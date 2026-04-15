@@ -33,8 +33,12 @@ nightly dream cycle, and adapters for six harnesses.
 ## Quickstart
 
 ```bash
-# zero-install — drop the brain into any existing project
-npx create-agentic-stack claude-code
+# install once
+brew install codejunkie99/agentic-stack/agentic-stack
+
+# drop the brain into any project
+cd your-project
+agentic-stack claude-code
 # or: cursor | windsurf | opencode | openclient | hermes | standalone-python
 ```
 
