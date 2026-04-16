@@ -20,7 +20,7 @@ def _normalize(text):
     return re.sub(r"\s+", " ", t).strip()
 
 
-def _extract_lesson_lines(lessons_md):
+def extract_lesson_lines(lessons_md):
     """Extract accepted lesson claims from rendered markdown.
 
     Only TERMINAL lessons count for duplicate detection. Non-terminal status
@@ -57,7 +57,7 @@ def check_exact_duplicate(claim, existing_lessons_md):
     nc = _normalize(claim)
     if not nc:
         return []
-    return [l for l in _extract_lesson_lines(existing_lessons_md)
+    return [l for l in extract_lesson_lines(existing_lessons_md)
             if _normalize(l) == nc]
 
 

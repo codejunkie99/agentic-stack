@@ -85,11 +85,17 @@ def extract_pattern(cluster):
 
     top_terms = sorted(common, key=lambda t: (-len(t), t))[:3]
     name_base = "_".join(top_terms) if top_terms else "untitled"
-    # Stable id: derived from the normalized claim text, NOT cluster membership.
-    # If an extra episode joins or leaves the cluster the canonical claim is
-    # usually unchanged, so the id is unchanged, so the candidate's lifecycle
-    # history (rejection_count, graduated/provisional state) carries forward.
-    pattern_id = hashlib.md5(_normalize_claim(claim).encode()).hexdigest()[:12]
+    # Id derived from normalized claim + conditions (shared tokens). Claim
+    # alone would collide for generic canonical text (e.g., "the test
+    # failed") occurring in unrelated contexts. Conditions usually stay
+    # stable as cluster members shift (intersection of the cluster's common
+    # vocabulary), so lifecycle history carries across membership changes
+    # in the common case while genuinely-different clusters with the same
+    # canonical get distinct ids.
+    conditions_key = "|".join(sorted(common))
+    pattern_id = hashlib.md5(
+        (_normalize_claim(claim) + "||" + conditions_key).encode()
+    ).hexdigest()[:12]
     name = f"pattern_{name_base}_{pattern_id[:6]}"
 
     # Recurrence-aware salience: give the scoring function cluster context

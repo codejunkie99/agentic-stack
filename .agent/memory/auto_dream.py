@@ -75,7 +75,12 @@ def _heuristic_prefilter(candidates_dir, semantic_dir):
         check = heuristic_check(cand, existing)
         if not check["passed"]:
             reason = ", ".join(check["reasons"])
-            mark_rejected(cand["id"], "heuristic_prefilter", reason, candidates_dir)
+            # Record the specific lesson(s) that triggered the duplicate
+            # rejection so write_candidates can check whether THIS blocker
+            # is still there, not just whether LESSONS.md as a whole changed.
+            mark_rejected(cand["id"], "heuristic_prefilter", reason,
+                          candidates_dir,
+                          duplicate_claims=check.get("duplicates", []))
             rejected += 1
     return rejected
 

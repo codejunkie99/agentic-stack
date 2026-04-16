@@ -125,11 +125,17 @@ def mark_graduated(candidate_id, reviewer, rationale, candidates_dir,
     return cand
 
 
-def mark_rejected(candidate_id, reviewer, reason, candidates_dir):
+def mark_rejected(candidate_id, reviewer, reason, candidates_dir, **extra_stamp):
     """Move a staged candidate to candidates/rejected/ with a reject decision.
 
     rejection_count tracks how many times this id has been rejected — if it
     keeps coming back, the reviewer sees churn instead of a 'fresh' item.
+
+    extra_stamp kwargs are merged into the decision entry. heuristic_prefilter
+    uses this to record which specific lessons triggered the duplicate rejection
+    (duplicate_claims=[...]); write_candidates later checks whether those
+    specific lessons are still present before re-staging, so unrelated LESSONS
+    edits don't cause the candidate to churn.
     """
     src = os.path.join(candidates_dir, f"{candidate_id}.json")
     if not os.path.exists(src):
@@ -137,7 +143,7 @@ def mark_rejected(candidate_id, reviewer, reason, candidates_dir):
     cand = load_candidate(src)
     cand["status"] = "rejected"
     cand["rejection_count"] = cand.get("rejection_count", 0) + 1
-    _touch(cand, "rejected", reviewer, notes=reason)
+    _touch(cand, "rejected", reviewer, notes=reason, **extra_stamp)
     _stamp_evidence_and_lessons(cand, candidates_dir)
 
     rejected_dir = os.path.join(candidates_dir, "rejected")

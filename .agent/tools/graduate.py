@@ -6,7 +6,7 @@ against current LESSONS.md) runs automatically so last-minute issues get
 caught. The rationale is REQUIRED — rubber-stamped promotions are the
 whole failure mode this layer is designed to prevent.
 """
-import os, sys, json, argparse, hashlib
+import os, sys, json, argparse, hashlib, datetime
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(BASE, "memory"))
@@ -51,18 +51,20 @@ def main():
               file=sys.stderr)
         sys.exit(2)
 
-    graduated = mark_graduated(
-        args.candidate_id, args.reviewer, args.rationale, CANDIDATES,
-        provisional=args.provisional,
-    )
-
+    # Atomicity: write to semantic memory BEFORE moving the candidate.
+    # If we crash mid-graduation, the staged candidate remains and the
+    # reviewer can retry. Append-only lessons.jsonl is deduped by id at
+    # render time, so a retry that re-appends produces one lesson bullet,
+    # not two. Crashing AFTER the move would leave the candidate lost and
+    # the lesson unlogged — the failure mode this reorder prevents.
+    accepted_at = datetime.datetime.now().isoformat()
     lesson = {
         "id": _lesson_id(cand),
         "claim": cand.get("claim"),
         "conditions": cand.get("conditions", []),
         "evidence_ids": cand.get("evidence_ids", []),
         "status": "provisional" if args.provisional else "accepted",
-        "accepted_at": graduated.get("accepted_at"),
+        "accepted_at": accepted_at,
         "reviewer": args.reviewer,
         "rationale": args.rationale,
         "cluster_size": cand.get("cluster_size", 1),
@@ -75,6 +77,12 @@ def main():
     }
     append_lesson(lesson, SEMANTIC)
     md_path = render_lessons(SEMANTIC)
+
+    # Semantic writes survived — now move the candidate file.
+    mark_graduated(
+        args.candidate_id, args.reviewer, args.rationale, CANDIDATES,
+        provisional=args.provisional,
+    )
 
     print(f"graduated {args.candidate_id} → lesson {lesson['id']}")
     print(f"re-rendered: {md_path}")

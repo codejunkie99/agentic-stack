@@ -11,6 +11,7 @@ fresh each time the pattern recurs.
 import os, json, datetime, hashlib
 from cluster import content_cluster, extract_pattern
 from review_state import _lessons_sha
+from validate import extract_lesson_lines
 
 
 def cluster_and_extract(entries, threshold=0.3):
@@ -70,13 +71,23 @@ def write_candidates(patterns, candidates_dir):
         return 0
     os.makedirs(candidates_dir, exist_ok=True)
     written = 0
-    current_lessons_sha = _lessons_sha(candidates_dir)
+    # Read LESSONS.md once — used to check whether specific duplicates that
+    # blocked a prior heuristic rejection are still present.
+    lessons_path = os.path.join(
+        os.path.dirname(candidates_dir), "semantic", "LESSONS.md")
+    lessons_text = ""
+    if os.path.exists(lessons_path):
+        try:
+            lessons_text = open(lessons_path).read()
+        except OSError:
+            pass
+    current_terminal_lessons = set(extract_lesson_lines(lessons_text))
 
     for key, p in patterns.items():
         claim = (p.get("claim") or "").strip()
         if not claim:
             continue
-        # Prefer the claim-derived id from extract_pattern — stable slug
+        # Prefer the claim+conditions id from extract_pattern — stable slug
         # means lifecycle state carries across cluster membership changes.
         slug = _slug(p)
         prev, prev_loc = _find_prior(slug, candidates_dir)
@@ -88,19 +99,27 @@ def write_candidates(patterns, candidates_dir):
         # For rejected + provisional-graduated, re-stage ONLY when something
         # material has changed since the last decision. Comparing reviewer
         # identity ("heuristic" vs "human") was a blunt proxy; what actually
-        # matters is whether evidence or the semantic landscape shifted.
+        # matters is whether evidence or the specific blocker shifted.
         if prev_loc in ("rejected", "graduated"):
             last = (prev.get("decisions") or [])[-1] if prev.get("decisions") else {}
             prev_evidence = set(last.get("evidence_snapshot", []))
             new_evidence = set(p.get("evidence_ids", []))
             evidence_changed = prev_evidence != new_evidence
-            # Lessons-hash only matters for rejections (heuristic rejections
-            # depend on LESSONS.md contents). Provisional re-review gates on
-            # evidence alone.
-            stamp = last.get("lessons_sha", "")
-            lessons_changed = (prev_loc == "rejected" and stamp != "" and
-                               stamp != current_lessons_sha)
-            if not evidence_changed and not lessons_changed:
+
+            # Did the specific lesson(s) that triggered this rejection go
+            # away? Uses stamped duplicate_claims rather than a whole-file
+            # LESSONS.md hash — unrelated graduations no longer cause
+            # heuristic-rejected candidates to churn.
+            stamped_dups = last.get("duplicate_claims") or []
+            if stamped_dups:
+                blocker_still_present = any(
+                    d in current_terminal_lessons for d in stamped_dups)
+            else:
+                # No specific stamp (older rejection or human reject).
+                # Provisional and human-rejected cases gate on evidence alone.
+                blocker_still_present = True
+
+            if not evidence_changed and blocker_still_present:
                 continue
 
         now = datetime.datetime.now().isoformat()
