@@ -18,8 +18,12 @@ def cluster_and_extract(entries, threshold=0.3):
     return {p["name"]: p for p in (extract_pattern(c) for c in clusters)}
 
 
-def _slug(key):
-    return hashlib.md5(key.encode()).hexdigest()[:12]
+def _slug(pattern_or_key):
+    """Slug for a pattern. Prefer pattern['id'] (claim-derived, stable across
+    cluster membership changes); fall back to md5(key) for legacy callers."""
+    if isinstance(pattern_or_key, dict) and pattern_or_key.get("id"):
+        return pattern_or_key["id"]
+    return hashlib.md5(str(pattern_or_key).encode()).hexdigest()[:12]
 
 
 def _find_prior(slug, candidates_dir):
@@ -69,7 +73,9 @@ def write_candidates(patterns, candidates_dir):
         claim = (p.get("claim") or "").strip()
         if not claim:
             continue
-        slug = _slug(key)
+        # Prefer the claim-derived id from extract_pattern — stable slug
+        # means lifecycle state carries across cluster membership changes.
+        slug = _slug(p)
         prev, prev_loc = _find_prior(slug, candidates_dir)
 
         # Fully-accepted lesson — don't resurrect. Provisional acceptance is

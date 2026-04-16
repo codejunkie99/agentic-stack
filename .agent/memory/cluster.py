@@ -5,11 +5,23 @@ similarity is Jaccard on word_set, and extraction picks a canonical episode
 rather than synthesizing a new claim. Structured candidates flow through the
 Phase 1 validation gate — if no LLM is available, they defer as before.
 """
-import os, sys, hashlib
+import os, re, sys, hashlib
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "harness"))
 from text import word_set, jaccard
 from salience import salience_score
+
+
+def _normalize_claim(text):
+    """Lowercase, strip punctuation, collapse whitespace.
+
+    Used to derive a stable pattern id — same claim text must always produce
+    the same id so lifecycle state (decisions, rejection_count, graduation
+    status) carries across dream cycles even when the cluster membership
+    shifts by one episode. Kept in sync with validate._normalize.
+    """
+    t = re.sub(r"[^\w\s]", " ", (text or "").lower())
+    return re.sub(r"\s+", " ", t).strip()
 
 
 def _entry_features(entry):
@@ -72,9 +84,13 @@ def extract_pattern(cluster):
     common = set.intersection(*feature_sets) if feature_sets else set()
 
     top_terms = sorted(common, key=lambda t: (-len(t), t))[:3]
-    sig = hashlib.md5(" ".join(sorted(common)).encode()).hexdigest()[:6]
     name_base = "_".join(top_terms) if top_terms else "untitled"
-    name = f"pattern_{name_base}_{sig}"
+    # Stable id: derived from the normalized claim text, NOT cluster membership.
+    # If an extra episode joins or leaves the cluster the canonical claim is
+    # usually unchanged, so the id is unchanged, so the candidate's lifecycle
+    # history (rejection_count, graduated/provisional state) carries forward.
+    pattern_id = hashlib.md5(_normalize_claim(claim).encode()).hexdigest()[:12]
+    name = f"pattern_{name_base}_{pattern_id[:6]}"
 
     # Recurrence-aware salience: give the scoring function cluster context
     # without mutating the source episode dict.
@@ -83,6 +99,7 @@ def extract_pattern(cluster):
     canonical_salience = salience_score(canonical_with_recurrence)
 
     return {
+        "id": pattern_id,
         "name": name,
         "claim": claim,
         "conditions": sorted(common),

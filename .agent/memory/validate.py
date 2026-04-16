@@ -19,13 +19,19 @@ def _normalize(text):
 
 
 def _extract_lesson_lines(lessons_md):
-    """Extract lesson claim text from rendered markdown.
+    """Extract accepted lesson claims from rendered markdown.
 
-    Strips render-only decorations so the duplicate check compares raw claims:
-      - HTML comment annotations (`<!-- ... -->`)
-      - `[PROVISIONAL]` prefix added by the renderer
-      - Strikethrough markers on superseded lessons (but the text is still
-        returned — a superseded lesson's claim can legitimately reappear)
+    Only TERMINAL lessons count for duplicate detection:
+      - `[PROVISIONAL]` lessons are probationary; if a pattern recurs, the
+        host agent should see it for evidence accumulation or full
+        graduation. Blocking them here makes provisional an accidental
+        dead end.
+      - Strikethrough (`~~...~~`) lessons are superseded; a new claim that
+        happens to match a superseded one is a legitimate revival, not a
+        duplicate.
+    Stable candidate ids (derived from claim text in cluster.extract_pattern)
+    handle the "same claim under different slug" risk without needing this
+    function to include provisional/superseded lessons.
     """
     out = []
     for line in (lessons_md or "").splitlines():
@@ -34,9 +40,9 @@ def _extract_lesson_lines(lessons_md):
             continue
         text = s[2:].split("<!--")[0].strip()
         if text.startswith("[PROVISIONAL]"):
-            text = text[len("[PROVISIONAL]"):].strip()
-        if text.startswith("~~") and text.endswith("~~") and len(text) >= 4:
-            text = text[2:-2].strip()
+            continue
+        if text.startswith("~~") and text.endswith("~~"):
+            continue
         if text:
             out.append(text)
     return out
