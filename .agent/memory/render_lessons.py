@@ -148,16 +148,37 @@ def migrate_legacy_bullets(semantic_dir):
     return migrated
 
 
+def _dedupe_by_id(lessons):
+    """Keep the latest entry per lesson id.
+
+    lessons.jsonl is append-only, so a provisional→accepted state transition
+    writes two rows with the same id. The render should show only the latest
+    state for each lesson; the jsonl is preserved for audit.
+    """
+    latest = {}
+    order = []
+    for L in lessons:
+        lid = L.get("id")
+        if not lid:
+            # No id? Treat as-is, keyed by its position so we keep it.
+            lid = f"_anon_{len(order)}"
+        if lid not in latest:
+            order.append(lid)
+        latest[lid] = L
+    return [latest[lid] for lid in order]
+
+
 def render_lessons(semantic_dir):
     """Re-render LESSONS.md. Preserves hand-curated content above the sentinel.
 
     Auto-migrates legacy auto-promoted bullets below the sentinel into
     lessons.jsonl before rendering, so upgrades from the old markdown-only
-    format don't silently erase past promotions.
+    format don't silently erase past promotions. Deduplicates entries by
+    lesson id so a provisional-then-accepted lesson renders once, not twice.
     """
     # First, absorb any un-registered bullets below the sentinel
     migrate_legacy_bullets(semantic_dir)
-    lessons = load_lessons(semantic_dir)
+    lessons = _dedupe_by_id(load_lessons(semantic_dir))
     auto_section = _build_auto_section(lessons)
 
     path = os.path.join(semantic_dir, LESSONS_MD)

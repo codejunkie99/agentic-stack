@@ -121,11 +121,13 @@ def write_candidates(patterns, candidates_dir):
         with open(staged_path, "w") as f:
             json.dump(candidate, f, indent=2)
 
-        # If the candidate was previously rejected, remove it from the
-        # rejected subdir so the same id isn't tracked in two states at once.
-        if prev_loc == "rejected":
+        # The slug must live in exactly one lifecycle location. Remove any
+        # prior copy in rejected/ or graduated/ (the latter only for
+        # provisional re-review — accepted never gets here because it's
+        # skipped above).
+        if prev_loc in ("rejected", "graduated"):
             try:
-                os.remove(os.path.join(candidates_dir, "rejected", f"{slug}.json"))
+                os.remove(os.path.join(candidates_dir, prev_loc, f"{slug}.json"))
             except OSError:
                 pass
         written += 1

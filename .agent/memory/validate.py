@@ -11,6 +11,8 @@ MIN_CLAIM_LEN = 20
 LENGTH_SATURATE = 100
 CLUSTER_SATURATE = 5
 
+_STATUS_RE = re.compile(r"status=(\w+)")
+
 
 def _normalize(text):
     """Lowercase, strip punctuation, collapse whitespace. For exact-dup detection."""
@@ -21,24 +23,26 @@ def _normalize(text):
 def _extract_lesson_lines(lessons_md):
     """Extract accepted lesson claims from rendered markdown.
 
-    Only TERMINAL lessons count for duplicate detection:
-      - `[PROVISIONAL]` lessons are probationary; if a pattern recurs, the
-        host agent should see it for evidence accumulation or full
-        graduation. Blocking them here makes provisional an accidental
-        dead end.
-      - Strikethrough (`~~...~~`) lessons are superseded; a new claim that
-        happens to match a superseded one is a legitimate revival, not a
-        duplicate.
-    Stable candidate ids (derived from claim text in cluster.extract_pattern)
-    handle the "same claim under different slug" risk without needing this
-    function to include provisional/superseded lessons.
+    Only TERMINAL lessons count for duplicate detection. Non-terminal status
+    values — `provisional` (probationary), `legacy` (imported from pre-restructure
+    LESSONS.md), and anything superseded — must be skipped so recurrences can
+    reach the host agent for re-review, evidence accumulation, or supersession.
+    Status is read from the HTML annotation written by render_lessons; visual
+    markers (`[PROVISIONAL]`, `~~...~~`) are the fallback for unannotated lines.
     """
     out = []
     for line in (lessons_md or "").splitlines():
         s = line.strip()
         if not s.startswith("- ") or len(s) <= 2:
             continue
+        # Primary signal: status in HTML annotation
+        if "<!--" in s:
+            ann = s.split("<!--", 1)[1]
+            m = _STATUS_RE.search(ann)
+            if m and m.group(1) != "accepted":
+                continue
         text = s[2:].split("<!--")[0].strip()
+        # Fallback: visual markers (for pre-existing bullets without annotations)
         if text.startswith("[PROVISIONAL]"):
             continue
         if text.startswith("~~") and text.endswith("~~"):
