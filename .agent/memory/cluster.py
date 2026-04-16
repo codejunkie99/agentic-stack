@@ -59,7 +59,11 @@ def extract_pattern(cluster):
       - conditions: tokens shared by every cluster member
       - name: longest shared terms + content hash (deterministic, collision-free)
       - evidence_ids: all member timestamps
-      - cluster_size, canonical_salience: fed into the promotion gate
+      - cluster_size: recurrence count
+      - canonical_salience: salience of the canonical episode *boosted by*
+        cluster_size. Repetition is a learning signal; a recurring-but-moderate
+        pattern must be able to clear the promotion threshold even when no
+        single episode was extreme. salience_score already caps recurrence at 3.
     """
     canonical = max(cluster, key=salience_score)
     claim = (canonical.get("reflection") or canonical.get("action") or "").strip()
@@ -72,11 +76,17 @@ def extract_pattern(cluster):
     name_base = "_".join(top_terms) if top_terms else "untitled"
     name = f"pattern_{name_base}_{sig}"
 
+    # Recurrence-aware salience: give the scoring function cluster context
+    # without mutating the source episode dict.
+    canonical_with_recurrence = dict(canonical)
+    canonical_with_recurrence["recurrence_count"] = len(cluster)
+    canonical_salience = salience_score(canonical_with_recurrence)
+
     return {
         "name": name,
         "claim": claim,
         "conditions": sorted(common),
         "evidence_ids": [e.get("timestamp", "") for e in cluster if e.get("timestamp")],
         "cluster_size": len(cluster),
-        "canonical_salience": salience_score(canonical),
+        "canonical_salience": canonical_salience,
     }

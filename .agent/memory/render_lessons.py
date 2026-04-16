@@ -11,7 +11,7 @@ from the sentinel onward. If the sentinel is missing it's appended at the
 end of the file. This means hand-curated preambles and seed bullets above
 the sentinel survive every render.
 """
-import os, json, datetime
+import os, json, datetime, hashlib
 from collections import defaultdict
 
 
@@ -83,8 +83,80 @@ def _build_auto_section(lessons):
     return "\n".join(lines).rstrip() + "\n" if lines else ""
 
 
+def migrate_legacy_bullets(semantic_dir):
+    """Import any bullets below the sentinel not yet in lessons.jsonl.
+
+    Upgrade safety: installations that ran the old markdown-only promotion
+    have auto-promoted bullets below the sentinel. Without this pass, the
+    first call to render_lessons with an empty lessons.jsonl would rewrite
+    LESSONS.md with an empty auto-section and lose all of them silently.
+    Migrated entries land with status='legacy' so they're visually distinct
+    and can be reviewed + superseded by the host agent later.
+    """
+    md_path = os.path.join(semantic_dir, LESSONS_MD)
+    if not os.path.exists(md_path):
+        return 0
+    content = open(md_path).read()
+    if SENTINEL not in content:
+        return 0
+
+    below = content.split(SENTINEL, 1)[1]
+    bullets = []
+    for line in below.splitlines():
+        s = line.strip()
+        if not s.startswith("- ") or len(s) <= 2:
+            continue
+        text = s[2:].split("<!--")[0].strip()
+        # Skip superseded entries — they're historical, not content to re-ingest
+        if text.startswith("~~") and text.endswith("~~"):
+            continue
+        # Strip provisional prefix if present
+        if text.startswith("[PROVISIONAL]"):
+            text = text[len("[PROVISIONAL]"):].strip()
+        if text:
+            bullets.append(text)
+
+    if not bullets:
+        return 0
+
+    existing_claims = {(L.get("claim") or "").strip().lower()
+                       for L in load_lessons(semantic_dir)}
+    try:
+        accepted_at = datetime.datetime.fromtimestamp(
+            os.path.getmtime(md_path)).isoformat()
+    except OSError:
+        accepted_at = datetime.datetime.now().isoformat()
+
+    migrated = 0
+    for claim in bullets:
+        if claim.strip().lower() in existing_claims:
+            continue
+        lid = "lesson_legacy_" + hashlib.md5(claim.lower().encode()).hexdigest()[:12]
+        lesson = {
+            "id": lid, "claim": claim,
+            "conditions": [], "evidence_ids": [],
+            "status": "legacy", "accepted_at": accepted_at,
+            "reviewer": "render_lessons_migration",
+            "rationale": "Imported from pre-restructure LESSONS.md bullets below sentinel",
+            "cluster_size": 1, "canonical_salience": 5.0,
+            "confidence": 0.7, "support_count": 0, "contradiction_count": 0,
+            "supersedes": None, "source_candidate": None,
+        }
+        append_lesson(lesson, semantic_dir)
+        existing_claims.add(claim.strip().lower())
+        migrated += 1
+    return migrated
+
+
 def render_lessons(semantic_dir):
-    """Re-render LESSONS.md. Preserves hand-curated content above the sentinel."""
+    """Re-render LESSONS.md. Preserves hand-curated content above the sentinel.
+
+    Auto-migrates legacy auto-promoted bullets below the sentinel into
+    lessons.jsonl before rendering, so upgrades from the old markdown-only
+    format don't silently erase past promotions.
+    """
+    # First, absorb any un-registered bullets below the sentinel
+    migrate_legacy_bullets(semantic_dir)
     lessons = load_lessons(semantic_dir)
     auto_section = _build_auto_section(lessons)
 

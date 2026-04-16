@@ -19,12 +19,27 @@ def _normalize(text):
 
 
 def _extract_lesson_lines(lessons_md):
+    """Extract lesson claim text from rendered markdown.
+
+    Strips render-only decorations so the duplicate check compares raw claims:
+      - HTML comment annotations (`<!-- ... -->`)
+      - `[PROVISIONAL]` prefix added by the renderer
+      - Strikethrough markers on superseded lessons (but the text is still
+        returned — a superseded lesson's claim can legitimately reappear)
+    """
     out = []
     for line in (lessons_md or "").splitlines():
         s = line.strip()
-        if s.startswith("- ") and len(s) > 2:
-            out.append(s[2:].split("<!--")[0].strip())
-    return [l for l in out if l]
+        if not s.startswith("- ") or len(s) <= 2:
+            continue
+        text = s[2:].split("<!--")[0].strip()
+        if text.startswith("[PROVISIONAL]"):
+            text = text[len("[PROVISIONAL]"):].strip()
+        if text.startswith("~~") and text.endswith("~~") and len(text) >= 4:
+            text = text[2:-2].strip()
+        if text:
+            out.append(text)
+    return out
 
 
 def check_exact_duplicate(claim, existing_lessons_md):
