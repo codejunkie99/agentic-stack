@@ -1,5 +1,7 @@
 # agentic-stack
 
+Follow me on : [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on projects
+
 [![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
