@@ -47,20 +47,44 @@ nightly dream cycle, and adapters for seven harnesses.
 brew tap codejunkie99/agentic-stack https://github.com/codejunkie99/agentic-stack
 brew install agentic-stack
 
-# drop the brain into any project
+# drop the brain into any project — the onboarding wizard runs automatically
 cd your-project
 agentic-stack claude-code
 # or: cursor | windsurf | opencode | openclient | hermes | standalone-python
 ```
-
-Then customize `.agent/memory/personal/PREFERENCES.md` with your own
-conventions — that's the one file every user should edit on day one.
 
 > **Clone instead?**
 > ```bash
 > git clone https://github.com/codejunkie99/agentic-stack.git
 > cd agentic-stack && ./install.sh claude-code
 > ```
+
+## Onboarding wizard
+
+After the adapter is installed, a colorful terminal wizard runs automatically
+and populates `.agent/memory/personal/PREFERENCES.md` — the **first file your
+AI reads at the start of every session**.
+
+It asks six questions with arrow-key selection, each skippable with Enter:
+
+| Question | Default |
+|---|---|
+| What should I call you? | *(skip)* |
+| Primary language(s)? | `unspecified` |
+| Explanation style? | `concise` |
+| Test strategy? | `test-after` |
+| Commit message style? | `conventional commits` |
+| Code review depth? | `critical issues only` |
+
+**Flags:**
+
+```bash
+agentic-stack claude-code --yes          # accept all defaults silently (CI / scripted)
+agentic-stack claude-code --reconfigure  # re-run the wizard on an existing project
+```
+
+Edit `.agent/memory/personal/PREFERENCES.md` any time to add or refine your
+conventions — the agent re-reads it fresh every session.
 
 ## Repo layout
 
@@ -84,7 +108,12 @@ adapters/                       # one small shim per harness
 
 docs/                           # architecture, getting-started, per-harness
 examples/                       # minimal first_run.py
-install.sh                      # one-command adapter install
+install.sh                      # one-command adapter install + wizard trigger
+onboard.py                      # onboarding wizard entry point
+onboard_ui.py                   # ANSI palette, banner, clack-style layout
+onboard_widgets.py              # arrow-key prompts (text, select, confirm)
+onboard_render.py               # answers → PREFERENCES.md content
+onboard_write.py                # atomic file write with backup
 ```
 
 ## Supported harnesses
