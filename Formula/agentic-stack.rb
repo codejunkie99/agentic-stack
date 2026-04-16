@@ -8,7 +8,9 @@ class AgenticStack < Formula
 
   def install
     # install the brain + adapters alongside install.sh so relative paths hold
-    pkgshare.install ".agent", "adapters", "install.sh"
+    pkgshare.install ".agent", "adapters", "install.sh",
+                     "onboard.py", "onboard_ui.py", "onboard_widgets.py",
+                     "onboard_render.py", "onboard_write.py"
 
     # wrapper so `agentic-stack cursor` works from anywhere
     (bin/"agentic-stack").write <<~EOS
@@ -20,5 +22,9 @@ class AgenticStack < Formula
   test do
     output = shell_output("#{bin}/agentic-stack 2>&1", 2)
     assert_match "usage", output
+    # Wizard --yes must write PREFERENCES.md into a temp project dir
+    (testpath/".agent/memory/personal").mkpath
+    system "#{bin}/agentic-stack", "claude-code", testpath.to_s, "--yes"
+    assert_predicate testpath/".agent/memory/personal/PREFERENCES.md", :exist?
   end
 end
