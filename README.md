@@ -9,12 +9,13 @@
 > you switch.
 
 <p align="center">
-  <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
+  <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
+  <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
+
 
 Based on the article:
 **["The Agentic Stack"](https://x.com/Av1dlive/status/2044453102703841645?s=20)** · by [@AV1DLIVE](https://twitter.com/AV1DLIVE)
