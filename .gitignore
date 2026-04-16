@@ -19,9 +19,11 @@ venv/
 .agent/memory/dream.log
 *.log
 
-# derived search index (auto-rebuilt)
-.agent/memory/.index/
-
 # do NOT ignore memory files — they are the point
 !.agent/memory/
 !.agent/memory/**
+
+# ...EXCEPT the derived search index (auto-rebuilt, per-machine).
+# Placed AFTER the negation above so the later rule wins.
+.agent/memory/.index/
+.agent/memory/.index/**

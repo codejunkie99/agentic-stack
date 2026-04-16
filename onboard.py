@@ -3,10 +3,11 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from onboard_ui      import print_banner, intro, note, outro, step_done, BAR, R, MUTED, GREEN, PURPLE, WHITE, B
-from onboard_widgets import ask_text, ask_select, ask_confirm
-from onboard_render  import render
-from onboard_write   import write_prefs, is_customized, REL
+from onboard_ui       import print_banner, intro, note, outro, step_done, BAR, R, MUTED, GREEN, PURPLE, WHITE, B, ORANGE
+from onboard_widgets  import ask_text, ask_select, ask_confirm
+from onboard_render   import render
+from onboard_write    import write_prefs, is_customized, REL
+from onboard_features import write_features
 
 _CI_VARS = ("CI", "GITHUB_ACTIONS", "CIRCLECI", "BUILDKITE", "JENKINS_URL", "TRAVIS")
 
@@ -57,6 +58,16 @@ def _wizard(target, force):
                                  ["conventional commits", "free-form", "emoji"])
     a["review"]    = ask_select("Code review depth?",
                                  ["critical issues only", "everything"])
+
+    # ── Optional features (beta, opt-in) ───────────────────────────────
+    note("Optional features", [
+        f"{ORANGE}[BETA]{R}{MUTED} features — off by default, opt-in only.",
+        "You can change this later with  agentic-stack <harness> --reconfigure.",
+    ])
+    a["feature_memory_search"] = ask_confirm(
+        f"Enable FTS memory search  {ORANGE}[BETA]{R}?",
+        default=False,
+    )
     return a
 
 
@@ -71,8 +82,13 @@ def main():
 
     if yes:
         path = write_prefs(target, render({}), force=True)
+        # --yes defaults all optional beta features to off
+        features_file = write_features(target, {
+            "memory_search_fts": {"enabled": False, "beta": True},
+        })
         print(f"{GREEN}◆{R}  {WHITE}{B}PREFERENCES.md{R} written with defaults")
-        print(f"{MUTED}   {path}{R}\n")
+        print(f"{MUTED}   {path}{R}")
+        print(f"{MUTED}   {features_file} (all beta features off){R}\n")
         sys.exit(0)
 
     try:
@@ -80,10 +96,18 @@ def main():
         if answers is None:
             sys.exit(0)
         path = write_prefs(target, render(answers), force=reconf)
+        features = {
+            "memory_search_fts": {
+                "enabled": bool(answers.get("feature_memory_search")),
+                "beta": True,
+            },
+        }
+        features_file = write_features(target, features)
         outro([
             f"PREFERENCES.md written",
             f"{path}",
-            "Edit it any time — your AI re-reads it every session.",
+            f"Features: {features_file}",
+            "Edit either file any time — your AI re-reads them every session.",
             "Tip: git add .agent/memory/ to track your brain.",
         ])
     except KeyboardInterrupt:
