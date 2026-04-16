@@ -26,6 +26,19 @@ happened. Before important decisions, read the top entries from
 5. Archive resolved working context to `memory/episodic/snapshots/`.
 6. Commit via git so history is preserved: `git log memory/` is the agent's autobiography.
 
+## Searching memory by keyword
+
+When you need to find a specific memory by topic or keyword (not just the
+top-salience entries), use the FTS5 search tool:
+
+```bash
+python3 .agent/memory/memory_search.py <query>
+```
+
+This indexes all `.md` and `.jsonl` files under `.agent/memory/` and returns
+ranked results with context snippets. Falls back to grep if FTS5 is not
+available. The index auto-rebuilds when files change.
+
 ## Anti-patterns
 - Do not auto-merge `personal/` into `semantic/` — user preferences are not general knowledge.
 - Do not delete entries to "clean up" memory. Archive them.
