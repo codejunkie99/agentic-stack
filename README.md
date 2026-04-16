@@ -43,7 +43,7 @@ nightly dream cycle, and adapters for seven harnesses.
 ## Quickstart
 
 ```bash
-# tap + install (one-time)
+# tap + install (one-time — both lines required)
 brew tap codejunkie99/agentic-stack https://github.com/codejunkie99/agentic-stack
 brew install agentic-stack
 
@@ -52,6 +52,11 @@ cd your-project
 agentic-stack claude-code
 # or: cursor | windsurf | opencode | openclient | hermes | standalone-python
 ```
+
+> **Already installed? Update to the latest version:**
+> ```bash
+> brew update && brew upgrade agentic-stack
+> ```
 
 > **Clone instead?**
 > ```bash
