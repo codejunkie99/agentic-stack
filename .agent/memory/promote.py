@@ -10,6 +10,7 @@ fresh each time the pattern recurs.
 """
 import os, json, datetime, hashlib
 from cluster import content_cluster, extract_pattern
+from review_state import _lessons_sha
 
 
 def cluster_and_extract(entries, threshold=0.3):
@@ -69,6 +70,8 @@ def write_candidates(patterns, candidates_dir):
         return 0
     os.makedirs(candidates_dir, exist_ok=True)
     written = 0
+    current_lessons_sha = _lessons_sha(candidates_dir)
+
     for key, p in patterns.items():
         claim = (p.get("claim") or "").strip()
         if not claim:
@@ -78,20 +81,26 @@ def write_candidates(patterns, candidates_dir):
         slug = _slug(p)
         prev, prev_loc = _find_prior(slug, candidates_dir)
 
-        # Fully-accepted lesson — don't resurrect. Provisional acceptance is
-        # probationary, so recurring provisional patterns SHOULD reappear
-        # for re-review + evidence accumulation.
+        # Fully-accepted lesson — terminal, never resurrect.
         if prev_loc == "graduated" and prev.get("status") != "provisional":
             continue
 
-        # Heuristic-rejected candidates (length / exact-duplicate of an
-        # existing lesson) are terminal unless a human reopens them. Without
-        # this guard, each dream cycle would re-stage the same slug and
-        # heuristic_prefilter would immediately reject it again, bumping
-        # rejection_count forever for no new signal.
-        if prev_loc == "rejected":
+        # For rejected + provisional-graduated, re-stage ONLY when something
+        # material has changed since the last decision. Comparing reviewer
+        # identity ("heuristic" vs "human") was a blunt proxy; what actually
+        # matters is whether evidence or the semantic landscape shifted.
+        if prev_loc in ("rejected", "graduated"):
             last = (prev.get("decisions") or [])[-1] if prev.get("decisions") else {}
-            if last.get("action") == "rejected" and last.get("reviewer") == "heuristic_prefilter":
+            prev_evidence = set(last.get("evidence_snapshot", []))
+            new_evidence = set(p.get("evidence_ids", []))
+            evidence_changed = prev_evidence != new_evidence
+            # Lessons-hash only matters for rejections (heuristic rejections
+            # depend on LESSONS.md contents). Provisional re-review gates on
+            # evidence alone.
+            stamp = last.get("lessons_sha", "")
+            lessons_changed = (prev_loc == "rejected" and stamp != "" and
+                               stamp != current_lessons_sha)
+            if not evidence_changed and not lessons_changed:
                 continue
 
         now = datetime.datetime.now().isoformat()

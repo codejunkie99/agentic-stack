@@ -5,7 +5,7 @@ sees the memory that matters for *this* task, not just the most salient memory
 in general. Always-on slots (PREFERENCES, WORKSPACE, permissions) are loaded
 whole regardless of query — they're cheap and safety-critical.
 """
-import json, os, sys
+import json, os, re, sys
 from salience import salience_score
 from text import word_set, jaccard
 
@@ -14,6 +14,10 @@ ROOT = os.path.join(os.path.dirname(__file__), "..")
 # to configure PYTHONPATH themselves
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 RELEVANCE_FLOOR = 0.3  # even zero-overlap episodes surface if very salient
+
+# Keep in sync with memory/validate._extract_lesson_lines — both filters
+# want TERMINAL-only lesson content.
+_STATUS_RE = re.compile(r"status=(\w+)")
 
 
 def _read(path, limit=None):
@@ -85,20 +89,34 @@ def _lines_up_to_budget(lines, char_budget):
 
 
 def _top_lessons(query, lessons_md, char_budget=8000):
-    """Rank LESSONS.md bullets by query overlap; fall back to original order.
+    """Rank accepted lesson bullets by query overlap; fall back to original order.
 
-    Section headers (## ...) get dropped when ranking — the LLM only needs
-    the distilled claim lines. When the query has zero overlap with any
-    bullet, fall back to the original order so the agent still sees general
-    knowledge.
+    Only terminal (status=accepted) lessons reach the host agent as retrievable
+    guidance. Provisional, legacy, and superseded bullets exist in LESSONS.md
+    for audit but must not be injected into the system prompt — they'd let the
+    agent act on probationary or stale memory.
     """
     lines = []
     for line in (lessons_md or "").splitlines():
         s = line.strip()
-        if s.startswith("- ") and len(s) > 2:
-            lines.append(s[2:].split("<!--")[0].strip())
+        if not s.startswith("- ") or len(s) <= 2:
+            continue
+        # Primary status filter: HTML annotation
+        if "<!--" in s:
+            ann = s.split("<!--", 1)[1]
+            m = _STATUS_RE.search(ann)
+            if m and m.group(1) != "accepted":
+                continue
+        text = s[2:].split("<!--")[0].strip()
+        # Fallback: visual markers
+        if text.startswith("[PROVISIONAL]"):
+            continue
+        if text.startswith("~~") and text.endswith("~~"):
+            continue
+        if text:
+            lines.append(text)
     if not lines:
-        return lessons_md[:char_budget]
+        return lessons_md[:char_budget] if lessons_md else ""
 
     query_words = word_set(query)
     if not query_words:

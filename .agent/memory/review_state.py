@@ -9,7 +9,7 @@ into this module to transition state. Rejection and re-stage preserve full
 history so a candidate that keeps reappearing is visibly churning rather
 than looking novel each time.
 """
-import os, json, datetime
+import os, json, datetime, hashlib
 
 
 def _now():
@@ -25,6 +25,37 @@ def _touch(candidate, action, reviewer, notes="", **fields):
         "notes": notes,
         **fields,
     })
+
+
+def _lessons_sha(candidates_dir):
+    """Short hash of current LESSONS.md, used to stamp decisions.
+
+    Re-staging logic uses this to tell 'semantic state changed since this
+    decision' apart from 'nothing has changed, skip to avoid churn'.
+    """
+    lessons_path = os.path.join(
+        os.path.dirname(candidates_dir), "semantic", "LESSONS.md")
+    if not os.path.exists(lessons_path):
+        return ""
+    try:
+        with open(lessons_path, "rb") as f:
+            return hashlib.md5(f.read()).hexdigest()[:12]
+    except OSError:
+        return ""
+
+
+def _stamp_evidence_and_lessons(cand, candidates_dir):
+    """Attach evidence + lessons snapshots to the most recent decision.
+
+    Called on every terminal-ish transition (rejected, graduated). Lets
+    write_candidates decide whether a later re-detection represents genuinely
+    new information or the same state we already judged.
+    """
+    if not cand.get("decisions"):
+        return
+    last = cand["decisions"][-1]
+    last["evidence_snapshot"] = list(cand.get("evidence_ids", []))
+    last["lessons_sha"] = _lessons_sha(candidates_dir)
 
 
 def load_candidate(path):
@@ -83,6 +114,7 @@ def mark_graduated(candidate_id, reviewer, rationale, candidates_dir,
     cand["rationale"] = rationale
     _touch(cand, "graduated", reviewer, notes=rationale,
            provisional=provisional)
+    _stamp_evidence_and_lessons(cand, candidates_dir)
 
     graduated_dir = os.path.join(candidates_dir, "graduated")
     os.makedirs(graduated_dir, exist_ok=True)
@@ -106,6 +138,7 @@ def mark_rejected(candidate_id, reviewer, reason, candidates_dir):
     cand["status"] = "rejected"
     cand["rejection_count"] = cand.get("rejection_count", 0) + 1
     _touch(cand, "rejected", reviewer, notes=reason)
+    _stamp_evidence_and_lessons(cand, candidates_dir)
 
     rejected_dir = os.path.join(candidates_dir, "rejected")
     os.makedirs(rejected_dir, exist_ok=True)
