@@ -1,31 +1,32 @@
 import { Composition, Series } from "remotion";
-import { Title } from "./scenes/Title";
+import { Title }        from "./scenes/Title";
 import { Architecture } from "./scenes/Architecture";
-import { Quickstart } from "./scenes/Quickstart";
-import { Outro } from "./scenes/Outro";
-import { FPS, W, H } from "./tokens";
+import { Memory }       from "./scenes/Memory";
+import { Skills }       from "./scenes/Skills";
+import { DreamCycle }   from "./scenes/DreamCycle";
+import { Quickstart }   from "./scenes/Quickstart";
+import { Outro }        from "./scenes/Outro";
+import { FPS, W, H }   from "./tokens";
 
-// Scene durations in frames (30fps)
-const T_TITLE = 150;       // 5s
-const T_ARCH = 300;        // 10s
-const T_QUICK = 270;       // 9s
-const T_OUTRO = 180;       // 6s
-const TOTAL = T_TITLE + T_ARCH + T_QUICK + T_OUTRO; // 900 = 30s
+// Scene durations in frames @ 30fps
+const T_TITLE  = 150;   // 5s
+const T_ARCH   = 270;   // 9s
+const T_MEM    = 270;   // 9s
+const T_SKILLS = 270;   // 9s
+const T_DREAM  = 210;   // 7s
+const T_QUICK  = 240;   // 8s
+const T_OUTRO  = 150;   // 5s
+const TOTAL = T_TITLE + T_ARCH + T_MEM + T_SKILLS + T_DREAM + T_QUICK + T_OUTRO; // 1560 = 52s
 
 const Demo: React.FC = () => (
   <Series>
-    <Series.Sequence durationInFrames={T_TITLE}>
-      <Title />
-    </Series.Sequence>
-    <Series.Sequence durationInFrames={T_ARCH}>
-      <Architecture />
-    </Series.Sequence>
-    <Series.Sequence durationInFrames={T_QUICK}>
-      <Quickstart />
-    </Series.Sequence>
-    <Series.Sequence durationInFrames={T_OUTRO}>
-      <Outro />
-    </Series.Sequence>
+    <Series.Sequence durationInFrames={T_TITLE} ><Title        /></Series.Sequence>
+    <Series.Sequence durationInFrames={T_ARCH}  ><Architecture /></Series.Sequence>
+    <Series.Sequence durationInFrames={T_MEM}   ><Memory       /></Series.Sequence>
+    <Series.Sequence durationInFrames={T_SKILLS}><Skills       /></Series.Sequence>
+    <Series.Sequence durationInFrames={T_DREAM} ><DreamCycle   /></Series.Sequence>
+    <Series.Sequence durationInFrames={T_QUICK} ><Quickstart   /></Series.Sequence>
+    <Series.Sequence durationInFrames={T_OUTRO} ><Outro        /></Series.Sequence>
   </Series>
 );
 

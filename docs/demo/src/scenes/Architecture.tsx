@@ -1,19 +1,25 @@
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { COLORS } from "../tokens";
+import { COLORS, FONT, FONT_MONO } from "../tokens";
 
 const HARNESSES = ["Claude Code", "Cursor", "Windsurf", "OpenCode", "OpenClient", "Hermes", "Python"];
-const LAYERS = ["memory/", "skills/", "protocols/"];
+const BRAIN_LAYERS = [
+  { path: "memory/",    color: COLORS.orange },
+  { path: "skills/",    color: COLORS.blue   },
+  { path: "protocols/", color: COLORS.green  },
+  { path: "tools/",     color: COLORS.purple },
+];
 
-const HarnessItem: React.FC<{ label: string; delay: number }> = ({ label, delay }) => {
+const Pill: React.FC<{ label: string; delay: number }> = ({ label, delay }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const sp = spring({ fps, frame: Math.max(0, frame - delay), config: { damping: 12 } });
-  const op = interpolate(frame, [delay, delay + 18], [0, 1], { extrapolateRight: "clamp" });
+  const sp = spring({ fps, frame: Math.max(0, frame - delay), config: { damping: 20, stiffness: 100 } });
+  const op = interpolate(frame, [delay, delay + 15], [0, 1], { extrapolateRight: "clamp" });
   return (
     <div style={{
-      background: COLORS.harness, border: "1px solid #334155", borderRadius: 6,
-      padding: "7px 18px", color: COLORS.harnessText, fontSize: 15,
-      opacity: op, transform: `translateX(${(1 - sp) * -50}px)`,
+      background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+      borderRadius: 10, padding: "9px 22px", color: COLORS.text, fontSize: 15,
+      fontFamily: FONT, fontWeight: 400,
+      opacity: op, transform: `translateX(${(1 - sp) * -36}px)`,
     }}>
       {label}
     </div>
@@ -23,38 +29,50 @@ const HarnessItem: React.FC<{ label: string; delay: number }> = ({ label, delay 
 export const Architecture: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const brainSp = spring({ fps, frame, config: { damping: 10, stiffness: 70 } });
+  const brainSp = spring({ fps, frame: Math.max(0, frame - 20), config: { damping: 20, stiffness: 80 } });
 
   return (
     <div style={{
       background: COLORS.bg, width: "100%", height: "100%",
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Courier New', monospace", gap: 60,
+      fontFamily: FONT, gap: 48,
     }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        {HARNESSES.map((h, i) => <HarnessItem key={h} label={h} delay={i * 14} />)}
+      {/* Harness column */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {HARNESSES.map((h, i) => <Pill key={h} label={h} delay={i * 13} />)}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 7, paddingTop: 2 }}>
+      {/* Arrow column */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {HARNESSES.map((_, i) => {
-          const op = interpolate(frame, [i * 14 + 25, i * 14 + 45], [0, 1], { extrapolateRight: "clamp" });
-          return <div key={i} style={{ color: COLORS.accent, fontSize: 22, opacity: op, lineHeight: "31px" }}>→</div>;
+          const op = interpolate(frame, [i * 13 + 22, i * 13 + 38], [0, 1], { extrapolateRight: "clamp" });
+          return (
+            <div key={i} style={{ color: COLORS.blue, fontSize: 16, opacity: op, lineHeight: "38px", letterSpacing: 2 }}>
+              ——›
+            </div>
+          );
         })}
       </div>
 
+      {/* Brain box */}
       <div style={{
-        background: COLORS.brain, border: `2px solid ${COLORS.border}`, borderRadius: 14,
-        padding: "36px 52px", textAlign: "center",
-        opacity: brainSp, transform: `scale(${interpolate(brainSp, [0, 1], [0.6, 1])})`,
+        background: COLORS.surface, border: `1px solid ${COLORS.borderBright}`,
+        borderRadius: 20, padding: "36px 48px", textAlign: "left", minWidth: 220,
+        opacity: brainSp, transform: `scale(${interpolate(brainSp, [0, 1], [0.92, 1])})`,
+        boxShadow: `0 0 60px rgba(10,132,255,${0.12 * brainSp})`,
       }}>
-        <div style={{ fontSize: 26, fontWeight: 700, color: COLORS.accentLight, marginBottom: 22 }}>
+        <div style={{ fontSize: 13, color: COLORS.textTertiary, letterSpacing: 2, marginBottom: 18 }}>
+          PORTABLE BRAIN
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 300, color: COLORS.text, fontFamily: FONT_MONO, marginBottom: 22 }}>
           .agent/
         </div>
-        {LAYERS.map((l, i) => {
-          const op = interpolate(frame, [55 + i * 22, 75 + i * 22], [0, 1], { extrapolateRight: "clamp" });
+        {BRAIN_LAYERS.map((l, i) => {
+          const op = interpolate(frame, [60 + i * 18, 80 + i * 18], [0, 1], { extrapolateRight: "clamp" });
           return (
-            <div key={l} style={{ color: COLORS.muted, fontSize: 17, marginTop: 10, opacity: op }}>
-              {l}
+            <div key={l.path} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, opacity: op }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: l.color, flexShrink: 0 }} />
+              <div style={{ fontSize: 15, color: COLORS.textSecondary, fontFamily: FONT_MONO }}>{l.path}</div>
             </div>
           );
         })}
