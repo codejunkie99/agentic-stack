@@ -19,6 +19,9 @@ venv/
 .agent/memory/dream.log
 *.log
 
+# derived search index (auto-rebuilt)
+.agent/memory/.index/
+
 # do NOT ignore memory files — they are the point
 !.agent/memory/
 !.agent/memory/**
