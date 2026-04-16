@@ -1,0 +1,4 @@
+# Force LF line endings for shell scripts and Python so Windows clones
+# (with core.autocrlf=true) don't break shebang parsing on bash/WSL.
+*.sh  text eol=lf
+*.py  text eol=lf

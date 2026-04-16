@@ -1,5 +1,11 @@
 """ANSI palette, block-char banner, and clack-style layout atoms (stdlib only)."""
-import sys, os, shutil, tty, termios
+import sys, os, shutil
+
+_WIN = sys.platform == "win32"
+if _WIN:
+    import msvcrt
+else:
+    import tty, termios
 
 # ── Palette ───────────────────────────────────────────────────────────────
 def _e(*c): return f"\x1b[{';'.join(map(str,c))}m"
@@ -58,22 +64,34 @@ def outro(lines):
     print(f"{MUTED}└{R}\n")
 
 # ── Raw key reader ────────────────────────────────────────────────────────
-def _getch():
-    fd = sys.stdin.fileno()
-    old = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        return sys.stdin.buffer.read(1).decode("utf-8", errors="replace")
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+if _WIN:
+    def get_key():
+        ch = msvcrt.getwch()
+        if ch in ("\x00", "\xe0"):        # arrow-key / function-key prefix
+            c2 = msvcrt.getwch()
+            return {"H": "UP", "P": "DOWN", "K": "LEFT", "M": "RIGHT"}.get(c2, "ESC")
+        if ch in "\r\n":  return "ENTER"
+        if ch == "\x03":  raise KeyboardInterrupt
+        if ch == "\x08":  return "BACKSPACE"
+        if ch == "\x1b":  return "ESC"
+        return ch
+else:
+    def _getch():
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            return sys.stdin.buffer.read(1).decode("utf-8", errors="replace")
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
-def get_key():
-    ch = _getch()
-    if ch == "\x1b":
-        _getch()                          # consume '['
-        c2 = _getch()
-        return {"A": "UP", "B": "DOWN", "C": "RIGHT", "D": "LEFT"}.get(c2, "ESC")
-    if ch in "\r\n":  return "ENTER"
-    if ch == "\x03":  raise KeyboardInterrupt
-    if ch == "\x7f":  return "BACKSPACE"
-    return ch
+    def get_key():
+        ch = _getch()
+        if ch == "\x1b":
+            _getch()                      # consume '['
+            c2 = _getch()
+            return {"A": "UP", "B": "DOWN", "C": "RIGHT", "D": "LEFT"}.get(c2, "ESC")
+        if ch in "\r\n":  return "ENTER"
+        if ch == "\x03":  raise KeyboardInterrupt
+        if ch == "\x7f":  return "BACKSPACE"
+        return ch
