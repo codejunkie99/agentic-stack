@@ -83,7 +83,11 @@ def _heuristic_prefilter(candidates_dir, semantic_dir):
 def run_dream_cycle():
     entries = _load_entries()
     if not entries:
-        print("dream cycle: no entries")
+        # Still refresh the review queue — candidates may have been staged in
+        # a previous cycle and the host agent loads REVIEW_QUEUE.md into every
+        # session via build_context, so a stale/missing file hides real work.
+        pending = write_review_queue_summary(CANDIDATES, REVIEW_QUEUE)
+        print(f"dream cycle: no entries (queue has {pending} pending)")
         return
 
     patterns = cluster_and_extract(entries, threshold=CLUSTER_SIMILARITY)
