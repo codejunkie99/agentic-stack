@@ -45,6 +45,26 @@ def stage_candidate(candidate_path, reviewer="auto_dream"):
     save_candidate(cand, candidate_path)
 
 
+def _default_queue_path(candidates_dir):
+    """By convention, memory/candidates/ sits next to memory/working/REVIEW_QUEUE.md."""
+    memory_dir = os.path.dirname(candidates_dir)
+    return os.path.join(memory_dir, "working", "REVIEW_QUEUE.md")
+
+
+def _refresh_queue(candidates_dir):
+    """Keep REVIEW_QUEUE.md in sync after any lifecycle transition.
+
+    build_context loads this file into every host session, so a stale file
+    makes reviewed items keep appearing as pending and reopened items stay
+    invisible until the next dream cycle.
+    """
+    try:
+        write_review_queue_summary(candidates_dir, _default_queue_path(candidates_dir))
+    except Exception:
+        # Never let queue bookkeeping break a graduation / rejection action.
+        pass
+
+
 def mark_graduated(candidate_id, reviewer, rationale, candidates_dir,
                    provisional=False):
     """Move a staged candidate to candidates/graduated/ with an accept decision.
@@ -69,6 +89,7 @@ def mark_graduated(candidate_id, reviewer, rationale, candidates_dir,
     dst = os.path.join(graduated_dir, f"{candidate_id}.json")
     save_candidate(cand, dst)
     os.remove(src)
+    _refresh_queue(candidates_dir)
     return cand
 
 
@@ -91,6 +112,7 @@ def mark_rejected(candidate_id, reviewer, reason, candidates_dir):
     dst = os.path.join(rejected_dir, f"{candidate_id}.json")
     save_candidate(cand, dst)
     os.remove(src)
+    _refresh_queue(candidates_dir)
     return cand
 
 
@@ -106,6 +128,7 @@ def mark_reopened(candidate_id, reviewer, candidates_dir):
     dst = os.path.join(candidates_dir, f"{candidate_id}.json")
     save_candidate(cand, dst)
     os.remove(src)
+    _refresh_queue(candidates_dir)
     return cand
 
 

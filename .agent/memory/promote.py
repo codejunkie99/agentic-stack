@@ -72,9 +72,21 @@ def write_candidates(patterns, candidates_dir):
         slug = _slug(key)
         prev, prev_loc = _find_prior(slug, candidates_dir)
 
-        # Already accepted upstream — don't resurrect as a candidate.
-        if prev_loc == "graduated":
+        # Fully-accepted lesson — don't resurrect. Provisional acceptance is
+        # probationary, so recurring provisional patterns SHOULD reappear
+        # for re-review + evidence accumulation.
+        if prev_loc == "graduated" and prev.get("status") != "provisional":
             continue
+
+        # Heuristic-rejected candidates (length / exact-duplicate of an
+        # existing lesson) are terminal unless a human reopens them. Without
+        # this guard, each dream cycle would re-stage the same slug and
+        # heuristic_prefilter would immediately reject it again, bumping
+        # rejection_count forever for no new signal.
+        if prev_loc == "rejected":
+            last = (prev.get("decisions") or [])[-1] if prev.get("decisions") else {}
+            if last.get("action") == "rejected" and last.get("reviewer") == "heuristic_prefilter":
+                continue
 
         now = datetime.datetime.now().isoformat()
         decisions = prev.get("decisions", [])
