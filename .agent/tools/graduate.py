@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(BASE, "memory"))
 
 from review_state import mark_graduated
 from validate import heuristic_check
-from render_lessons import append_lesson, render_lessons
+from render_lessons import append_lesson, render_lessons, load_lessons
 
 CANDIDATES = os.path.join(BASE, "memory/candidates")
 SEMANTIC = os.path.join(BASE, "memory/semantic")
@@ -55,6 +55,28 @@ def main():
     with open(cand_path) as f:
         cand = json.load(f)
 
+    lesson_id = _lesson_id(cand)
+
+    # Retry-safety: if a prior graduation run got as far as appending to
+    # lessons.jsonl but crashed before the candidate move, the staged file
+    # still exists and the lesson is already recorded. Heuristic check
+    # would otherwise reject the retry as an exact duplicate of its own
+    # prior output, leaving the candidate stuck. Detect and complete the
+    # move without re-appending.
+    prior_lesson = next(
+        (l for l in load_lessons(SEMANTIC) if l.get("id") == lesson_id),
+        None,
+    )
+    if prior_lesson:
+        print(f"retry detected: lesson {lesson_id} already in lessons.jsonl; "
+              f"completing candidate move")
+        mark_graduated(
+            args.candidate_id, args.reviewer, args.rationale, CANDIDATES,
+            provisional=args.provisional,
+        )
+        print(f"graduated {args.candidate_id} → lesson {lesson_id} (retry)")
+        return
+
     lessons_md = os.path.join(SEMANTIC, "LESSONS.md")
     existing = open(lessons_md).read() if os.path.exists(lessons_md) else ""
     # When superseding, exclude the target lesson from the duplicate check —
@@ -73,13 +95,11 @@ def main():
 
     # Atomicity: write to semantic memory BEFORE moving the candidate.
     # If we crash mid-graduation, the staged candidate remains and the
-    # reviewer can retry. Append-only lessons.jsonl is deduped by id at
-    # render time, so a retry that re-appends produces one lesson bullet,
-    # not two. Crashing AFTER the move would leave the candidate lost and
-    # the lesson unlogged — the failure mode this reorder prevents.
+    # reviewer can retry. The retry-safety block above catches the
+    # specific "lesson appended but candidate not moved" scenario.
     accepted_at = datetime.datetime.now().isoformat()
     lesson = {
-        "id": _lesson_id(cand),
+        "id": lesson_id,
         "claim": cand.get("claim"),
         "conditions": cand.get("conditions", []),
         "evidence_ids": cand.get("evidence_ids", []),

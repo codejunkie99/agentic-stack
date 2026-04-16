@@ -11,7 +11,7 @@ fresh each time the pattern recurs.
 import os, json, datetime, hashlib
 from cluster import content_cluster, extract_pattern
 from review_state import _lessons_sha
-from validate import extract_lesson_lines
+from validate import extract_lesson_lines, check_exact_duplicate
 
 
 def cluster_and_extract(entries, threshold=0.3):
@@ -87,6 +87,18 @@ def write_candidates(patterns, candidates_dir):
         claim = (p.get("claim") or "").strip()
         if not claim:
             continue
+
+        # Claim-level terminal check: if this exact claim is already an
+        # accepted lesson, skip regardless of slug. Cluster membership
+        # changes can shift the id (conditions = intersection, shrinks
+        # when outlier members join), so the slug-based graduated check
+        # below would miss an accepted pattern under a new id. This
+        # catches it by claim text, which IS stable. Provisional and
+        # legacy lessons don't appear in extract_lesson_lines, so they
+        # correctly do NOT block re-review.
+        if lessons_text and check_exact_duplicate(claim, lessons_text):
+            continue
+
         # Prefer the claim+conditions id from extract_pattern — stable slug
         # means lifecycle state carries across cluster membership changes.
         slug = _slug(p)
