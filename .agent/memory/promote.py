@@ -1,46 +1,72 @@
-"""Detect recurring patterns and promote high-salience entries to semantic memory."""
-import os, datetime
-from collections import defaultdict
-import sys
+"""Cluster + extract + stage candidates. No graduation here — CLI tools do that.
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "harness"))
-from salience import salience_score
+Pipeline:
+  1. cluster_and_extract(entries) — content clusters → structured patterns
+  2. write_candidates(patterns, dir) — patterns → candidate JSON files
+
+Every staged candidate carries lifecycle metadata (status, decisions,
+rejection_count) from birth so repeated churn is visible rather than looking
+fresh each time the pattern recurs.
+"""
+import os, json, datetime, hashlib
+from cluster import content_cluster, extract_pattern
 
 
-def find_recurring_patterns(entries):
-    """Cluster by (skill, action-prefix); entries appearing 2+ times get boosted."""
-    groups = defaultdict(list)
-    for e in entries:
-        key = f"{e.get('skill','general')}::{e.get('action','')[:50]}"
-        groups[key].append(e)
+def cluster_and_extract(entries, threshold=0.3):
+    """Cluster entries by content similarity, extract a pattern per cluster."""
+    clusters = content_cluster(entries, threshold=threshold)
+    return {p["name"]: p for p in (extract_pattern(c) for c in clusters)}
 
-    recurring = {}
-    for key, group in groups.items():
-        if len(group) < 2:
+
+def _slug(key):
+    return hashlib.md5(key.encode()).hexdigest()[:12]
+
+
+def write_candidates(patterns, candidates_dir):
+    """Stage each pattern as a candidate JSON with initial lifecycle metadata.
+
+    Idempotent per pattern key: re-staging preserves prior decision history
+    and rejection_count. A pattern rejected three times and re-detected a
+    fourth time still shows rejection_count=3 to the reviewer.
+    """
+    if not patterns:
+        return 0
+    os.makedirs(candidates_dir, exist_ok=True)
+    written = 0
+    for key, p in patterns.items():
+        claim = (p.get("claim") or "").strip()
+        if not claim:
             continue
-        best = max(group, key=salience_score)
-        best["recurrence_count"] = len(group)
-        best["_salience"] = salience_score(best)
-        recurring[key] = best
-    return recurring
+        slug = _slug(key)
+        path = os.path.join(candidates_dir, f"{slug}.json")
+        now = datetime.datetime.now().isoformat()
 
+        prev = {}
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    prev = json.load(f)
+            except (OSError, json.JSONDecodeError):
+                prev = {}
 
-def promote_to_semantic(entries, semantic_dir):
-    """Append lessons that aren't already present. Returns count promoted."""
-    if not entries:
-        return 0
-    lessons_path = os.path.join(semantic_dir, "LESSONS.md")
-    existing = open(lessons_path).read() if os.path.exists(lessons_path) else ""
-    new = []
-    for e in entries:
-        line = f"- {e.get('reflection') or e.get('action') or 'unknown'}"
-        if line.strip() and line not in existing:
-            new.append(line)
-    if not new:
-        return 0
-    os.makedirs(semantic_dir, exist_ok=True)
-    with open(lessons_path, "a") as f:
-        f.write(f"\n## Auto-promoted {datetime.date.today().isoformat()}\n")
-        for line in new:
-            f.write(line + "\n")
-    return len(new)
+        decisions = prev.get("decisions", [])
+        decisions.append({"ts": now, "action": "staged", "reviewer": "auto_dream"})
+
+        candidate = {
+            "id": slug,
+            "key": key,
+            "name": p.get("name", key),
+            "claim": claim,
+            "conditions": p.get("conditions", []),
+            "evidence_ids": p.get("evidence_ids", []),
+            "cluster_size": p.get("cluster_size", 1),
+            "canonical_salience": p.get("canonical_salience", 0.0),
+            "staged_at": now,
+            "status": "staged",
+            "decisions": decisions,
+            "rejection_count": prev.get("rejection_count", 0),
+        }
+        with open(path, "w") as f:
+            json.dump(candidate, f, indent=2)
+        written += 1
+    return written

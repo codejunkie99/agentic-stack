@@ -1,13 +1,32 @@
-"""Nightly compression. Orchestrates promote + decay + archive + git snapshot."""
-import json, os, datetime, subprocess
-from promote import find_recurring_patterns, promote_to_semantic
+"""Staging-only dream cycle. Mechanical work, no reasoning.
+
+Responsibilities (in order):
+  1. load episodic entries
+  2. cluster + extract → structured patterns
+  3. stage candidates (lifecycle metadata baked in)
+  4. heuristic prefilter (length + exact-duplicate; obvious junk goes to rejected/)
+  5. decay old episodes + archive stale workspace
+  6. write REVIEW_QUEUE.md summary so the next host session sees the backlog
+
+Never:
+  - subjective validation (host agent reviews via CLI tools)
+  - promotion to LESSONS.md (graduate.py does that)
+  - git commit (unattended repo writes are dangerous on a host hook)
+"""
+import json, os
+from promote import cluster_and_extract, write_candidates
+from validate import heuristic_check
+from review_state import mark_rejected, write_review_queue_summary
 from decay import decay_old_entries
 from archive import archive_stale_workspace
 
-ROOT = os.path.abspath(os.path.dirname(__file__))  # .agent/memory/ — absolute so cron paths hold
-PROJ_ROOT = os.path.dirname(os.path.dirname(ROOT))   # project root
+ROOT = os.path.abspath(os.path.dirname(__file__))
 EPISODIC = os.path.join(ROOT, "episodic/AGENT_LEARNINGS.jsonl")
+CANDIDATES = os.path.join(ROOT, "candidates")
+SEMANTIC = os.path.join(ROOT, "semantic")
+REVIEW_QUEUE = os.path.join(ROOT, "working/REVIEW_QUEUE.md")
 PROMOTION_THRESHOLD = 7.0
+CLUSTER_SIMILARITY = 0.3
 
 
 def _load_entries():
@@ -31,14 +50,34 @@ def _write_entries(entries):
             f.write(json.dumps(e) + "\n")
 
 
-def _git_snapshot(promoted, decayed, kept):
-    msg = f"dream cycle: promoted {promoted}, decayed {decayed}, kept {kept}"
-    try:
-        subprocess.run(["git", "add", ROOT], check=False, cwd=PROJ_ROOT)
-        subprocess.run(["git", "commit", "-m", msg], check=False, cwd=PROJ_ROOT)
-    except FileNotFoundError:
-        pass
-    return msg
+def _heuristic_prefilter(candidates_dir, semantic_dir):
+    """Move obvious junk (too-short, exact duplicate) to rejected/ automatically.
+
+    Anything subjective — "is this really a useful lesson?" — is the host
+    agent's call, not this function's.
+    """
+    if not os.path.isdir(candidates_dir):
+        return 0
+    lessons_path = os.path.join(semantic_dir, "LESSONS.md")
+    existing = open(lessons_path).read() if os.path.exists(lessons_path) else ""
+    rejected = 0
+    for fname in sorted(os.listdir(candidates_dir)):
+        if not fname.endswith(".json"):
+            continue
+        path = os.path.join(candidates_dir, fname)
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path) as f:
+                cand = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+        check = heuristic_check(cand, existing)
+        if not check["passed"]:
+            reason = ", ".join(check["reasons"])
+            mark_rejected(cand["id"], "heuristic_prefilter", reason, candidates_dir)
+            rejected += 1
+    return rejected
 
 
 def run_dream_cycle():
@@ -47,17 +86,27 @@ def run_dream_cycle():
         print("dream cycle: no entries")
         return
 
-    recurring = find_recurring_patterns(entries)
-    promotable = [e for e in recurring.values()
-                  if e.get("_salience", 0) >= PROMOTION_THRESHOLD]
-    promoted = promote_to_semantic(promotable, semantic_dir=os.path.join(ROOT, "semantic"))
+    patterns = cluster_and_extract(entries, threshold=CLUSTER_SIMILARITY)
+    promotable = {k: p for k, p in patterns.items()
+                  if p.get("canonical_salience", 0) >= PROMOTION_THRESHOLD}
 
-    kept, archived = decay_old_entries(entries, archive_dir=os.path.join(ROOT, "episodic/snapshots"))
+    staged = write_candidates(promotable, CANDIDATES)
+    prefiltered = _heuristic_prefilter(CANDIDATES, SEMANTIC)
+
+    kept, archived = decay_old_entries(
+        entries, archive_dir=os.path.join(ROOT, "episodic/snapshots"))
     _write_entries(kept)
-    archive_stale_workspace(working_dir=os.path.join(ROOT, "working"),
-                            archive_dir=os.path.join(ROOT, "episodic/snapshots"))
+    archive_stale_workspace(
+        working_dir=os.path.join(ROOT, "working"),
+        archive_dir=os.path.join(ROOT, "episodic/snapshots"))
 
-    print(_git_snapshot(promoted, len(archived), len(kept)))
+    pending = write_review_queue_summary(CANDIDATES, REVIEW_QUEUE)
+
+    print(
+        f"dream cycle: patterns={len(patterns)} staged={staged} "
+        f"prefiltered_out={prefiltered} pending_review={pending} "
+        f"archived={len(archived)} kept={len(kept)}"
+    )
 
 
 if __name__ == "__main__":
