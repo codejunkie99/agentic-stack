@@ -57,6 +57,14 @@ def main():
 
     lessons_md = os.path.join(SEMANTIC, "LESSONS.md")
     existing = open(lessons_md).read() if os.path.exists(lessons_md) else ""
+    # When superseding, exclude the target lesson from the duplicate check —
+    # replacing a lesson with structurally-better content but same wording
+    # is exactly what supersession is for.
+    if args.supersedes:
+        existing = "\n".join(
+            line for line in existing.splitlines()
+            if f"id={args.supersedes}" not in line
+        )
     check = heuristic_check(cand, existing)
     if not check["passed"]:
         print(f"ERROR: candidate fails heuristic check: {check['reasons']}",

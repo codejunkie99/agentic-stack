@@ -104,7 +104,11 @@ def write_candidates(patterns, candidates_dir):
             last = (prev.get("decisions") or [])[-1] if prev.get("decisions") else {}
             prev_evidence = set(last.get("evidence_snapshot", []))
             new_evidence = set(p.get("evidence_ids", []))
-            evidence_changed = prev_evidence != new_evidence
+            # Only NEW supporting episodes count as a change worth re-review.
+            # Equality comparison would trigger on routine decay (old evidence
+            # archived out of the cluster), even though nothing new arrived
+            # and the original blocker is unchanged.
+            evidence_changed = bool(new_evidence - prev_evidence)
 
             # Did the specific lesson(s) that triggered this rejection go
             # away? Uses stamped duplicate_claims rather than a whole-file

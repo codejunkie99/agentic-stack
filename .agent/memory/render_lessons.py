@@ -62,8 +62,15 @@ def _bullet_for(lesson, superseded_by):
 
 
 def _build_auto_section(lessons):
+    # Only accepted supersessions flip the old lesson to strikethrough.
+    # A provisional --supersedes would otherwise blank the active lesson
+    # before its replacement has been accepted, leaving no active guidance
+    # on that topic at all (retrieval skips both provisional and
+    # strikethrough).
     superseded_by = {}
     for L in lessons:
+        if L.get("status") != "accepted":
+            continue
         sup = L.get("supersedes")
         if sup:
             superseded_by[sup] = L.get("id")
