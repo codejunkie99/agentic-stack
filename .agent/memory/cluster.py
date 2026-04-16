@@ -37,13 +37,15 @@ def _entry_features(entry):
 def content_cluster(entries, threshold=0.3, min_size=2):
     """Single-linkage agglomerative clustering on Jaccard similarity.
 
-    An entry joins the first cluster where any member's similarity meets
-    threshold. Entries with empty feature sets are dropped (they can't
-    cluster meaningfully — jaccard on two empty sets returns 1.0 in the
-    shared helper, so we filter here rather than fight the math).
+    An entry joins every existing cluster it's similar to, and all such
+    clusters merge into one — proper single-linkage. Without the merge
+    step, ordering matters: entries [A, C, B] where A~B~C but A⊄C would
+    produce two clusters [A,B] + [C] instead of one, so recurrence
+    counts and promotion thresholds become input-order dependent.
 
-    Returns only clusters with >= min_size members so singletons don't
-    create candidate churn.
+    Entries with empty feature sets are dropped (jaccard of two empty
+    sets would otherwise be 1.0). Clusters smaller than min_size are
+    filtered so singletons don't create candidate churn.
     """
     featured = [(e, _entry_features(e)) for e in entries]
     featured = [(e, fs) for e, fs in featured if fs]
@@ -51,14 +53,20 @@ def content_cluster(entries, threshold=0.3, min_size=2):
     clusters = []  # each: list of (entry, feature_set)
     for item in featured:
         e_i, fs_i = item
-        joined = False
-        for c in clusters:
-            if any(jaccard(fs_i, fs_j) >= threshold for _, fs_j in c):
-                c.append(item)
-                joined = True
-                break
-        if not joined:
+        matching_indices = [
+            i for i, c in enumerate(clusters)
+            if any(jaccard(fs_i, fs_j) >= threshold for _, fs_j in c)
+        ]
+        if not matching_indices:
             clusters.append([item])
+            continue
+        # Merge the new item + every cluster it connects to into one.
+        target = clusters[matching_indices[0]]
+        target.append(item)
+        # Absorb the rest, tail-first so indexing stays valid.
+        for idx in reversed(matching_indices[1:]):
+            target.extend(clusters[idx])
+            del clusters[idx]
 
     return [[e for e, _ in c] for c in clusters if len(c) >= min_size]
 

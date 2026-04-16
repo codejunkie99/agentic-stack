@@ -20,6 +20,18 @@ SEMANTIC = os.path.join(BASE, "memory/semantic")
 
 
 def _lesson_id(candidate):
+    """1:1 with the candidate's own id (claim + conditions, stable).
+
+    Using md5(claim) alone collides when two distinct patterns happen to
+    share canonical text — different clusters about different situations
+    with the same "the test failed" reflection, etc. Keying off the
+    candidate id keeps them distinct and matches how write_candidates
+    identifies the pattern lifecycle.
+    """
+    cid = candidate.get("id") or ""
+    if cid:
+        return f"lesson_{cid}"
+    # Fallback for older candidate dicts without `id`
     claim = (candidate.get("claim") or "").strip().lower()
     return "lesson_" + hashlib.md5(claim.encode()).hexdigest()[:12]
 

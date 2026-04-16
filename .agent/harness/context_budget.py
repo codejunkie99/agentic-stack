@@ -116,7 +116,9 @@ def _top_lessons(query, lessons_md, char_budget=8000):
         if text:
             lines.append(text)
     if not lines:
-        return lessons_md[:char_budget] if lessons_md else ""
+        # No accepted lessons → return empty. Returning raw markdown would
+        # leak the non-terminal content the filter is designed to block.
+        return ""
 
     query_words = word_set(query)
     if not query_words:
