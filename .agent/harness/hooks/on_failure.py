@@ -1,5 +1,6 @@
 """Failures are learning. High pain score + rewrite flag after repeat offenses."""
 import json, datetime, os
+from ._provenance import build_source
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 EPISODIC = os.path.join(ROOT, "memory/episodic/AGENT_LEARNINGS.jsonl")
@@ -30,7 +31,8 @@ def _count_recent_failures(skill_name):
     return count
 
 
-def on_failure(skill_name, action, error, context=""):
+def on_failure(skill_name, action, error, context="", confidence=0.9,
+               evidence_ids=None):
     entry = {
         "timestamp": datetime.datetime.now().isoformat(),
         "skill": skill_name,
@@ -42,8 +44,13 @@ def on_failure(skill_name, action, error, context=""):
         "reflection": f"FAILURE in {skill_name}: {type(error).__name__}: "
                       f"{str(error)[:200]}",
         "context": context[:300],
+        "confidence": confidence,
+        "source": build_source(skill_name),
+        "evidence_ids": list(evidence_ids) if evidence_ids else [],
     }
-    recent = _count_recent_failures(skill_name)
+    # _count_recent_failures returns PRIOR failures only; add 1 for this one
+    # so the rewrite flag fires on the Nth failure, not the (N+1)th.
+    recent = _count_recent_failures(skill_name) + 1
     if recent >= FAILURE_THRESHOLD:
         entry["reflection"] += (
             f" | THIS SKILL HAS FAILED {recent} TIMES IN {WINDOW_DAYS}d. "
