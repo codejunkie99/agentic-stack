@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh — copy an adapter into the consuming project, then run the onboarding wizard
 # Usage: ./install.sh <adapter-name> [target-dir] [--yes] [--reconfigure]
-#   adapter-name:  claude-code | cursor | windsurf | opencode | openclient | hermes | standalone-python
+#   adapter-name:  claude-code | cursor | windsurf | opencode | openclient | hermes | pi | standalone-python
 #   target-dir:    where your project lives (default: current dir)
 #   --yes          accept all wizard defaults without prompting (safe for CI)
 #   --reconfigure  re-run the wizard even if PREFERENCES.md is already filled
@@ -13,7 +13,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 
 if [[ -z "$ADAPTER" ]]; then
   echo "usage: $0 <adapter-name> [target-dir]" >&2
-  echo "adapters: claude-code cursor windsurf opencode openclient hermes standalone-python" >&2
+  echo "adapters: claude-code cursor windsurf opencode openclient hermes pi standalone-python" >&2
   exit 2
 fi
 
@@ -63,6 +63,27 @@ case "$ADAPTER" in
     ;;
   hermes)
     cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
+    ;;
+  pi)
+    # pi, hermes, and opencode all read AGENTS.md — don't stomp an existing one
+    if [[ -f "$TARGET/AGENTS.md" ]]; then
+      echo "  ~ $TARGET/AGENTS.md already exists — skipping (pi reads whatever is there)"
+    else
+      cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
+      echo "  + AGENTS.md"
+    fi
+    mkdir -p "$TARGET/.pi"
+    # symlink .pi/skills -> .agent/skills so pi sees the one true skill tree.
+    # ln -sfn atomically replaces an existing symlink; fall back to cp -R
+    # on filesystems that don't support symlinks (e.g. Windows without dev mode).
+    SKILLS_SRC="$(cd "$TARGET/.agent/skills" && pwd)"
+    if ln -sfn "$SKILLS_SRC" "$TARGET/.pi/skills" 2>/dev/null; then
+      echo "  + .pi/skills -> $SKILLS_SRC"
+    else
+      rm -rf "$TARGET/.pi/skills"
+      cp -R "$SKILLS_SRC" "$TARGET/.pi/skills"
+      echo "  + .pi/skills (copy; symlink not supported here)"
+    fi
     ;;
   standalone-python)
     cp "$SRC/run.py" "$TARGET/run.py"
