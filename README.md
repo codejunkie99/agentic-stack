@@ -25,57 +25,6 @@ Follow me on [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on pr
 Based on the article:
 **["The Agentic Stack"](https://x.com/Av1dlive/status/2044453102703841645?s=20)** · by [@AV1DLIVE](https://twitter.com/AV1DLIVE)
 
----
-
-## What this is
-
-Every guide shows the folder structure. This repo gives you the folder
-structure **plus the files that actually go inside**: a working portable
-brain with five seed skills, four memory layers, enforced permissions, a
-nightly staging cycle, host-agent review tools, and adapters for eight
-harnesses.
-
-- **Memory** — `working/`, `episodic/`, `semantic/`, `personal/`. Each
-  layer has its own retention policy. Query-aware retrieval (salience ×
-  relevance); nightly compression into reviewable candidates.
-- **Review protocol** — `auto_dream.py` stages candidate lessons
-  mechanically. Your host agent reviews them via CLI tools
-  (`graduate.py`, `reject.py`, `reopen.py`) and commits decisions with
-  a required rationale. No unattended reasoning, no provider coupling.
-- **Skills** — progressive disclosure. A lightweight manifest always
-  loads; full `SKILL.md` files only load when triggers match the task.
-  Every skill ships with a self-rewrite hook.
-- **Protocols** — typed tool schemas, a `permissions.md` that the
-  pre-tool-call hook enforces, and a delegation contract for sub-agents.
-
-## What's new in v0.6.0
-
-- **Pi Coding Agent adapter.** `./install.sh pi` drops `AGENTS.md` and
-  symlinks `.pi/skills` to `.agent/skills` so pi sees the full brain
-  with zero duplication. Safe to install alongside hermes/opencode
-  (they all read `AGENTS.md`; we skip the overwrite if one exists).
-- **OpenClient → OpenClaw.** Adapter renamed across the board.
-  Installed file changed: `.openclient-system.md` → `.openclaw-system.md`.
-  Breaking for existing OpenClient users — re-run `./install.sh openclaw`.
-
-## What's new in v0.5.0
-
-- **Host-agent review protocol.** Python handles filing (cluster, stage,
-  heuristic prefilter, decay). The host agent handles reasoning via
-  `list_candidates.py` / `graduate.py` / `reject.py` / `reopen.py`.
-  Graduation requires `--rationale` so rubber-stamping is structurally
-  impossible.
-- **Structured `lessons.jsonl` as source of truth.** `LESSONS.md` is
-  rendered from it. Hand-curated content above the sentinel is
-  preserved across renders; legacy bullets auto-migrate on first run.
-- **Content clustering.** Proper single-linkage Jaccard with bridge
-  merging. Pattern IDs derived from canonical claim + conditions, stable
-  across cluster-membership changes.
-- **[BETA] FTS5 memory search.** Opt-in full-text search over all
-  `.md` / `.jsonl` memory documents. Default **off**; enable during
-  onboarding or edit `.agent/memory/.features.json` directly.
-- **Windows-native installer.** `install.ps1` runs natively in
-  PowerShell; `install.sh` continues to work under Git Bash / WSL.
 
 ## Quickstart
 
@@ -175,6 +124,59 @@ are rendered to `semantic/LESSONS.md`. Rejected candidates retain full
 decision history so recurring churn is visible, not fresh.
 
 See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
+
+---
+
+## What this is
+
+Every guide shows the folder structure. This repo gives you the folder
+structure **plus the files that actually go inside**: a working portable
+brain with five seed skills, four memory layers, enforced permissions, a
+nightly staging cycle, host-agent review tools, and adapters for eight
+harnesses.
+
+- **Memory** — `working/`, `episodic/`, `semantic/`, `personal/`. Each
+  layer has its own retention policy. Query-aware retrieval (salience ×
+  relevance); nightly compression into reviewable candidates.
+- **Review protocol** — `auto_dream.py` stages candidate lessons
+  mechanically. Your host agent reviews them via CLI tools
+  (`graduate.py`, `reject.py`, `reopen.py`) and commits decisions with
+  a required rationale. No unattended reasoning, no provider coupling.
+- **Skills** — progressive disclosure. A lightweight manifest always
+  loads; full `SKILL.md` files only load when triggers match the task.
+  Every skill ships with a self-rewrite hook.
+- **Protocols** — typed tool schemas, a `permissions.md` that the
+  pre-tool-call hook enforces, and a delegation contract for sub-agents.
+
+## What's new in v0.6.0
+
+- **Pi Coding Agent adapter.** `./install.sh pi` drops `AGENTS.md` and
+  symlinks `.pi/skills` to `.agent/skills` so pi sees the full brain
+  with zero duplication. Safe to install alongside hermes/opencode
+  (they all read `AGENTS.md`; we skip the overwrite if one exists).
+- **OpenClient → OpenClaw.** Adapter renamed across the board.
+  Installed file changed: `.openclient-system.md` → `.openclaw-system.md`.
+  Breaking for existing OpenClient users — re-run `./install.sh openclaw`.
+
+## What's new in v0.5.0
+
+- **Host-agent review protocol.** Python handles filing (cluster, stage,
+  heuristic prefilter, decay). The host agent handles reasoning via
+  `list_candidates.py` / `graduate.py` / `reject.py` / `reopen.py`.
+  Graduation requires `--rationale` so rubber-stamping is structurally
+  impossible.
+- **Structured `lessons.jsonl` as source of truth.** `LESSONS.md` is
+  rendered from it. Hand-curated content above the sentinel is
+  preserved across renders; legacy bullets auto-migrate on first run.
+- **Content clustering.** Proper single-linkage Jaccard with bridge
+  merging. Pattern IDs derived from canonical claim + conditions, stable
+  across cluster-membership changes.
+- **[BETA] FTS5 memory search.** Opt-in full-text search over all
+  `.md` / `.jsonl` memory documents. Default **off**; enable during
+  onboarding or edit `.agent/memory/.features.json` directly.
+- **Windows-native installer.** `install.ps1` runs natively in
+  PowerShell; `install.sh` continues to work under Git Bash / WSL.
+
 
 ## Memory search `[BETA]`
 
