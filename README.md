@@ -270,3 +270,7 @@ Design adapted from the author's article on building an agentic stack, plus
 patterns from Gstack, Claude Code's memory system, and conversations in
 the agent-engineering community. Built with the hypothesis that
 **harness-agnosticism is the point**.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=codejunkie99/agentic-stack&type=Date)](https://star-history.com/#codejunkie99/agentic-stack&Date)
