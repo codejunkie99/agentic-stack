@@ -10,8 +10,8 @@ Follow me on [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on pr
 
 > **One brain, many harnesses.** A portable `.agent/` folder (memory + skills
 > + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode,
-> OpenClient, Hermes, or a DIY Python loop, and keeps its knowledge when
-> you switch.
+> OpenClient, Hermes, Pi Coding Agent, or a DIY Python loop, and keeps
+> its knowledge when you switch.
 
 <p align="center">
   <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
@@ -32,7 +32,7 @@ Based on the article:
 Every guide shows the folder structure. This repo gives you the folder
 structure **plus the files that actually go inside**: a working portable
 brain with five seed skills, four memory layers, enforced permissions, a
-nightly staging cycle, host-agent review tools, and adapters for seven
+nightly staging cycle, host-agent review tools, and adapters for eight
 harnesses.
 
 - **Memory** — `working/`, `episodic/`, `semantic/`, `personal/`. Each
@@ -79,7 +79,7 @@ brew install agentic-stack
 # drop the brain into any project — the onboarding wizard runs automatically
 cd your-project
 agentic-stack claude-code
-# or: cursor | windsurf | opencode | openclient | hermes | standalone-python
+# or: cursor | windsurf | opencode | openclient | hermes | pi | standalone-python
 ```
 
 ### Windows (PowerShell)
@@ -103,6 +103,7 @@ brew update && brew upgrade agentic-stack
 git clone https://github.com/codejunkie99/agentic-stack.git
 cd agentic-stack && ./install.sh claude-code         # mac / linux / git-bash
 # or on Windows PowerShell: .\install.ps1 claude-code
+# adapters: claude-code | cursor | windsurf | opencode | openclient | hermes | pi | standalone-python
 ```
 
 ## Onboarding wizard
@@ -209,6 +210,7 @@ adapters/                       # one small shim per harness
 ├── opencode/      (AGENTS.md + opencode.json)
 ├── openclient/    (system-prompt include)
 ├── hermes/        (AGENTS.md)
+├── pi/            (AGENTS.md + .pi/skills symlink)
 └── standalone-python/  (DIY conductor entrypoint)
 
 docs/                           # architecture, getting-started, per-harness
@@ -232,6 +234,7 @@ onboard_write.py                # atomic file write with backup
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |
 | **OpenClient** | system-prompt include | varies by fork |
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
+| **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` | no (extension system) |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
 
 ## Seed skills
