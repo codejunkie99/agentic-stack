@@ -173,9 +173,9 @@ python3 .agent/memory/memory_search.py --status
 python3 .agent/memory/memory_search.py --rebuild
 ```
 
-Falls back to `grep` (restricted to `.md` / `.jsonl`) when SQLite FTS5
-isn't available. The index is stored at `.agent/memory/.index/` and
-gitignored.
+Falls back to **ripgrep** (`rg`) if installed, then to `grep` — both
+restricted to `.md` / `.jsonl` so source files never pollute results.
+The index is stored at `.agent/memory/.index/` and gitignored.
 
 ## Repo layout
 

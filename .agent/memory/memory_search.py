@@ -3,8 +3,9 @@
 Memory Search [BETA] — SQLite FTS5 full-text search over .agent/memory/ files.
 
 Indexes all .md and .jsonl files under .agent/memory/ and provides ranked
-keyword search. Falls back to grep (restricted to .md/.jsonl) if FTS5 is
-not available.
+keyword search. When SQLite FTS5 is not available, falls back to ripgrep
+(`rg`) if installed, then to grep. Fallback paths are always restricted
+to .md / .jsonl so implementation files never pollute results.
 
 BETA + opt-in: disabled by default. Enable via onboarding
 (agentic-stack <harness> --reconfigure) or by setting
@@ -20,6 +21,7 @@ The index is stored at .agent/memory/.index/memory.db and auto-rebuilds
 when any memory file changes, is renamed, or is deleted.
 """
 import json
+import shutil
 import sys
 import sqlite3
 import subprocess
@@ -176,26 +178,54 @@ def search_fts5(query: str):
     return rows
 
 
-def search_grep(query: str):
-    """Fallback search using grep, restricted to memory document files.
+def _fallback_command(query, targets):
+    """Return (cmd, tool_name) for the best available fallback searcher.
 
-    Passing explicit target paths (not the whole directory) ensures we
-    don't match implementation files like archive.py or auto_dream.py —
-    keyword retrieval must only surface .md / .jsonl memory content.
+    Prefers ripgrep (faster, UTF-8 clean, sensible defaults). Falls back
+    to grep for POSIX environments. Returns (None, None) if neither is
+    on PATH — callers should degrade gracefully.
+    """
+    if shutil.which("rg"):
+        # -l: files-with-matches, -i: case-insensitive, -- ends flags
+        return (["rg", "-li", "--", query, *targets], "ripgrep")
+    if shutil.which("grep"):
+        return (["grep", "-ril", query, *targets], "grep")
+    return (None, None)
+
+
+def fallback_tool():
+    """Name of the external tool that would be used for fallback search.
+
+    'ripgrep' if rg is on PATH, else 'grep' if grep is, else 'unavailable'.
+    Surfaced in --status so users know what mode a query would run in.
+    """
+    _, tool = _fallback_command("", [])
+    return tool or "unavailable"
+
+
+def search_fallback(query: str):
+    """Full-text search without FTS5, restricted to memory document files.
+
+    Passing explicit target paths (not the whole directory) keeps
+    keyword retrieval scoped to .md / .jsonl — implementation files
+    like archive.py or auto_dream.py never pollute the results.
     """
     targets = [str(f) for f in _memory_files()]
     if not targets:
         return []
-    result = subprocess.run(
-        ["grep", "-ril", query, *targets],
-        capture_output=True,
-        text=True,
-    )
+    cmd, _ = _fallback_command(query, targets)
+    if not cmd:
+        return []
+    result = subprocess.run(cmd, capture_output=True, text=True)
     files = [f for f in result.stdout.strip().split("\n") if f]
     return [
         (Path(f).relative_to(MEMORY_DIR), f"(match in {Path(f).name})")
         for f in files
     ]
+
+
+# Backwards-compat alias — anything calling search_grep keeps working.
+search_grep = search_fallback
 
 
 def cmd_rebuild():
@@ -215,8 +245,11 @@ def cmd_status():
         print("Or edit .agent/memory/.features.json directly.")
         return
     if not check_fts5():
-        print("Mode: BASIC (grep fallback)")
+        tool = fallback_tool()
+        print(f"Mode: FALLBACK ({tool})")
         print("Reason: SQLite FTS5 not available in this Python build.")
+        if tool == "unavailable":
+            print("Also: neither rg nor grep on PATH — install ripgrep for best results.")
         return
     if not INDEX_PATH.exists():
         print("Mode: FTS5 (index not built yet — auto-builds on first search)")
@@ -228,6 +261,7 @@ def cmd_status():
     print(f"Mode: FTS5")
     print(f"Index: {count} files indexed ({size_kb} KB)")
     print(f"Location: {INDEX_PATH}")
+    print(f"Fallback available: {fallback_tool()}")
 
 
 def _refuse_disabled():
@@ -271,8 +305,8 @@ def main():
         results = search_fts5(query)
         mode = "FTS5"
     else:
-        results = search_grep(query)
-        mode = "grep"
+        results = search_fallback(query)
+        mode = fallback_tool()
 
     if not results:
         print(f"No results for: '{query}'  [mode: {mode}]")
