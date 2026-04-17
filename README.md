@@ -5,6 +5,9 @@ Follow me on [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on pr
 [![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+
+>> **Coded using Minimax-M2.7 in the Claude Code Harness. PR Review by Macroscope and Codex**
+
 > **One brain, many harnesses.** A portable `.agent/` folder (memory + skills
 > + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode,
 > OpenClient, Hermes, or a DIY Python loop, and keeps its knowledge when
