@@ -40,7 +40,7 @@
       </g>
       <g transform="translate(560,0)">
         <rect width="130" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="65" y="20" text-anchor="middle" font-weight="600">OpenClient</text>
+        <text x="65" y="20" text-anchor="middle" font-weight="600">OpenClaw</text>
         <text x="65" y="37" text-anchor="middle" font-size="10" fill="#64748b">system prompt</text>
       </g>
       <g transform="translate(700,0)">

@@ -25,7 +25,7 @@ CLR  = "\x1b[2K\r"; UP   = "\x1b[1A"
 # 2-row pixel font spells "AGENTIC STACK"
 _L1 = "  ▄▀█ █▀▀ █▀▀ █▄░█ ▀█▀ █ █▀▀  █▀ ▀█▀ ▄▀█ █▀▀ █▄▀ "
 _L2 = "  █▀█ █▄█ ██▄ █░▀█ ░█░ █ █▄▄  ▄█ ░█░ █▀█ █▄▄ █░█ "
-_T  = "  your portable brain  ·  harness-agnostic AI memory  ·  v0.5.0"
+_T  = "  your portable brain  ·  harness-agnostic AI memory  ·  v0.6.0"
 
 def _cc(c):
     if c == "█": return f"{PURPLE}{B}{c}{R}"

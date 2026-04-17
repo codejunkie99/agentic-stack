@@ -1,7 +1,7 @@
 # Agent Infrastructure
 
 This folder is the portable brain. Any harness (Claude Code, Cursor, Windsurf,
-OpenCode, OpenClient, Hermes, standalone Python) can mount it and get the
+OpenCode, OpenClaw, Hermes, standalone Python) can mount it and get the
 same memory, skills, and protocols.
 
 ## Memory (read in this order)

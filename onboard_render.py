@@ -1,7 +1,7 @@
 """Turn collected answers into a PREFERENCES.md string. Pure function, no I/O."""
 import datetime
 
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 
 _DEFAULTS = {
     "name":      "",

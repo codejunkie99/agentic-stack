@@ -1,6 +1,6 @@
 # install.ps1 — Windows PowerShell installer (parallel to install.sh)
 # Usage:  .\install.ps1 <adapter-name> [target-dir] [-Yes] [-Reconfigure] [-Force]
-#   adapter-name: claude-code | cursor | windsurf | opencode | openclient | hermes | standalone-python
+#   adapter-name: claude-code | cursor | windsurf | opencode | openclaw | hermes | standalone-python
 #   target-dir:   where your project lives (default: current dir)
 #   -Yes          accept all wizard defaults (safe for CI)
 #   -Reconfigure  re-run the wizard on an existing project
@@ -24,7 +24,7 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $ValidAdapters = @(
     'claude-code', 'cursor', 'windsurf',
-    'opencode', 'openclient', 'hermes',
+    'opencode', 'openclaw', 'hermes',
     'standalone-python'
 )
 if ($Adapter -notin $ValidAdapters) {
@@ -66,8 +66,8 @@ switch ($Adapter) {
         Copy-Item (Join-Path $Src 'AGENTS.md') (Join-Path $TargetDir 'AGENTS.md') -Force
         Copy-Item (Join-Path $Src 'opencode.json') (Join-Path $TargetDir 'opencode.json') -Force
     }
-    'openclient' {
-        Copy-Item (Join-Path $Src 'config.md') (Join-Path $TargetDir '.openclient-system.md') -Force
+    'openclaw' {
+        Copy-Item (Join-Path $Src 'config.md') (Join-Path $TargetDir '.openclaw-system.md') -Force
     }
     'hermes' {
         Copy-Item (Join-Path $Src 'AGENTS.md') (Join-Path $TargetDir 'AGENTS.md') -Force

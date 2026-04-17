@@ -1,18 +1,18 @@
-# OpenClient setup
+# OpenClaw setup
 
 ## What the adapter installs
-- `.openclient-system.md` at project root (to be used as the system prompt)
+- `.openclaw-system.md` at project root (to be used as the system prompt)
 
 ## Install
 ```bash
-./install.sh openclient
+./install.sh openclaw
 ```
 
-Then configure OpenClient to load `.openclient-system.md` as its system
-prompt. The exact steps vary by OpenClient fork/version — check the docs.
+Then configure OpenClaw to load `.openclaw-system.md` as its system
+prompt. The exact steps vary by OpenClaw fork/version — check the docs.
 
 ## How it works
-OpenClient doesn't enforce a project-root convention file; instead, you
+OpenClaw doesn't enforce a project-root convention file; instead, you
 paste the system prompt include (or point the config at it). The content
 mirrors the other adapters: read `.agent/` first, respect permissions,
 log after actions.

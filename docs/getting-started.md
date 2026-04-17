@@ -16,7 +16,7 @@ cp /path/to/agentic-stack/install.sh ./
 
 ```bash
 ./install.sh claude-code        # or cursor, windsurf, opencode,
-                                # openclient, hermes, standalone-python
+                                # openclaw, hermes, standalone-python
 ```
 
 Each adapter has its own `README.md` under `adapters/<name>/`.

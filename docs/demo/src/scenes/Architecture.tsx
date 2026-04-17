@@ -1,7 +1,7 @@
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT, FONT_MONO } from "../tokens";
 
-const HARNESSES = ["Claude Code", "Cursor", "Windsurf", "OpenCode", "OpenClient", "Hermes", "Python"];
+const HARNESSES = ["Claude Code", "Cursor", "Windsurf", "OpenCode", "OpenClaw", "Hermes", "Python"];
 const BRAIN_LAYERS = [
   { path: "memory/",    color: COLORS.orange },
   { path: "skills/",    color: COLORS.blue   },

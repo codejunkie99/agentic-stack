@@ -1,6 +1,6 @@
-# OpenClient system prompt (include)
+# OpenClaw system prompt (include)
 
-Paste this into your OpenClient system prompt, or reference it via the
+Paste this into your OpenClaw system prompt, or reference it via the
 `system_prompt_file` option.
 
 ---

@@ -10,7 +10,7 @@ Follow me on [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on pr
 
 > **One brain, many harnesses.** A portable `.agent/` folder (memory + skills
 > + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode,
-> OpenClient, Hermes, Pi Coding Agent, or a DIY Python loop, and keeps
+> OpenClaw, Hermes, Pi Coding Agent, or a DIY Python loop, and keeps
 > its knowledge when you switch.
 
 <p align="center">
@@ -48,6 +48,16 @@ harnesses.
 - **Protocols** — typed tool schemas, a `permissions.md` that the
   pre-tool-call hook enforces, and a delegation contract for sub-agents.
 
+## What's new in v0.6.0
+
+- **Pi Coding Agent adapter.** `./install.sh pi` drops `AGENTS.md` and
+  symlinks `.pi/skills` to `.agent/skills` so pi sees the full brain
+  with zero duplication. Safe to install alongside hermes/opencode
+  (they all read `AGENTS.md`; we skip the overwrite if one exists).
+- **OpenClient → OpenClaw.** Adapter renamed across the board.
+  Installed file changed: `.openclient-system.md` → `.openclaw-system.md`.
+  Breaking for existing OpenClient users — re-run `./install.sh openclaw`.
+
 ## What's new in v0.5.0
 
 - **Host-agent review protocol.** Python handles filing (cluster, stage,
@@ -79,7 +89,7 @@ brew install agentic-stack
 # drop the brain into any project — the onboarding wizard runs automatically
 cd your-project
 agentic-stack claude-code
-# or: cursor | windsurf | opencode | openclient | hermes | pi | standalone-python
+# or: cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python
 ```
 
 ### Windows (PowerShell)
@@ -103,7 +113,7 @@ brew update && brew upgrade agentic-stack
 git clone https://github.com/codejunkie99/agentic-stack.git
 cd agentic-stack && ./install.sh claude-code         # mac / linux / git-bash
 # or on Windows PowerShell: .\install.ps1 claude-code
-# adapters: claude-code | cursor | windsurf | opencode | openclient | hermes | pi | standalone-python
+# adapters: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python
 ```
 
 ## Onboarding wizard
@@ -208,7 +218,7 @@ adapters/                       # one small shim per harness
 ├── cursor/        (.cursor/rules/*.mdc)
 ├── windsurf/      (.windsurfrules)
 ├── opencode/      (AGENTS.md + opencode.json)
-├── openclient/    (system-prompt include)
+├── openclaw/    (system-prompt include)
 ├── hermes/        (AGENTS.md)
 ├── pi/            (AGENTS.md + .pi/skills symlink)
 └── standalone-python/  (DIY conductor entrypoint)
@@ -232,7 +242,7 @@ onboard_write.py                # atomic file write with backup
 | **Cursor** | `.cursor/rules/*.mdc` | no (manual reflect calls) |
 | **Windsurf** | `.windsurfrules` | no (manual reflect calls) |
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |
-| **OpenClient** | system-prompt include | varies by fork |
+| **OpenClaw** | system-prompt include | varies by fork |
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
 | **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` | no (extension system) |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
