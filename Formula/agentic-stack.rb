@@ -4,7 +4,7 @@ class AgenticStack < Formula
   url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.7.0.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000" # TODO: regenerate after tag push
   version "0.7.0"
-  license "MIT"
+  license "Apache-2.0"
 
   def install
     # install the brain + adapters alongside install.sh so relative paths hold

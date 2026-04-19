@@ -3,7 +3,7 @@
 Follow me on [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on projects.
 
 [![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 
 >> **Coded using Minimax-M2.7 in the Claude Code Harness. PR Review by Macroscope and Codex**
@@ -323,7 +323,7 @@ network, no reasoning — safe to run unattended.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Credits
 
