@@ -15,11 +15,25 @@ Hermes supports the agentskills.io standard. Our skills under
 shape. Use `/skills` in Hermes to browse them; load `SKILL.md` only
 when triggers match the current task (progressive disclosure).
 
+## Recall before non-trivial tasks
+For deploy / ship / migration / schema / timestamp / date / failing test /
+debug / refactor, FIRST run:
+
+```bash
+python3 .agent/tools/recall.py "<description>"
+```
+
+Surface results in a `Consulted lessons before acting:` block and follow
+them.
+
 ## Memory discipline
 - Update `.agent/memory/working/WORKSPACE.md` as you work.
 - After significant actions, run
   `python3 .agent/tools/memory_reflect.py <skill> <action> <outcome>`.
 - Never delete memory entries; archive only.
+- Quick state: `python3 .agent/tools/show.py`.
+- Teach a rule in one shot:
+  `python3 .agent/tools/learn.py "<rule>" --rationale "<why>"`.
 - Optional: mirror high-signal state into Hermes's own `MEMORY.md` /
   `USER.md` if you want it inside Hermes's runtime persistence layer.
 

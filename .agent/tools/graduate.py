@@ -70,11 +70,68 @@ def main():
     if prior_lesson:
         print(f"retry detected: lesson {lesson_id} already in lessons.jsonl; "
               f"completing candidate move")
+
+        # Guard: lessons.jsonl row must carry the metadata we're about to
+        # sync into the candidate file. A legacy / hand-edited / sparse row
+        # missing reviewer or rationale would otherwise get silently mixed
+        # with retry args (candidate gets args.*, jsonl stays missing) —
+        # the exact drift this branch exists to prevent.
+        missing_fields = [
+            f for f in ("reviewer", "rationale")
+            if not prior_lesson.get(f)
+        ]
+        if missing_fields:
+            print(
+                f"ERROR: cannot complete retry — lessons.jsonl row "
+                f"{lesson_id} is missing {missing_fields}. This is a "
+                f"legacy or hand-edited row. Fix it manually (add the "
+                f"missing fields) and re-run, or delete the staged "
+                f"candidate to start fresh.",
+                file=sys.stderr,
+            )
+            sys.exit(3)
+
+        # Re-render LESSONS.md too. The first attempt could have crashed
+        # between append_lesson() and render_lessons(), leaving lessons.jsonl
+        # and the rendered LESSONS.md out of sync. Idempotent: if they're
+        # already in sync, this is a no-op write of the same content.
+        md_path = render_lessons(SEMANTIC)
+
+        # Use the ORIGINAL reviewer/rationale/provisional-flag from the
+        # prior lesson, not the retry invocation's args. The retry is
+        # finishing the first decision, not making a new one. The guard
+        # above ensures prior_lesson has non-empty reviewer + rationale.
+        retry_reviewer = prior_lesson["reviewer"]
+        retry_rationale = prior_lesson["rationale"]
+        retry_provisional = (prior_lesson.get("status") == "provisional")
+
+        diffs = []
+        if retry_reviewer != args.reviewer:
+            diffs.append(f"reviewer: {args.reviewer!r} → {retry_reviewer!r}")
+        if retry_provisional != args.provisional:
+            diffs.append(
+                f"provisional: {args.provisional} → {retry_provisional}"
+            )
+        if retry_rationale != args.rationale:
+            diffs.append(
+                "rationale: overridden (see first-run text in lessons.jsonl)"
+            )
+        if diffs:
+            print(
+                f"note: retry invocation metadata differs from the "
+                f"first-run record in lessons.jsonl. Honoring the "
+                f"original values so lessons.jsonl and the candidate "
+                f"file stay in sync:\n  "
+                + "\n  ".join(diffs),
+                file=sys.stderr,
+            )
+
         mark_graduated(
-            args.candidate_id, args.reviewer, args.rationale, CANDIDATES,
-            provisional=args.provisional,
+            args.candidate_id, retry_reviewer, retry_rationale, CANDIDATES,
+            provisional=retry_provisional,
         )
         print(f"graduated {args.candidate_id} → lesson {lesson_id} (retry)")
+        print(f"re-rendered: {md_path}")
         return
 
     lessons_md = os.path.join(SEMANTIC, "LESSONS.md")

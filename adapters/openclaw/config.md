@@ -18,11 +18,25 @@ portable brain located at `.agent/`.
 - Read `.agent/skills/_index.md` first.
 - Load `.agent/skills/<name>/SKILL.md` only when triggers match.
 
+## Recall before non-trivial tasks
+For deploy / ship / migration / schema / timestamp / date / failing test /
+debug / refactor, FIRST run:
+
+```bash
+python3 .agent/tools/recall.py "<description>"
+```
+
+Surface results in a `Consulted lessons before acting:` block and follow
+them.
+
 ## Memory discipline
 - Update `.agent/memory/working/WORKSPACE.md` as you work.
 - After significant actions, call
   `python3 .agent/tools/memory_reflect.py <skill> <action> <outcome>`.
 - Never delete memory entries. Archive only.
+- Quick state: `python3 .agent/tools/show.py`.
+- Teach a rule in one shot:
+  `python3 .agent/tools/learn.py "<rule>" --rationale "<why>"`.
 
 ## Hard rules
 - No force push to `main`, `production`, or `staging`.

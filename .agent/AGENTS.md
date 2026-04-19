@@ -46,6 +46,19 @@ are the exact failure mode this layer prevents.
 - `protocols/tool_schemas/` — typed interfaces for external tools
 - `protocols/delegation.md` — rules for sub-agent handoff
 
+## Host-agent CLI tools (in `tools/`)
+Daily driver, highest-leverage first:
+- `recall.py "<intent>"` — surface graduated lessons relevant to what
+  you're about to do. **Run before deploy / migration / timestamp / debug /
+  refactor work.** This is how lessons cross harnesses.
+- `learn.py "<rule>" --rationale "<why>"` — teach the agent a new lesson
+  in one shot (stage + graduate + render). For rules you already know.
+- `show.py` — one-screen dashboard of brain state: episodes, candidates,
+  lessons, failing skills, activity graph.
+- `list_candidates.py` / `graduate.py` / `reject.py` / `reopen.py` — review
+  protocol for patterns the dream cycle has staged.
+- `memory_reflect.py <skill> <action> <outcome>` — log a significant event.
+
 ## Rules
 1. Check memory before decisions you have been corrected on before.
 2. If `REVIEW_QUEUE.md` shows backlog past threshold, handle it before the new task.

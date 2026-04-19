@@ -9,6 +9,17 @@ it at the portable brain in `.agent/`.
 3. Read `.agent/memory/semantic/LESSONS.md`.
 4. Read `.agent/protocols/permissions.md`.
 
+## Recall before non-trivial tasks
+For deploy / ship / migration / schema / timestamp / date / failing test /
+debug / refactor, FIRST run:
+
+```bash
+python3 .agent/tools/recall.py "<description>"
+```
+
+Surface results in a `Consulted lessons before acting:` block and follow
+them.
+
 ## Skills
 - Use `.agent/skills/_index.md` for discovery.
 - Load `.agent/skills/<name>/SKILL.md` only when the skill's triggers match.
@@ -18,6 +29,9 @@ it at the portable brain in `.agent/`.
 - After significant actions, run
   `python3 .agent/tools/memory_reflect.py <skill> <action> <outcome>`.
 - Never delete memory entries. Archive only.
+- Quick state: `python3 .agent/tools/show.py`.
+- Teach a rule in one shot:
+  `python3 .agent/tools/learn.py "<rule>" --rationale "<why>"`.
 
 ## Constraints
 - Never force push to `main`, `production`, or `staging`.

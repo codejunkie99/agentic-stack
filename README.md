@@ -148,6 +148,46 @@ harnesses.
 - **Protocols** — typed tool schemas, a `permissions.md` that the
   pre-tool-call hook enforces, and a delegation contract for sub-agents.
 
+## What's new in v0.7.0
+
+- **Three host-agent tools that make the brain usable from day one.**
+  - `learn.py` — teach the agent a rule in one command:
+    `python3 .agent/tools/learn.py "Always serialize timestamps in UTC" --rationale "past cross-region bugs"`.
+    Stages + graduates + renders in one step. Idempotent. Cleans up staged
+    files on heuristic reject; preserves on crashes so retries work.
+  - `recall.py` — surface graduated lessons relevant to what you're about
+    to do: `python3 .agent/tools/recall.py "add a created_at column"`.
+    Returns ranked lexical-overlap hits with per-entry source labels.
+    Merges `lessons.jsonl` and seed bullets in `LESSONS.md` so graduating
+    your first lesson doesn't hide the seeds. Logs every recall to
+    episodic memory for audit.
+  - `show.py` — colorful dashboard of brain state (episodes, candidates,
+    lessons, failing skills, 14d activity sparkline). `--json` / `--plain`
+    / `NO_COLOR` flags.
+- **Adapter wiring for recall across all 8 harnesses.** Every adapter
+  (`claude-code`, `cursor`, `windsurf`, `opencode`, `openclaw`, `hermes`,
+  `pi`, `standalone-python`) now instructs the model to run
+  `recall.py "<intent>"` before deploy / migration / timestamp / debug /
+  refactor work, and to surface results in a `Consulted lessons before
+  acting:` block.
+- **Seed UTC lesson ships pre-graduated.** New installs see proactive
+  recall return a real hit on first try — no setup ceremony for the
+  demo path. Stored at `.agent/memory/semantic/lessons.jsonl`.
+- **Reliability fixes.**
+  - `pattern_id` canonicalizes conditions (casefold, unicode-whitespace
+    collapse, zero-width strip, dedupe, sort) — so the same logical set
+    always yields the same id.
+  - `validate.heuristic_check` now requires ≥3 content words in a claim
+    (blocks junk like `!!!abc` that passed the raw-length gate).
+  - `graduate.py` retry path is idempotent: re-renders `LESSONS.md`,
+    honors original reviewer/rationale from `lessons.jsonl` to keep
+    stores in sync, refuses retries against legacy rows missing
+    metadata.
+  - `render_lessons` + `append_lesson` now hold an advisory exclusive
+    flock on `lessons.jsonl`. Concurrent writers serialize; `LESSONS.md`
+    can no longer be stale relative to `lessons.jsonl`. Atomic rewrite
+    via temp file + rename.
+
 ## What's new in v0.6.0
 
 - **Pi Coding Agent adapter.** `./install.sh pi` drops `AGENTS.md` and
@@ -210,6 +250,9 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 ├── skills/                     # _index.md + _manifest.jsonl + SKILL.md files
 ├── protocols/                  # permissions + tool schemas + delegation
 └── tools/                      # host-agent CLI + memory_reflect + skill_loader
+    ├── learn.py                # one-shot lesson teaching (stage + graduate)
+    ├── recall.py               # surface lessons relevant to an intent
+    ├── show.py                 # colorful brain-state dashboard
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py
