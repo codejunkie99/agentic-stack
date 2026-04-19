@@ -12,3 +12,7 @@
 - Never force push to protected branches under any circumstance.
 
 ## Auto-promoted entries will be appended below
+
+### 2026-04
+
+- Always serialize timestamps in UTC to avoid cross-region comparison bugs  <!-- status=accepted confidence=0.46 evidence=1 id=lesson_422695ae5b2d -->

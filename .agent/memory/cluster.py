@@ -24,6 +24,56 @@ def _normalize_claim(text):
     return re.sub(r"\s+", " ", t).strip()
 
 
+_ZERO_WIDTH_RE = re.compile(r"[\u200b\u200c\u200d\u2060\ufeff]")
+_WHITESPACE_RE = re.compile(r"\s+", re.UNICODE)
+
+
+def _canonicalize_condition(c):
+    """Normalize a single condition token for stable hashing.
+
+    - strip zero-width characters (ZWSP, ZWNJ, ZWJ, WJ, BOM)
+    - casefold (more aggressive than lower; handles e.g. ß → ss)
+    - collapse ALL unicode whitespace (spaces, tabs, NBSP, etc.) to single ' '
+    - outer strip
+    Returns "" if nothing substantive remains.
+    """
+    if not c:
+        return ""
+    c = _ZERO_WIDTH_RE.sub("", str(c))
+    c = _WHITESPACE_RE.sub(" ", c).strip()
+    return c.casefold()
+
+
+def pattern_id(claim, conditions):
+    """Stable content-derived pattern id. Single source of truth.
+
+    Same logical (claim, conditions) → same id. Conditions are canonicalized
+    before hashing: case-folded, unicode-whitespace collapsed, zero-width
+    characters stripped, outer-trimmed, empties dropped, deduplicated,
+    sorted. So `['Alpha']`, `[' alpha ']`, `['alpha\\u200b']`, and
+    `['alpha']` all hash the same.
+
+    What's NOT normalized: punctuation, hyphens, underscores. `'cross-region'`
+    and `'cross_region'` are still distinct — they're likely distinct
+    concepts. Callers who want them equivalent must pre-normalize.
+
+    Ids WILL still differ across birth paths for the same claim when
+    conditions are genuinely different (cluster intersection vs user-provided
+    vs full claim word_set). That's intentional: conditions are the stable
+    signature of "under what circumstances does this claim hold," and
+    different contexts deserve different lifecycle state.
+    """
+    canonical = sorted({
+        _canonicalize_condition(c)
+        for c in (conditions or [])
+        if _canonicalize_condition(c)
+    })
+    conditions_key = "|".join(canonical)
+    return hashlib.md5(
+        (_normalize_claim(claim) + "||" + conditions_key).encode()
+    ).hexdigest()[:12]
+
+
 def _entry_features(entry):
     """Content feature set for clustering: action + reflection + detail."""
     text = " ".join([
@@ -100,11 +150,8 @@ def extract_pattern(cluster):
     # vocabulary), so lifecycle history carries across membership changes
     # in the common case while genuinely-different clusters with the same
     # canonical get distinct ids.
-    conditions_key = "|".join(sorted(common))
-    pattern_id = hashlib.md5(
-        (_normalize_claim(claim) + "||" + conditions_key).encode()
-    ).hexdigest()[:12]
-    name = f"pattern_{name_base}_{pattern_id[:6]}"
+    pid = pattern_id(claim, sorted(common))
+    name = f"pattern_{name_base}_{pid[:6]}"
 
     # Recurrence-aware salience: give the scoring function cluster context
     # without mutating the source episode dict.
@@ -113,7 +160,7 @@ def extract_pattern(cluster):
     canonical_salience = salience_score(canonical_with_recurrence)
 
     return {
-        "id": pattern_id,
+        "id": pid,
         "name": name,
         "claim": claim,
         "conditions": sorted(common),

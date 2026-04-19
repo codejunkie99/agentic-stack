@@ -5,9 +5,18 @@ CLI tools in .agent/tools/ (graduate.py, reject.py). This module catches
 obvious junk — too-short claims, exact duplicates — before the reviewer
 sees the candidate at all. Anything subjective is the host's job.
 """
-import re
+import os, re, sys
+
+# Make harness/text.py importable for content-word counting. Codex review
+# caught that raw char-length gates let `!!!!!!!!!!!!!!!!!abc` pass — a
+# claim with exactly one real token. Content-word count is the real gate.
+_HARNESS = os.path.join(os.path.dirname(__file__), "..", "harness")
+if _HARNESS not in sys.path:
+    sys.path.insert(0, _HARNESS)
+from text import word_set
 
 MIN_CLAIM_LEN = 20
+MIN_CONTENT_WORDS = 3  # minimum non-stopword tokens for a meaningful claim
 LENGTH_SATURATE = 100
 CLUSTER_SATURATE = 5
 
@@ -76,6 +85,15 @@ def heuristic_check(candidate, existing_lessons_md=""):
 
     if len(claim) < MIN_CLAIM_LEN:
         reasons.append("claim_too_short")
+
+    # Content-word gate: raw char length alone let garbage like
+    # `!!!!!!!!!!!!!!!!!abc` through. A real lesson needs at least three
+    # non-stopword tokens so the reviewer has something substantive to
+    # evaluate and retrieval has hooks to score on.
+    content_words = word_set(claim)
+    if len(content_words) < MIN_CONTENT_WORDS:
+        reasons.append(
+            f"insufficient_content_words_{len(content_words)}_of_{MIN_CONTENT_WORDS}")
 
     if claim:
         duplicates = check_exact_duplicate(claim, existing_lessons_md)

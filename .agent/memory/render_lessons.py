@@ -10,9 +10,17 @@ template) is treated as the sentinel; subsequent calls replace everything
 from the sentinel onward. If the sentinel is missing it's appended at the
 end of the file. This means hand-curated preambles and seed bullets above
 the sentinel survive every render.
+
+Concurrency: append_lesson and render_lessons both acquire an advisory
+exclusive flock on lessons.jsonl so a concurrent appender can't land a new
+row between render's load and write, leaving LESSONS.md stale. LESSONS.md
+is rewritten atomically (temp file + rename) so readers never see a
+half-written file. Windows (no fcntl) falls through without locking; safe
+for single-user, noted in a one-time warning.
 """
-import os, json, datetime, hashlib
+import os, json, datetime, hashlib, warnings
 from collections import defaultdict
+from contextlib import contextmanager
 
 
 LESSONS_JSONL = "lessons.jsonl"
@@ -21,12 +29,72 @@ LESSONS_MD = "LESSONS.md"
 SENTINEL = "## Auto-promoted entries will be appended below"
 
 
+try:
+    import fcntl
+    _HAS_FLOCK = True
+except ImportError:
+    _HAS_FLOCK = False
+    warnings.warn(
+        "fcntl unavailable; lessons.jsonl concurrent-write protection "
+        "disabled. Safe for single-user repos; not safe for shared/multi-"
+        "process access.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+
+
+@contextmanager
+def _locked_jsonl(path):
+    """Open lessons.jsonl with an advisory exclusive flock held for the scope.
+
+    Creates the file if missing ('a+' mode, which also permits read). The
+    lock is process-level on Unix via fcntl.flock — two appenders serialize,
+    and a render() call wrapping its entire read-render-write cycle in this
+    lock blocks concurrent appenders until the render is done. Windows falls
+    through without locking (see module-level warning).
+
+    Note: within a single process, opening the same path twice yields two
+    separate fds with separate flock states, so nesting `_locked_jsonl`
+    around another `_locked_jsonl` in the same thread will deadlock. Call
+    `_append_lesson_unlocked(fd, lesson)` instead when already inside a
+    lock (e.g. migrate_legacy_bullets is deliberately called OUTSIDE the
+    render lock to sidestep this).
+    """
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    f = open(path, "a+")
+    try:
+        if _HAS_FLOCK:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        yield f
+    finally:
+        if _HAS_FLOCK:
+            try:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                # Release-on-close is the kernel default; swallowing a late
+                # release failure doesn't leak the lock.
+                pass
+        f.close()
+
+
+def _append_lesson_unlocked(f, lesson):
+    """Write a lesson row to an already-open, already-locked jsonl file.
+
+    Use this only when you already hold the lock (via `_locked_jsonl`).
+    Seeks to end first because 'a+' mode tracks position across reads
+    and the caller may have read from the head.
+    """
+    f.seek(0, os.SEEK_END)
+    f.write(json.dumps(lesson) + "\n")
+    f.flush()
+
+
 def append_lesson(lesson, semantic_dir):
     """Append a lesson to semantic/lessons.jsonl. Returns the written path."""
     os.makedirs(semantic_dir, exist_ok=True)
     path = os.path.join(semantic_dir, LESSONS_JSONL)
-    with open(path, "a") as f:
-        f.write(json.dumps(lesson) + "\n")
+    with _locked_jsonl(path) as f:
+        _append_lesson_unlocked(f, lesson)
     return path
 
 
@@ -182,33 +250,56 @@ def render_lessons(semantic_dir):
     lessons.jsonl before rendering, so upgrades from the old markdown-only
     format don't silently erase past promotions. Deduplicates entries by
     lesson id so a provisional-then-accepted lesson renders once, not twice.
+
+    Concurrency-safe: the entire read-render-write cycle runs under an
+    exclusive flock on lessons.jsonl. A concurrent append_lesson() either
+    lands BEFORE our load (we include it) or AFTER our write (it blocks
+    on the flock, then will re-render on its own — graduate.py calls
+    render_lessons right after appending). LESSONS.md is rewritten
+    atomically via temp file + rename so readers never see a half-written
+    file.
     """
-    # First, absorb any un-registered bullets below the sentinel
+    # Migrate BEFORE taking the render lock. migrate_legacy_bullets calls
+    # append_lesson internally, which acquires its own lock; nesting would
+    # deadlock (two fds on the same file within one process each want
+    # LOCK_EX). Migration is idempotent and only does real work on first
+    # run after an upgrade, so the ordering is safe.
     migrate_legacy_bullets(semantic_dir)
-    lessons = _dedupe_by_id(load_lessons(semantic_dir))
-    auto_section = _build_auto_section(lessons)
 
-    path = os.path.join(semantic_dir, LESSONS_MD)
-
-    if os.path.exists(path):
-        existing = open(path).read()
-        if SENTINEL in existing:
-            prefix = existing.split(SENTINEL)[0].rstrip()
-            new = f"{prefix}\n\n{SENTINEL}\n\n{auto_section}"
-        else:
-            new = existing.rstrip() + f"\n\n{SENTINEL}\n\n{auto_section}"
-    else:
-        header = (
-            "# Lessons\n\n"
-            "> _Auto-managed below. Hand-curated preamble + seed lessons "
-            "above the sentinel are preserved across renders._\n"
-        )
-        new = f"{header}\n{SENTINEL}\n\n{auto_section}"
+    jsonl_path = os.path.join(semantic_dir, LESSONS_JSONL)
+    md_path = os.path.join(semantic_dir, LESSONS_MD)
 
     os.makedirs(semantic_dir, exist_ok=True)
-    with open(path, "w") as f:
-        f.write(new)
-    return path
+
+    with _locked_jsonl(jsonl_path):
+        lessons = _dedupe_by_id(load_lessons(semantic_dir))
+        auto_section = _build_auto_section(lessons)
+
+        if os.path.exists(md_path):
+            existing = open(md_path).read()
+            if SENTINEL in existing:
+                prefix = existing.split(SENTINEL)[0].rstrip()
+                new = f"{prefix}\n\n{SENTINEL}\n\n{auto_section}"
+            else:
+                new = existing.rstrip() + f"\n\n{SENTINEL}\n\n{auto_section}"
+        else:
+            header = (
+                "# Lessons\n\n"
+                "> _Auto-managed below. Hand-curated preamble + seed lessons "
+                "above the sentinel are preserved across renders._\n"
+            )
+            new = f"{header}\n{SENTINEL}\n\n{auto_section}"
+
+        # Atomic rewrite: write to .tmp next to the target, then rename.
+        # os.replace is atomic on POSIX and Windows (Python 3.3+), so a
+        # reader of LESSONS.md always sees either the old or the new
+        # complete content, never a half-written file.
+        tmp_path = md_path + ".tmp"
+        with open(tmp_path, "w") as f:
+            f.write(new)
+        os.replace(tmp_path, md_path)
+
+    return md_path
 
 
 def render_lessons_as_text(semantic_dir):
