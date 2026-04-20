@@ -1,17 +1,8 @@
 # agentic-stack
 
-Follow me on [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on projects.
+**Keep one portable memory-and-skills layer across coding-agent harnesses, so switching tools doesn't reset how your agent works.**
 
-[![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-
-
->> **Coded using Minimax-M2.7 in the Claude Code Harness. PR Review by Macroscope and Codex**
-
-> **One brain, many harnesses.** A portable `.agent/` folder (memory + skills
-> + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode,
-> OpenClaw, Hermes, Pi Coding Agent, or a DIY Python loop, and keeps
-> its knowledge when you switch.
+A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, or a DIY Python loop — and keeps its knowledge when you switch.
 
 <p align="center">
   <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
@@ -21,9 +12,8 @@ Follow me on [@AV1DLIVE](https://twitter.com/AV1DLIVE) for updates/collabs on pr
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-
-Based on the article:
-**["The Agentic Stack"](https://x.com/Av1dlive/status/2044453102703841645?s=20)** · by [@AV1DLIVE](https://twitter.com/AV1DLIVE)
+[![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 
 ## Quickstart
@@ -327,9 +317,11 @@ Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Credits
 
-Design adapted from the author's article on building an agentic stack, plus
-patterns from Gstack, Claude Code's memory system, and conversations in
-the agent-engineering community. Built with the hypothesis that
+Based on the article **["The Agentic Stack"](https://x.com/Av1dlive/status/2044453102703841645?s=20)**
+by [@AV1DLIVE](https://twitter.com/AV1DLIVE) — follow for updates and collabs.
+Coded using Minimax-M2.7 in the Claude Code harness; PR review by Macroscope and Codex.
+Patterns from Gstack, Claude Code's memory system, and conversations in the
+agent-engineering community. Built with the hypothesis that
 **harness-agnosticism is the point**.
 
 ## Star History
