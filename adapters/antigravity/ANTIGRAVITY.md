@@ -41,8 +41,8 @@ Skip it and the system is just files on disk.
 If `.agent/memory/.features.json` has `tldraw.enabled: true`, the `tldraw`
 skill is available. It draws on a live canvas at `http://localhost:3030`
 via the tldraw MCP server configured in `.mcp.json`. Worthwhile drawings
-snapshot into `memory/visual/` and are recalled with
-`python3 .agent/memory/visual/visual_memory.py list`. Off by default.
+snapshot into the skill's local store and are recalled with
+`python3 .agent/skills/tldraw/store.py list`. Off by default.
 
 ## Rules that override defaults
 - Never force push to `main`, `production`, or `staging`.

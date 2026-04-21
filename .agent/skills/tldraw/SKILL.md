@@ -8,12 +8,12 @@ constraints: ["call get_canvas before update_shape or delete_shape to discover r
 category: visualization
 ---
 
-# tldraw — draw on a live canvas as working memory
+# tldraw — draw on a live canvas
 
-The tldraw MCP server exposes a live canvas at `http://localhost:3030`. You
-draw into it; the user watches it fill in. The canvas is the fifth memory
-layer (see `memory/visual/`): scratch space for spatial reasoning that can
-be snapshotted into persistent visual memory.
+The tldraw MCP server exposes a live canvas at `http://localhost:3030`.
+You draw into it; the user watches it fill in. Worthwhile drawings can
+be snapshotted to disk and recalled in future sessions via this skill's
+local store (`store.py`).
 
 ## When this skill loads
 
@@ -61,23 +61,24 @@ Always `get_canvas` first when the user says "add to", "next to",
 Colors: `black, grey, light-violet, violet, blue, light-blue, yellow, orange, green, light-green, red`.
 Fills: `none, semi, solid, pattern`.
 
-## Persisting drawings as visual memory
+## Persisting drawings
 
 When a drawing is worth keeping across sessions (architecture decisions,
 recurring diagrams, reference material), snapshot it:
 
 ```bash
-# 1. fetch current shapes via MCP get_canvas and pipe the JSON in
-python3 .agent/memory/visual/visual_memory.py snapshot \
+# fetch current shapes via MCP get_canvas and pipe the JSON in
+python3 .agent/skills/tldraw/store.py snapshot \
     --label "auth-flow-v1" --tags architecture,auth \
     --note "login + refresh token flow agreed 2026-04-21"
 ```
 
-The tool reads the canvas JSON on stdin, writes a snapshot file under
-`memory/visual/snapshots/`, appends metadata to `snapshots.jsonl`, and
-re-renders `INDEX.md`. Later sessions can `list` / `load` to recover the
-drawing. Archive with `archive` when stale — never delete (agentic-stack
-memory is append-only).
+The store reads canvas JSON on stdin, writes a snapshot file under
+`snapshots/`, appends metadata to `snapshots.jsonl`, and re-renders
+`INDEX.md` — all within a single file lock. Later sessions recover a
+drawing with `list` / `load`. Use `archive` to retire a snapshot; the
+JSONL is append-only semantic, so archived records move to
+`snapshots/archive/` rather than being deleted.
 
 ## Pitfalls
 
@@ -90,8 +91,6 @@ memory is append-only).
 
 After any failure, or every 5 uses:
 1. Read the last N tldraw-tagged entries from `memory/episodic/AGENT_LEARNINGS.jsonl`.
-2. If a new failure mode has appeared (browser disconnection, invalid
-   shape schema, coordinate drift), append the pattern to `KNOWLEDGE.md`.
-3. If a constraint was violated (shape cap, id-before-edit rule), escalate
+2. If a constraint was violated (shape cap, id-before-edit rule), escalate
    a candidate lesson to `semantic/LESSONS.md` via `tools/learn.py`.
-4. Commit: `skill-update: tldraw, <one-line reason>`.
+3. Commit: `skill-update: tldraw, <one-line reason>`.
