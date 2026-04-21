@@ -32,7 +32,7 @@ def _count_recent_failures(skill_name):
 
 
 def on_failure(skill_name, action, error, context="", confidence=0.9,
-               evidence_ids=None):
+               evidence_ids=None, importance=None, pain_score=None):
     # Format reflection without the noisy `type(error).__name__:` prefix
     # when the caller passes a pre-formatted string (the common case for
     # hook callers). Only include the type name for actual Exception objects
@@ -43,14 +43,17 @@ def on_failure(skill_name, action, error, context="", confidence=0.9,
     else:
         _refl = f"FAILURE in {skill_name}: {str(error)[:200]}"
 
+    # Let callers override the generic (7/8) defaults so a failed deploy or
+    # schema migration is recorded with its true importance and pain score;
+    # the dream-cycle salience can't distinguish failure severity otherwise.
     entry = {
         "timestamp": datetime.datetime.now().isoformat(),
         "skill": skill_name,
         "action": action[:200],
         "result": "failure",
         "detail": str(error)[:500],
-        "pain_score": 8,
-        "importance": 7,
+        "pain_score": pain_score if pain_score is not None else 8,
+        "importance": importance if importance is not None else 7,
         "reflection": _refl,
         "context": context[:300],
         "confidence": confidence,

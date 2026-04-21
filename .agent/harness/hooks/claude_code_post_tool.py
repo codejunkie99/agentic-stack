@@ -93,23 +93,73 @@ def _load_user_patterns() -> tuple[list[str], list[str]]:
             cfg = json.load(f)
     except (OSError, json.JSONDecodeError):
         return [], []
-    high   = [str(p) for p in cfg.get("high_stakes",   []) if p]
-    medium = [str(p) for p in cfg.get("medium_stakes", []) if p]
-    return high, medium
+    raw_high   = [str(p) for p in cfg.get("high_stakes",   []) if p]
+    raw_medium = [str(p) for p in cfg.get("medium_stakes", []) if p]
+    # Drop fragments that aren't valid standalone regex — a single typo
+    # (e.g. unbalanced paren) would otherwise kill every PostToolUse
+    # invocation until the config file is hand-fixed.
+    return _filter_valid(raw_high), _filter_valid(raw_medium)
+
+
+def _filter_valid(fragments: list[str]) -> list[str]:
+    good = []
+    for frag in fragments:
+        try:
+            re.compile(frag)
+        except re.error as e:
+            import sys
+            print(
+                f"hook_patterns.json: skipping invalid regex {frag!r}: {e}",
+                file=sys.stderr,
+            )
+            continue
+        good.append(frag)
+    return good
 
 
 def _build_pattern(fragments: list[str]) -> re.Pattern | None:
+    """Compile fragments into a combined word-boundary pattern.
+    Returns None on failure; caller decides on fallback behavior."""
     if not fragments:
         return None
     combined = r'\b(' + '|'.join(fragments) + r')\b'
-    return re.compile(combined, re.IGNORECASE)
+    try:
+        return re.compile(combined, re.IGNORECASE)
+    except re.error:
+        return None
+
+
+def _build_with_fallback(universals: list[str],
+                         user: list[str]) -> re.Pattern | None:
+    """Try merging universal + user fragments. If the merged pattern fails
+    to compile (one fragment like `(?i)foo` that is valid standalone, OR
+    two fragments that only conflict together like duplicate named groups),
+    rebuild INCREMENTALLY: add each user fragment only if it still compiles
+    with everything we've kept so far. This way one bad entry doesn't
+    disable every custom rule, and inter-fragment conflicts are resolved
+    first-wins (deterministic)."""
+    merged = _build_pattern(universals + user)
+    if merged is not None or not user:
+        return merged
+    import sys
+    surviving: list[str] = []
+    for frag in user:
+        if _build_pattern(universals + surviving + [frag]) is not None:
+            surviving.append(frag)
+        else:
+            print(
+                f"hook_patterns.json: fragment {frag!r} is incompatible "
+                "with the rest of the pattern; dropping it.",
+                file=sys.stderr,
+            )
+    return _build_pattern(universals + surviving)
 
 
 # Build once at import time.  User patterns are merged in here so there's
 # no per-call file I/O.
 _user_high, _user_medium = _load_user_patterns()
-_HIGH   = _build_pattern(_UNIVERSAL_HIGH   + _user_high)
-_MEDIUM = _build_pattern(_UNIVERSAL_MEDIUM + _user_medium)
+_HIGH   = _build_with_fallback(_UNIVERSAL_HIGH,   _user_high)
+_MEDIUM = _build_with_fallback(_UNIVERSAL_MEDIUM, _user_medium)
 
 
 def _importance(tool_name: str, tool_input_str: str) -> int:
@@ -156,8 +206,71 @@ _ERROR_SIGNALS = re.compile(
     re.IGNORECASE,
 )
 
+# Patterns where the user has explicitly asked the shell to mask a non-zero
+# exit PER-COMMAND. When a command uses these, exit_code=0 is NOT reliable,
+# so we fall through to the generic stdout heuristic.
+# Examples: `deploy || true`, `migrate || :`, `run; true`.
+# Deliberately NOT matching `set +e`: it's often a temporary disable around
+# `grep Error logfile; rc=$?; set -e`-style patterns where exit_code=0 IS
+# still trustworthy for the actual command.
+_EXIT_MASKED = re.compile(
+    r'\|\|\s*(?:true|:|exit\s+0)'    # || true   ||  :   || exit 0
+    r'|;\s*(?:true|:)\s*$',          # ; true    ; :  at end of command
+    re.IGNORECASE,
+)
 
-def _is_success(tool_name: str, resp: dict) -> bool:
+
+_QUOTED_STRING = re.compile(
+    r"'[^']*'"                      # single-quoted (no escapes in bash)
+    r'|"(?:[^"\\]|\\.)*"',          # double-quoted, honoring backslash escapes
+)
+
+
+def _is_exit_masked(command: str) -> bool:
+    """Return True if the Bash command explicitly suppresses its exit code.
+    Strips single/double-quoted regions before matching so that masked-exit
+    tokens inside quoted strings (e.g. `echo '... || true ...'`) don't
+    produce false positives. Heredocs are not parsed; that corner case
+    (text between <<EOF ... EOF lines containing || true) can still slip
+    through, but is rare enough in real Bash tool use to accept."""
+    if not command:
+        return False
+    stripped = _QUOTED_STRING.sub("", command)
+    return bool(_EXIT_MASKED.search(stripped))
+
+
+def _extract_bash_command(tool_input: dict) -> str:
+    """Pull the Bash command string from tool_input, supporting both the
+    modern `{"command": "..."}` shape and the env-var fallback `{"raw": "..."}`
+    shape that `main()` constructs from `CLAUDE_TOOL_INPUT`."""
+    if not isinstance(tool_input, dict):
+        return ""
+    cmd = tool_input.get("command")
+    if isinstance(cmd, str) and cmd:
+        return cmd
+    raw = tool_input.get("raw")
+    if isinstance(raw, str) and raw:
+        return raw
+    return ""
+
+
+def _is_success(tool_name: str, tool_input_or_resp, resp=None) -> bool:
+    """Signature:
+        _is_success(tool_name, tool_input, resp)   — preferred, 3-arg form
+        _is_success(tool_name, resp)               — legacy 2-arg form;
+                                                     wrapper detection off
+    Detects failure from the tool_response dict. Conservative — only fails
+    on unambiguous signals so we don't discard genuine successes."""
+    # Support the legacy 2-arg call (tool_name, resp).
+    if resp is None:
+        tool_input: dict = {}
+        resp = tool_input_or_resp
+    else:
+        tool_input = tool_input_or_resp if isinstance(tool_input_or_resp, dict) else {}
+    return _is_success_impl(tool_name, tool_input, resp)
+
+
+def _is_success_impl(tool_name: str, tool_input: dict, resp: dict) -> bool:
     """Detect failure from the tool_response dict. Conservative — only fails
     on unambiguous signals so we don't discard genuine successes."""
     if not isinstance(resp, dict):
@@ -167,18 +280,44 @@ def _is_success(tool_name: str, resp: dict) -> bool:
     if resp.get("is_error", False):
         return False
 
-    # Bash-specific: exit code and error stream
+    # Bash-specific. Classification rules, in order:
+    #  1. interrupted → failure
+    #  2. stderr looks like an error (length threshold differs by wrapper):
+    #     - wrapped (`|| true`, `|| :`): any non-empty error-looking stderr
+    #       catches masked failures, since they often emit brief messages
+    #       like "build failed" or "permission denied".
+    #     - unwrapped: require >30 chars to avoid tripping on benign warnings
+    #  3. if exit_code is present and no wrapper override fired → trust it.
+    #     Trusting exit_code=0 matters for `grep Error log`, `cat log`,
+    #     `grep X || true`, and other inspections that legitimately print
+    #     error-looking stdout.
+    #  4. otherwise → fall through to generic stdout heuristic (handles
+    #     non-Bash tools and ancient response shapes without exit_code).
     if tool_name == "Bash":
         exit_code = resp.get("exit_code")
-        if exit_code is not None and exit_code != 0:
-            return False
         if resp.get("interrupted", False):
             return False
         stderr = resp.get("error", "") or resp.get("stderr", "") or ""
-        if len(stderr) > 30 and _ERROR_SIGNALS.search(stderr):
-            return False
+        command = _extract_bash_command(tool_input)
+        wrapped = _is_exit_masked(command)
+        if wrapped:
+            # Masked exit. stderr is the best available signal; catch even
+            # short messages because masked failures are often terse.
+            if stderr and _ERROR_SIGNALS.search(stderr):
+                return False
+            # No stderr signal → trust exit_code. Prevents false-failure
+            # misclassification of `grep '^Error' log || true` (benign).
+            if exit_code is not None:
+                return exit_code == 0
+        else:
+            if len(stderr) > 30 and _ERROR_SIGNALS.search(stderr):
+                return False
+            if exit_code is not None:
+                return exit_code == 0
+        # No exit_code and no stderr signal — fall through to the generic
+        # stdout heuristic below.
 
-    # Generic output error heuristic (for non-Bash tools)
+    # Generic output error heuristic (non-Bash, or Bash without exit_code)
     output = _extract_output(resp)
     if output and _ERROR_SIGNALS.search(output[:200]):
         # Only fail if the very start of output looks like an error,
@@ -449,7 +588,7 @@ def main() -> None:
                 tool_response = {"raw": raw_resp_env}
 
     # --- derive everything ---
-    success = _is_success(tool_name, tool_response)
+    success = _is_success(tool_name, tool_input, tool_response)
     importance = _importance(tool_name, json.dumps(tool_input))
     action = _action_label(tool_name, tool_input)
     reflection = _reflection(tool_name, tool_input, tool_response, success)
@@ -475,6 +614,8 @@ def main() -> None:
             error=reflection,
             context=detail,
             confidence=0.7,
+            importance=importance,
+            pain_score=pscore,
         )
 
 
