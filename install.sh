@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh — copy an adapter into the consuming project, then run the onboarding wizard
 # Usage: ./install.sh <adapter-name> [target-dir] [--yes] [--reconfigure]
-#   adapter-name:  claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python
+#   adapter-name:  claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python | antigravity
 #   target-dir:    where your project lives (default: current dir)
 #   --yes          accept all wizard defaults without prompting (safe for CI)
 #   --reconfigure  re-run the wizard even if PREFERENCES.md is already filled
@@ -13,7 +13,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 
 if [[ -z "$ADAPTER" ]]; then
   echo "usage: $0 <adapter-name> [target-dir]" >&2
-  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi standalone-python" >&2
+  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi standalone-python antigravity" >&2
   exit 2
 fi
 
@@ -87,6 +87,9 @@ case "$ADAPTER" in
     ;;
   standalone-python)
     cp "$SRC/run.py" "$TARGET/run.py"
+    ;;
+  antigravity)
+    cp "$SRC/ANTIGRAVITY.md" "$TARGET/ANTIGRAVITY.md"
     ;;
   *)
     echo "error: unknown adapter '$ADAPTER'" >&2
