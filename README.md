@@ -14,7 +14,7 @@ A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude
 
 [![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-
+Made by https://x.com/Av1dlive
 
 ## Quickstart
 
