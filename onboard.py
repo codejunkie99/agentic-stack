@@ -109,6 +109,9 @@ def main():
             f"Features: {features_file}",
             "Edit either file any time — your AI re-reads them every session.",
             "Tip: git add .agent/memory/ to track your brain.",
+            "Want Claude Code to score YOUR stack's deploys/migrations as",
+            "high-stakes? Edit .agent/protocols/hook_patterns.json —",
+            "add service names like 'vercel' or 'supabase' under high_stakes.",
         ])
     except KeyboardInterrupt:
         print(f"\n\n{MUTED}  Setup cancelled.{R}\n")
