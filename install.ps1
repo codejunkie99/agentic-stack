@@ -1,6 +1,6 @@
 # install.ps1 — Windows PowerShell installer (parallel to install.sh)
 # Usage:  .\install.ps1 <adapter-name> [target-dir] [-Yes] [-Reconfigure] [-Force]
-#   adapter-name: claude-code | cursor | windsurf | opencode | openclaw | hermes | standalone-python
+#   adapter-name: claude-code | cursor | windsurf | opencode | openclaw | hermes | standalone-python | antigravity
 #   target-dir:   where your project lives (default: current dir)
 #   -Yes          accept all wizard defaults (safe for CI)
 #   -Reconfigure  re-run the wizard on an existing project
@@ -25,7 +25,7 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ValidAdapters = @(
     'claude-code', 'cursor', 'windsurf',
     'opencode', 'openclaw', 'hermes',
-    'standalone-python'
+    'standalone-python', 'antigravity'
 )
 if ($Adapter -notin $ValidAdapters) {
     Write-Error "unknown adapter '$Adapter'. valid: $($ValidAdapters -join ' ')"
@@ -74,6 +74,9 @@ switch ($Adapter) {
     }
     'standalone-python' {
         Copy-Item (Join-Path $Src 'run.py') (Join-Path $TargetDir 'run.py') -Force
+    }
+    'antigravity' {
+        Copy-Item (Join-Path $Src 'ANTIGRAVITY.md') (Join-Path $TargetDir 'ANTIGRAVITY.md') -Force
     }
 }
 
