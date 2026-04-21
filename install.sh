@@ -44,12 +44,11 @@ fi
 case "$ADAPTER" in
   claude-code)
     cp "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md"
-    mkdir -p "$TARGET/.claude/commands"
+    mkdir -p "$TARGET/.claude"
     cp "$SRC/settings.json" "$TARGET/.claude/settings.json"
-    cp "$SRC/.claude/commands/tldraw.md" "$TARGET/.claude/commands/tldraw.md"
     # project-level MCP config; don't stomp a pre-existing one
     if [[ ! -f "$TARGET/.mcp.json" ]]; then
-      cp "$SRC/.mcp.json" "$TARGET/.mcp.json"
+      cp "$HERE/adapters/_shared/tldraw-mcp.json" "$TARGET/.mcp.json"
     else
       echo "  ~ $TARGET/.mcp.json already exists — merge tldraw from adapters/_shared/tldraw-mcp.json manually"
     fi
@@ -58,7 +57,7 @@ case "$ADAPTER" in
     mkdir -p "$TARGET/.cursor/rules"
     cp "$SRC/.cursor/rules/agentic-stack.mdc" "$TARGET/.cursor/rules/agentic-stack.mdc"
     if [[ ! -f "$TARGET/.cursor/mcp.json" ]]; then
-      cp "$SRC/.cursor/mcp.json" "$TARGET/.cursor/mcp.json"
+      cp "$HERE/adapters/_shared/tldraw-mcp.json" "$TARGET/.cursor/mcp.json"
     else
       echo "  ~ $TARGET/.cursor/mcp.json already exists — merge tldraw from adapters/_shared/tldraw-mcp.json manually"
     fi
@@ -103,7 +102,7 @@ case "$ADAPTER" in
   antigravity)
     cp "$SRC/ANTIGRAVITY.md" "$TARGET/ANTIGRAVITY.md"
     if [[ ! -f "$TARGET/.mcp.json" ]]; then
-      cp "$SRC/.mcp.json" "$TARGET/.mcp.json"
+      cp "$HERE/adapters/_shared/tldraw-mcp.json" "$TARGET/.mcp.json"
     else
       echo "  ~ $TARGET/.mcp.json already exists — merge tldraw from adapters/_shared/tldraw-mcp.json manually"
     fi

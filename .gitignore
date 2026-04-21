@@ -29,10 +29,18 @@ venv/
 .agent/memory/.index/**
 
 # ...and Python bytecode that lands anywhere under .agent/memory/ when
-# modules there are imported (e.g. memory/visual/visual_memory.py). The
-# negation above re-includes these by default; re-exclude explicitly.
+# modules there are imported. The negation above re-includes these by
+# default; re-exclude explicitly.
 .agent/memory/**/__pycache__/
 .agent/memory/**/*.py[cod]
 
 # Test scratch dir — the CLI round-trip test creates shim scripts here.
 .tmp/
+
+# tldraw skill runtime data — generated at use, not committed.
+.agent/skills/tldraw/INDEX.md
+.agent/skills/tldraw/snapshots/
+.agent/skills/tldraw/snapshots.jsonl
+
+# Local-only PR verification tests — not shipped.
+test_tldraw_visual_memory.py

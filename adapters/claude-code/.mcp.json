@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "tldraw": {
-      "command": "npx",
-      "args": ["-y", "@tldraw-mcp/server"]
-    }
-  }
-}

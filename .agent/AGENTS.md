@@ -11,8 +11,6 @@ same memory, skills, and protocols.
 - `memory/semantic/DECISIONS.md` — past architectural choices
 - `memory/semantic/LESSONS.md` — distilled patterns (rendered from `lessons.jsonl`)
 - `memory/episodic/AGENT_LEARNINGS.jsonl` — raw experience log (top-k by salience)
-- `memory/visual/INDEX.md` — durable canvas snapshots from the tldraw skill
-  (fifth layer, opt-in via the `tldraw` feature flag)
 
 ## Review Queue (host-agent responsibility)
 

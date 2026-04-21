@@ -28,9 +28,9 @@ Constraints: all tests passing, no unresolved TODOs in diff,
 requires human approval for production.
 
 ## tldraw
-Draw, diagram, sketch, or lay out ideas on a live tldraw canvas. Canvas
-state is the fifth memory layer — snapshot worthwhile drawings into
-`memory/visual/` for recall across sessions.
+Draw, diagram, sketch, or lay out ideas on a live tldraw canvas.
+Worthwhile drawings snapshot into this skill's local store
+(`skills/tldraw/store.py`) for recall across sessions.
 Triggers: "draw", "diagram", "sketch", "wireframe", "flowchart",
 "mind-map", "visualize", "whiteboard"
 Constraints: get_canvas before edits; max 200 shapes per create_shape call.
