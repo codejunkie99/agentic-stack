@@ -164,6 +164,11 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 .agent/                         # the portable brain (same across harnesses)
 ├── AGENTS.md                   # the map
 ├── harness/                    # conductor + hooks (standalone path)
+│   └── hooks/
+│       ├── claude_code_post_tool.py  # rich PostToolUse logging (v0.8+)
+│       ├── pre_tool_call.py    # permissions enforcement
+│       ├── post_execution.py   # log_execution() entry point
+│       └── on_failure.py       # failure write + repeated-failure rewrite flag
 ├── memory/                     # working / episodic / semantic / personal
 │   ├── auto_dream.py           # staging-only dream cycle
 │   ├── cluster.py              # content clustering + pattern extraction
@@ -174,6 +179,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 │   └── memory_search.py        # [BETA] FTS5 search (opt-in)
 ├── skills/                     # _index.md + _manifest.jsonl + SKILL.md files
 ├── protocols/                  # permissions + tool schemas + delegation
+│   └── hook_patterns.json      # user-owned high/medium-stakes regex (v0.8+)
 └── tools/                      # host-agent CLI + memory_reflect + skill_loader
     ├── learn.py                # one-shot lesson teaching (stage + graduate)
     ├── recall.py               # surface lessons relevant to an intent
@@ -197,12 +203,15 @@ adapters/                       # one small shim per harness
 docs/                           # architecture, getting-started, per-harness
 install.sh                      # mac / linux / git-bash installer
 install.ps1                     # Windows PowerShell installer
+CHANGELOG.md                    # per-version release notes (v0.1.0 onward)
 onboard.py                      # onboarding wizard entry point
 onboard_features.py             # .features.json read/write
 onboard_ui.py                   # ANSI palette, banner, clack-style layout
 onboard_widgets.py              # arrow-key prompts (text, select, confirm)
 onboard_render.py               # answers → PREFERENCES.md content
 onboard_write.py                # atomic file write with backup
+test_claude_code_hook.py        # hook validation suite (54 checks)
+verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 ```
 
 ## Supported harnesses

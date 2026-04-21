@@ -14,57 +14,69 @@
   <text x="490" y="42" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">agentic-stack — one brain, many harnesses</text>
   <text x="490" y="66" text-anchor="middle" font-size="13" fill="#475569">Memory + Skills + Protocols stay constant. Swap the harness; keep the knowledge.</text>
 
-  <!-- Harness row -->
+  <!-- Harness row: 9 adapters -->
   <g transform="translate(40,100)">
-    <text x="0" y="-8" font-size="12" font-weight="600" fill="#334155">HARNESSES (adapters)</text>
-    <g font-size="12" fill="#0f172a">
+    <text x="0" y="-8" font-size="12" font-weight="600" fill="#334155">HARNESSES (9 adapters)</text>
+    <g font-size="11" fill="#0f172a">
       <g transform="translate(0,0)">
-        <rect width="130" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="65" y="20" text-anchor="middle" font-weight="600">Claude Code</text>
-        <text x="65" y="37" text-anchor="middle" font-size="10" fill="#64748b">CLAUDE.md + hooks</text>
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">Claude Code</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">CLAUDE.md + hooks</text>
       </g>
-      <g transform="translate(140,0)">
-        <rect width="130" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="65" y="20" text-anchor="middle" font-weight="600">Cursor</text>
-        <text x="65" y="37" text-anchor="middle" font-size="10" fill="#64748b">.cursor/rules/*.mdc</text>
+      <g transform="translate(101,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">Cursor</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">.cursor/rules</text>
       </g>
-      <g transform="translate(280,0)">
-        <rect width="130" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="65" y="20" text-anchor="middle" font-weight="600">Windsurf</text>
-        <text x="65" y="37" text-anchor="middle" font-size="10" fill="#64748b">.windsurfrules</text>
+      <g transform="translate(202,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">Windsurf</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">.windsurfrules</text>
       </g>
-      <g transform="translate(420,0)">
-        <rect width="130" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="65" y="20" text-anchor="middle" font-weight="600">OpenCode</text>
-        <text x="65" y="37" text-anchor="middle" font-size="10" fill="#64748b">AGENTS.md + config</text>
+      <g transform="translate(303,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">OpenCode</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">AGENTS.md + cfg</text>
       </g>
-      <g transform="translate(560,0)">
-        <rect width="130" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="65" y="20" text-anchor="middle" font-weight="600">OpenClaw</text>
-        <text x="65" y="37" text-anchor="middle" font-size="10" fill="#64748b">system prompt</text>
+      <g transform="translate(404,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">OpenClaw</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">system prompt</text>
       </g>
-      <g transform="translate(700,0)">
-        <rect width="130" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="65" y="20" text-anchor="middle" font-weight="600">Hermes</text>
-        <text x="65" y="37" text-anchor="middle" font-size="10" fill="#64748b">AGENTS.md</text>
+      <g transform="translate(505,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">Hermes</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">AGENTS.md</text>
       </g>
-      <g transform="translate(840,0)">
-        <rect width="60" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="30" y="20" text-anchor="middle" font-weight="600">DIY</text>
-        <text x="30" y="37" text-anchor="middle" font-size="10" fill="#64748b">Python</text>
+      <g transform="translate(606,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">Pi</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">.pi/skills symlink</text>
+      </g>
+      <g transform="translate(707,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">Standalone</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">run.py</text>
+      </g>
+      <g transform="translate(808,0)">
+        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="46" y="20" text-anchor="middle" font-weight="600">Antigravity</text>
+        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">ANTIGRAVITY.md</text>
       </g>
     </g>
   </g>
 
-  <!-- Arrows down to brain -->
+  <!-- Arrows down to brain (9 of them) -->
   <g stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#arr)">
-    <path d="M105,160 L300,210"/>
-    <path d="M245,160 L340,210"/>
-    <path d="M385,160 L420,210"/>
-    <path d="M525,160 L500,210"/>
-    <path d="M665,160 L560,210"/>
-    <path d="M805,160 L640,210"/>
-    <path d="M905,160 L680,210"/>
+    <path d="M86,160 L242,215"/>
+    <path d="M187,160 L304,215"/>
+    <path d="M288,160 L366,215"/>
+    <path d="M389,160 L428,215"/>
+    <path d="M490,160 L490,215"/>
+    <path d="M591,160 L552,215"/>
+    <path d="M692,160 L614,215"/>
+    <path d="M793,160 L676,215"/>
+    <path d="M894,160 L738,215"/>
   </g>
 
   <!-- Brain box -->
@@ -78,13 +90,14 @@
       <text x="90" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="#fbbf24">MEMORY</text>
       <g font-size="11" fill="#cbd5e1">
         <text x="14" y="50">working/ — live task state</text>
-        <text x="14" y="78">episodic/ — what happened</text>
-        <text x="14" y="106">semantic/ — distilled lessons</text>
-        <text x="14" y="134">personal/ — user conventions</text>
-        <text x="14" y="175" font-size="10" fill="#94a3b8">auto_dream.py nightly:</text>
-        <text x="14" y="191" font-size="10" fill="#94a3b8">  promote · decay · archive</text>
-        <text x="14" y="225" font-size="10" fill="#64748b">salience = recency × pain</text>
-        <text x="14" y="239" font-size="10" fill="#64748b">         × importance × rec.</text>
+        <text x="14" y="68">episodic/ — rich reflections</text>
+        <text x="14" y="86">semantic/ — distilled lessons</text>
+        <text x="14" y="104">personal/ — user conventions</text>
+        <text x="14" y="140" font-size="10" fill="#94a3b8">auto_dream.py nightly:</text>
+        <text x="14" y="156" font-size="10" fill="#94a3b8">  promote · decay · archive</text>
+        <text x="14" y="185" font-size="10" fill="#94a3b8">learn / recall / show (v0.7+)</text>
+        <text x="14" y="218" font-size="10" fill="#64748b">salience = recency × pain</text>
+        <text x="14" y="232" font-size="10" fill="#64748b">         × importance × rec.</text>
       </g>
     </g>
 
@@ -113,13 +126,14 @@
       <g font-size="11" fill="#cbd5e1">
         <text x="14" y="50">permissions.md</text>
         <text x="14" y="68">delegation.md</text>
-        <text x="14" y="96">tool_schemas/</text>
-        <text x="14" y="114">  github.schema.json</text>
-        <text x="14" y="132">  shell.schema.json</text>
-        <text x="14" y="150">  api.schema.json</text>
-        <text x="14" y="195" font-size="10" fill="#94a3b8">pre_tool_call hook:</text>
-        <text x="14" y="211" font-size="10" fill="#94a3b8">  allow · deny · approval</text>
-        <text x="14" y="239" font-size="10" fill="#64748b">blocked means blocked</text>
+        <text x="14" y="86">hook_patterns.json</text>
+        <text x="14" y="104" font-size="10" fill="#94a3b8">  tune YOUR stack (v0.8+)</text>
+        <text x="14" y="132">tool_schemas/</text>
+        <text x="14" y="150">  github.schema.json</text>
+        <text x="14" y="168">  shell.schema.json</text>
+        <text x="14" y="186">  api.schema.json</text>
+        <text x="14" y="215" font-size="10" fill="#94a3b8">pre_tool_call hook:</text>
+        <text x="14" y="231" font-size="10" fill="#94a3b8">  allow · deny · approval</text>
       </g>
     </g>
   </g>
