@@ -3,11 +3,11 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Bash|Edit|Write",
+        "matcher": "Bash|Edit|MultiEdit|Write|Task|TodoWrite",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .agent/tools/memory_reflect.py claude-code post-tool ok"
+            "command": "python3 .agent/harness/hooks/claude_code_post_tool.py"
           }
         ]
       }
