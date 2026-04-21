@@ -33,6 +33,16 @@ def _count_recent_failures(skill_name):
 
 def on_failure(skill_name, action, error, context="", confidence=0.9,
                evidence_ids=None):
+    # Format reflection without the noisy `type(error).__name__:` prefix
+    # when the caller passes a pre-formatted string (the common case for
+    # hook callers). Only include the type name for actual Exception objects
+    # where it carries diagnostic value.
+    if isinstance(error, Exception):
+        _refl = (f"FAILURE in {skill_name}: {type(error).__name__}: "
+                 f"{str(error)[:200]}")
+    else:
+        _refl = f"FAILURE in {skill_name}: {str(error)[:200]}"
+
     entry = {
         "timestamp": datetime.datetime.now().isoformat(),
         "skill": skill_name,
@@ -41,8 +51,7 @@ def on_failure(skill_name, action, error, context="", confidence=0.9,
         "detail": str(error)[:500],
         "pain_score": 8,
         "importance": 7,
-        "reflection": f"FAILURE in {skill_name}: {type(error).__name__}: "
-                      f"{str(error)[:200]}",
+        "reflection": _refl,
         "context": context[:300],
         "confidence": confidence,
         "source": build_source(skill_name),
