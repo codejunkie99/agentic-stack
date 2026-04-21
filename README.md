@@ -223,6 +223,36 @@ Falls back to **ripgrep** (`rg`) if installed, then to `grep` — both
 restricted to `.md` / `.jsonl` so source files never pollute results.
 The index is stored at `.agent/memory/.index/` and gitignored.
 
+## YantrikDB memory backend `[BETA]`
+
+Opt-in layer that mirrors `.agent/memory/` into a
+[yantrikdb](https://github.com/yantrikos/yantrikdb) server for
+multi-signal recall (vector × decay × importance × graph ×
+retrieval-feedback), contradiction detection, and `reflect()` composition.
+Filesystem stays authoritative — markdown is still your canonical,
+git-diffable source of truth.
+
+```bash
+# enable during onboarding, then install the optional client
+pip install 'yantrikdb-client[embed]>=0.2.1'
+
+# first sync (incremental on subsequent runs)
+python3 .agent/memory/yantrikdb_sync.py
+
+# multi-signal recall
+python3 .agent/tools/yantrikdb_recall.py "postgres migration idempotency"
+
+# structured reflection ready for agent system-prompt injection
+python3 .agent/tools/yantrikdb_reflect.py "task: refactor auth flow" --bare
+```
+
+The reflect tool emits a validated **memory-router seed prompt** that
+teaches the agent to treat retrieved memories as scoped procedure
+controllers — upstream research showed 27% HURT → 93% RESCUE at small-
+LLM scale when this framing is added. See
+[`docs/yantrikdb.md`](docs/yantrikdb.md) for setup, namespaces, env
+vars, and the architecture diagram.
+
 ## Repo layout
 
 ```
@@ -236,7 +266,8 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 │   ├── validate.py             # heuristic prefilter (length + exact duplicate)
 │   ├── review_state.py         # candidate lifecycle + decision log
 │   ├── render_lessons.py       # lessons.jsonl → LESSONS.md
-│   └── memory_search.py        # [BETA] FTS5 search (opt-in)
+│   ├── memory_search.py        # [BETA] FTS5 search (opt-in)
+│   └── yantrikdb_sync.py       # [BETA] mirror to yantrikdb (opt-in)
 ├── skills/                     # _index.md + _manifest.jsonl + SKILL.md files
 ├── protocols/                  # permissions + tool schemas + delegation
 └── tools/                      # host-agent CLI + memory_reflect + skill_loader
@@ -246,7 +277,9 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py
-    └── reopen.py
+    ├── reopen.py
+    ├── yantrikdb_recall.py      # [BETA] multi-signal recall via yantrikdb
+    └── yantrikdb_reflect.py     # [BETA] typed meta-state + router seed prompt
 
 adapters/                       # one small shim per harness
 ├── claude-code/   (CLAUDE.md + settings.json hooks)
