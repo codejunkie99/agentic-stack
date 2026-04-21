@@ -51,13 +51,26 @@ switch ($Adapter) {
     'claude-code' {
         Copy-Item (Join-Path $Src 'CLAUDE.md') (Join-Path $TargetDir 'CLAUDE.md') -Force
         $claudeDir = Join-Path $TargetDir '.claude'
-        New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $claudeDir 'commands') -Force | Out-Null
         Copy-Item (Join-Path $Src 'settings.json') (Join-Path $claudeDir 'settings.json') -Force
+        Copy-Item (Join-Path $Src '.claude/commands/tldraw.md') (Join-Path $claudeDir 'commands/tldraw.md') -Force
+        $mcpDst = Join-Path $TargetDir '.mcp.json'
+        if (-not (Test-Path $mcpDst)) {
+            Copy-Item (Join-Path $Src '.mcp.json') $mcpDst -Force
+        } else {
+            Write-Host "  ~ $mcpDst already exists - merge tldraw from adapters/_shared/tldraw-mcp.json manually"
+        }
     }
     'cursor' {
         $rulesDir = Join-Path $TargetDir '.cursor/rules'
         New-Item -ItemType Directory -Path $rulesDir -Force | Out-Null
         Copy-Item (Join-Path $Src '.cursor/rules/agentic-stack.mdc') (Join-Path $rulesDir 'agentic-stack.mdc') -Force
+        $cursorMcp = Join-Path $TargetDir '.cursor/mcp.json'
+        if (-not (Test-Path $cursorMcp)) {
+            Copy-Item (Join-Path $Src '.cursor/mcp.json') $cursorMcp -Force
+        } else {
+            Write-Host "  ~ $cursorMcp already exists - merge tldraw from adapters/_shared/tldraw-mcp.json manually"
+        }
     }
     'windsurf' {
         Copy-Item (Join-Path $Src '.windsurfrules') (Join-Path $TargetDir '.windsurfrules') -Force
@@ -77,6 +90,12 @@ switch ($Adapter) {
     }
     'antigravity' {
         Copy-Item (Join-Path $Src 'ANTIGRAVITY.md') (Join-Path $TargetDir 'ANTIGRAVITY.md') -Force
+        $mcpDst = Join-Path $TargetDir '.mcp.json'
+        if (-not (Test-Path $mcpDst)) {
+            Copy-Item (Join-Path $Src '.mcp.json') $mcpDst -Force
+        } else {
+            Write-Host "  ~ $mcpDst already exists - merge tldraw from adapters/_shared/tldraw-mcp.json manually"
+        }
     }
 }
 
