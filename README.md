@@ -28,7 +28,7 @@ brew install agentic-stack
 # drop the brain into any project — the onboarding wizard runs automatically
 cd your-project
 agentic-stack claude-code
-# or: cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python
+# or: cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python | antigravity
 ```
 
 ### Windows (PowerShell)
@@ -52,7 +52,7 @@ brew update && brew upgrade agentic-stack
 git clone https://github.com/codejunkie99/agentic-stack.git
 cd agentic-stack && ./install.sh claude-code         # mac / linux / git-bash
 # or on Windows PowerShell: .\install.ps1 claude-code
-# adapters: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python
+# adapters: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python | antigravity
 ```
 
 ## Onboarding wizard
@@ -154,9 +154,9 @@ harnesses.
   - `show.py` — colorful dashboard of brain state (episodes, candidates,
     lessons, failing skills, 14d activity sparkline). `--json` / `--plain`
     / `NO_COLOR` flags.
-- **Adapter wiring for recall across all 8 harnesses.** Every adapter
+- **Adapter wiring for recall across all harnesses.** Every adapter
   (`claude-code`, `cursor`, `windsurf`, `opencode`, `openclaw`, `hermes`,
-  `pi`, `standalone-python`) now instructs the model to run
+  `pi`, `standalone-python`, `antigravity`) now instructs the model to run
   `recall.py "<intent>"` before deploy / migration / timestamp / debug /
   refactor work, and to surface results in a `Consulted lessons before
   acting:` block.
@@ -256,7 +256,8 @@ adapters/                       # one small shim per harness
 ├── openclaw/      (system-prompt include)
 ├── hermes/        (AGENTS.md)
 ├── pi/            (AGENTS.md + .pi/skills symlink)
-└── standalone-python/  (DIY conductor entrypoint)
+├── standalone-python/  (DIY conductor entrypoint)
+└── antigravity/   (ANTIGRAVITY.md)
 
 docs/                           # architecture, getting-started, per-harness
 install.sh                      # mac / linux / git-bash installer
@@ -281,6 +282,7 @@ onboard_write.py                # atomic file write with backup
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
 | **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` | no (extension system) |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
+| **Antigravity** | `ANTIGRAVITY.md` | yes (system context) |
 
 ## Seed skills
 
