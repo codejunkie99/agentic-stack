@@ -144,6 +144,9 @@ case "$ADAPTER" in
       cp -R "$SKILLS_SRC" "$TARGET/.pi/skills"
       echo "  + .pi/skills (copy; symlink not supported here)"
     fi
+    mkdir -p "$TARGET/.pi/extensions"
+    cp "$SRC/memory-hook.ts" "$TARGET/.pi/extensions/memory-hook.ts"
+    echo "  + .pi/extensions/memory-hook.ts"
     ;;
   standalone-python)
     cp "$SRC/run.py" "$TARGET/run.py"
