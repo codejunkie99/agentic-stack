@@ -59,7 +59,67 @@ case "$ADAPTER" in
     cp "$SRC/opencode.json" "$TARGET/opencode.json"
     ;;
   openclaw)
+    # 1. Backward-compat: drop the system-prompt include for users on older
+    #    OpenClaw flows that require pasting or --system-prompt-file.
     cp "$SRC/config.md" "$TARGET/.openclaw-system.md"
+    echo "  + .openclaw-system.md (system-prompt include; backward compat)"
+
+    # 2. OpenClaw auto-injects AGENTS.md from the workspace root. Drop it
+    #    safely, the same way pi does — don't stomp an existing AGENTS.md
+    #    (codex/aider/amp/cline all use this filename).
+    if [[ -f "$TARGET/AGENTS.md" ]]; then
+      if grep -q '\.agent/' "$TARGET/AGENTS.md" 2>/dev/null; then
+        echo "  ~ AGENTS.md already references .agent/ — leaving alone"
+      else
+        echo "  ! AGENTS.md exists but does not reference .agent/; not overwriting."
+        echo "    merge this block into your AGENTS.md to wire the brain:"
+        echo "    ---8<---"
+        sed 's/^/    /' "$SRC/AGENTS.md"
+        echo "    --->8---"
+      fi
+    else
+      cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
+      echo "  + AGENTS.md (auto-injected by OpenClaw from the workspace root)"
+    fi
+
+    # 3. Register a project-scoped OpenClaw agent whose workspace IS this
+    #    project. Without this, OpenClaw's workspace defaults to
+    #    ~/.openclaw/workspace and never sees the .agent/ brain.
+    OC_ABS="$(cd "$TARGET" && pwd)"
+    OC_BN_RAW="$(basename "$OC_ABS")"
+    # lowercase first (OpenClaw normalizes agent ids to lowercase), then
+    # sanitize to [a-z0-9._-], collapse dashes, trim
+    OC_BN_SAFE="$(printf '%s' "$OC_BN_RAW" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')"
+    [[ -z "$OC_BN_SAFE" ]] && OC_BN_SAFE="project"
+    # 6-digit stable suffix from absolute path so cross-project collisions
+    # (api, backend, app, website) resolve to distinct agent names
+    OC_PATH_CKSUM="$(printf '%s' "$OC_ABS" | cksum | awk '{print $1}')"
+    OC_AGENT_NAME="${OC_BN_SAFE}-$(printf '%06d' "$((OC_PATH_CKSUM % 1000000))")"
+
+    if command -v openclaw >/dev/null 2>&1; then
+      echo "  → registering OpenClaw agent '$OC_AGENT_NAME' (workspace: $OC_ABS)"
+      # capture stdout+stderr and rc without tripping set -e
+      OC_RC=0
+      OC_OUT="$(openclaw agents add "$OC_AGENT_NAME" --workspace "$OC_ABS" 2>&1)" || OC_RC=$?
+      printf '%s\n' "$OC_OUT" | sed 's/^/    /'
+      if [[ $OC_RC -eq 0 ]]; then
+        echo "  ✓ registered. run from anywhere: openclaw --agent $OC_AGENT_NAME"
+      elif printf '%s' "$OC_OUT" | grep -qi "already exists"; then
+        echo "  ✓ already registered (idempotent re-run). run: openclaw --agent $OC_AGENT_NAME"
+      else
+        echo "  ! 'openclaw agents add' failed (details above)."
+        echo "    if your OpenClaw fork does not support 'agents add --workspace',"
+        echo "    fall back to the system-prompt include we wrote:"
+        echo "      openclaw --system-prompt-file \"$OC_ABS/.openclaw-system.md\""
+        echo "    otherwise retry: openclaw agents add \"$OC_AGENT_NAME\" --workspace \"$OC_ABS\""
+      fi
+    else
+      echo "  ! 'openclaw' CLI not found on PATH. after installing OpenClaw, try:"
+      echo "      openclaw agents add \"$OC_AGENT_NAME\" --workspace \"$OC_ABS\""
+      echo "      openclaw --agent $OC_AGENT_NAME"
+      echo "    or, on forks without 'agents add', use the system-prompt include:"
+      echo "      openclaw --system-prompt-file \"$OC_ABS/.openclaw-system.md\""
+    fi
     ;;
   hermes)
     cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
