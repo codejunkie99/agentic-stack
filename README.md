@@ -224,7 +224,7 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |
 | **OpenClaw** | `AGENTS.md` (auto-injected) + per-project `openclaw agents add --workspace` | varies by fork |
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
-| **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` | no (extension system) |
+| **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` + `.pi/extensions/` | yes (`tool_result` event) |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
 | **Antigravity** | `ANTIGRAVITY.md` | yes (system context) |
 
