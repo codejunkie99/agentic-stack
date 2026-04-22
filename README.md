@@ -194,7 +194,7 @@ adapters/                       # one small shim per harness
 ├── cursor/        (.cursor/rules/*.mdc)
 ├── windsurf/      (.windsurfrules)
 ├── opencode/      (AGENTS.md + opencode.json)
-├── openclaw/      (system-prompt include)
+├── openclaw/      (AGENTS.md + system-prompt include; auto-registers per-project agent)
 ├── hermes/        (AGENTS.md)
 ├── pi/            (AGENTS.md + .pi/skills symlink)
 ├── standalone-python/  (DIY conductor entrypoint)
