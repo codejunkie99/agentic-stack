@@ -107,13 +107,18 @@ case "$ADAPTER" in
       elif printf '%s' "$OC_OUT" | grep -qi "already exists"; then
         echo "  ✓ already registered (idempotent re-run). run: openclaw --agent $OC_AGENT_NAME"
       else
-        echo "  ! 'openclaw agents add' failed (details above). retry manually:"
-        echo "      openclaw agents add \"$OC_AGENT_NAME\" --workspace \"$OC_ABS\""
+        echo "  ! 'openclaw agents add' failed (details above)."
+        echo "    if your OpenClaw fork does not support 'agents add --workspace',"
+        echo "    fall back to the system-prompt include we wrote:"
+        echo "      openclaw --system-prompt-file \"$OC_ABS/.openclaw-system.md\""
+        echo "    otherwise retry: openclaw agents add \"$OC_AGENT_NAME\" --workspace \"$OC_ABS\""
       fi
     else
-      echo "  ! 'openclaw' CLI not found on PATH. after installing OpenClaw, run:"
+      echo "  ! 'openclaw' CLI not found on PATH. after installing OpenClaw, try:"
       echo "      openclaw agents add \"$OC_AGENT_NAME\" --workspace \"$OC_ABS\""
-      echo "    then: openclaw --agent $OC_AGENT_NAME"
+      echo "      openclaw --agent $OC_AGENT_NAME"
+      echo "    or, on forks without 'agents add', use the system-prompt include:"
+      echo "      openclaw --system-prompt-file \"$OC_ABS/.openclaw-system.md\""
     fi
     ;;
   hermes)

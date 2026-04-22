@@ -117,18 +117,24 @@ switch ($Adapter) {
                 } elseif ($ocOutJoined -match '(?i)already exists') {
                     Write-Host "  ✓ already registered (idempotent re-run). run: openclaw --agent $ocAgentName"
                 } else {
-                    Write-Host "  ! 'openclaw agents add' failed (details above). retry manually:"
-                    Write-Host "      openclaw agents add `"$ocAgentName`" --workspace `"$ocAbs`""
+                    Write-Host "  ! 'openclaw agents add' failed (details above)."
+                    Write-Host "    if your OpenClaw fork does not support 'agents add --workspace',"
+                    Write-Host "    fall back to the system-prompt include we wrote:"
+                    Write-Host "      openclaw --system-prompt-file `"$ocAbs\.openclaw-system.md`""
+                    Write-Host "    otherwise retry: openclaw agents add `"$ocAgentName`" --workspace `"$ocAbs`""
                 }
             } catch {
                 Write-Host "  ! 'openclaw agents add' errored: $_"
-                Write-Host "    retry manually:"
-                Write-Host "      openclaw agents add `"$ocAgentName`" --workspace `"$ocAbs`""
+                Write-Host "    fall back to the system-prompt include:"
+                Write-Host "      openclaw --system-prompt-file `"$ocAbs\.openclaw-system.md`""
+                Write-Host "    or retry: openclaw agents add `"$ocAgentName`" --workspace `"$ocAbs`""
             }
         } else {
-            Write-Host "  ! 'openclaw' CLI not found on PATH. after installing OpenClaw, run:"
+            Write-Host "  ! 'openclaw' CLI not found on PATH. after installing OpenClaw, try:"
             Write-Host "      openclaw agents add `"$ocAgentName`" --workspace `"$ocAbs`""
-            Write-Host "    then: openclaw --agent $ocAgentName"
+            Write-Host "      openclaw --agent $ocAgentName"
+            Write-Host "    or, on forks without 'agents add', use the system-prompt include:"
+            Write-Host "      openclaw --system-prompt-file `"$ocAbs\.openclaw-system.md`""
         }
     }
     'hermes' {
