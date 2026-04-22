@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh — copy an adapter into the consuming project, then run the onboarding wizard
 # Usage: ./install.sh <adapter-name> [target-dir] [--yes] [--reconfigure]
-#   adapter-name:  claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python | antigravity
+#   adapter-name:  claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
 #   target-dir:    where your project lives (default: current dir)
 #   --yes          accept all wizard defaults without prompting (safe for CI)
 #   --reconfigure  re-run the wizard even if PREFERENCES.md is already filled
@@ -13,7 +13,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 
 if [[ -z "$ADAPTER" ]]; then
   echo "usage: $0 <adapter-name> [target-dir]" >&2
-  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi standalone-python antigravity" >&2
+  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi codex standalone-python antigravity" >&2
   exit 2
 fi
 
@@ -83,6 +83,31 @@ case "$ADAPTER" in
       rm -rf "$TARGET/.pi/skills"
       cp -R "$SKILLS_SRC" "$TARGET/.pi/skills"
       echo "  + .pi/skills (copy; symlink not supported here)"
+    fi
+    ;;
+  codex)
+    # codex, pi, hermes, and opencode can all read the same AGENTS.md
+    if [[ -f "$TARGET/AGENTS.md" ]]; then
+      echo "  ~ $TARGET/AGENTS.md already exists — skipping (codex reads whatever is there)"
+    else
+      cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
+      echo "  + AGENTS.md"
+    fi
+    mkdir -p "$TARGET/.agents"
+    SKILLS_SRC="$(cd "$TARGET/.agent/skills" && pwd)"
+    SKILLS_DEST="$TARGET/.agents/skills"
+    if [[ -L "$SKILLS_DEST" ]]; then
+      ln -sfn "$SKILLS_SRC" "$SKILLS_DEST"
+      echo "  + .agents/skills -> $SKILLS_SRC"
+    elif [[ -d "$SKILLS_DEST" ]]; then
+      cp -R "$SKILLS_SRC/." "$SKILLS_DEST/"
+      echo "  ~ merged .agent/skills into existing .agents/skills"
+    elif ln -sfn "$SKILLS_SRC" "$SKILLS_DEST" 2>/dev/null; then
+      echo "  + .agents/skills -> $SKILLS_SRC"
+    else
+      mkdir -p "$SKILLS_DEST"
+      cp -R "$SKILLS_SRC/." "$SKILLS_DEST/"
+      echo "  + .agents/skills (copy; symlink not supported here)"
     fi
     ;;
   standalone-python)

@@ -1,6 +1,6 @@
 # install.ps1 — Windows PowerShell installer (parallel to install.sh)
 # Usage:  .\install.ps1 <adapter-name> [target-dir] [-Yes] [-Reconfigure] [-Force]
-#   adapter-name: claude-code | cursor | windsurf | opencode | openclaw | hermes | standalone-python | antigravity
+#   adapter-name: claude-code | cursor | windsurf | opencode | openclaw | hermes | codex | standalone-python | antigravity
 #   target-dir:   where your project lives (default: current dir)
 #   -Yes          accept all wizard defaults (safe for CI)
 #   -Reconfigure  re-run the wizard on an existing project
@@ -24,7 +24,7 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $ValidAdapters = @(
     'claude-code', 'cursor', 'windsurf',
-    'opencode', 'openclaw', 'hermes',
+    'opencode', 'openclaw', 'hermes', 'codex',
     'standalone-python', 'antigravity'
 )
 if ($Adapter -notin $ValidAdapters) {
@@ -71,6 +71,33 @@ switch ($Adapter) {
     }
     'hermes' {
         Copy-Item (Join-Path $Src 'AGENTS.md') (Join-Path $TargetDir 'AGENTS.md') -Force
+    }
+    'codex' {
+        $agentsMd = Join-Path $TargetDir 'AGENTS.md'
+        if (Test-Path $agentsMd -PathType Leaf) {
+            Write-Host "  ~ $agentsMd already exists — skipping (codex reads whatever is there)"
+        } else {
+            Copy-Item (Join-Path $Src 'AGENTS.md') $agentsMd -Force
+            Write-Host "  + AGENTS.md"
+        }
+
+        $agentsDir = Join-Path $TargetDir '.agents'
+        New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
+        $skillsSrc = Join-Path $TargetAgent 'skills'
+        $skillsDst = Join-Path $agentsDir 'skills'
+
+        if (Test-Path $skillsDst) {
+            Copy-Item -Path (Join-Path $skillsSrc '*') -Destination $skillsDst -Recurse -Force
+            Write-Host "  ~ merged .agent/skills into existing .agents/skills"
+        } else {
+            try {
+                New-Item -ItemType SymbolicLink -Path $skillsDst -Target $skillsSrc -ErrorAction Stop | Out-Null
+                Write-Host "  + .agents/skills -> $skillsSrc"
+            } catch {
+                Copy-Item -Path $skillsSrc -Destination $skillsDst -Recurse
+                Write-Host "  + .agents/skills (copy; symlink not supported here)"
+            }
+        }
     }
     'standalone-python' {
         Copy-Item (Join-Path $Src 'run.py') (Join-Path $TargetDir 'run.py') -Force
