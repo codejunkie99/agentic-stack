@@ -63,9 +63,32 @@ works at any context-window size.
   constraints + self-rewrite hook). Loaded only on trigger match.
 
 ### Module 4: Protocols — deterministic enforcement
-<!-- TODO (Pulkit): the KEY property of the protocol layer is that it's enforced
-     architecturally, not by model judgment. Capture in 2 sentences why that
-     matters. What specifically runs, and when? -->
+**Key property:** protocols are enforced architecturally, not by model judgment.
+Hooks are deterministic Python that run in the harness *before* (and *after*)
+every tool call — independent of what the model decides.
+
+**What runs, when:**
+- `pre_tool_call.py` — **before** any tool call. Reads `tool_schemas/<tool>.schema.json`
+  (checks `blocked_targets`, `requires_approval`) and `permissions.md`
+  (keyword-matches `## Never allowed` rules). Returns `allowed` / `approval_needed`
+  / blocked — blocked calls never execute.
+- `post_execution.py` — **after** every action. Appends a structured entry to
+  `episodic/AGENT_LEARNINGS.jsonl` with `importance`, `pain_score`, `reflection`,
+  `source`.
+- `on_failure.py` — **on failure**. Scores pain + counts recent failures; fires
+  the skill-rewrite flag after 3 failures in 14 days.
+- `claude_code_post_tool.py` — v0.8.0 Claude Code PostToolUse hook. Parses
+  Claude Code's JSON payload, scores `importance` by domain (deploy/migrate = 9,
+  edit = 5…) using universal + user-configurable patterns (`hook_patterns.json`),
+  detects wrapper-masked failures (`|| true`), writes reflections the dream
+  cycle can cluster on.
+
+**Why it matters.** Architectural enforcement lets me make a safety claim that
+holds regardless of how the agent gets used — "the system cannot force-push to
+protected branches, cannot hit non-approved domains, cannot delete outside
+`memory/working/`." Advisory rules in `CLAUDE.md` can only claim "the model
+usually respects this." On a live BCG engagement, only the first claim survives
+a risk review.
 
 ### Module 5: Tools — the review surface
 <!-- TODO (Pulkit): why does graduate.py require --rationale? What failure mode
@@ -90,10 +113,12 @@ repo module by module. Established fork at github.com/pulkittalwar/agentic-stack
 Created this file using gbrain compiled-truth + timeline format. Planned 10-step
 buildout toward a PDLC-SDLC team in Claude Code (see plan file).
 
-### 2026-04-22 — Modules 1–3 filled
-Filled Modules 1 (AGENTS.md), 2 (memory four layers — what-question + who-writes
-dual lens), and 3 (skills / progressive disclosure — token + cache economics)
-via Socratic Q&A in Claude Code. Modules 4–7 remain TODO. v0.8.0 baseline merged
+### 2026-04-22 — Modules 1–4 filled
+Filled Modules 1 (AGENTS.md as harness-agnostic map + constitution),
+2 (memory four layers — what-question + who-writes dual lens),
+3 (skills / progressive disclosure — token + cache economics), and
+4 (protocols — deterministic enforcement, architectural claim vs. advisory) via
+Socratic Q&A in Claude Code. Modules 5–7 remain TODO. v0.8.0 baseline merged
 from upstream; D1/D2/D3 locked (single fork + gitignored `memory/client/<id>/`;
 hybrid core + `adapters/bcg/`; all four deliverables — Phase 3 non-optional).
 
