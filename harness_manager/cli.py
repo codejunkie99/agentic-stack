@@ -19,7 +19,7 @@ from . import status as status_mod
 from . import __version__
 
 
-VERBS = {"add", "remove", "doctor", "status"}
+VERBS = {"add", "remove", "doctor", "status", "manage"}
 
 
 def _stack_root() -> Path:
@@ -163,6 +163,23 @@ def cmd_status(target: Path) -> int:
     return status_mod.show(target_root=target)
 
 
+def cmd_manage(target: Path) -> int:
+    """Open the persistent TUI menu for ongoing adapter management."""
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        print(
+            "error: manage is an interactive TUI; this shell is not a TTY.\n"
+            "use the verb-style subcommands instead:\n"
+            "  ./install.sh add <adapter>\n"
+            "  ./install.sh remove <adapter>\n"
+            "  ./install.sh doctor\n"
+            "  ./install.sh status",
+            file=sys.stderr,
+        )
+        return 2
+    from . import manage_tui
+    return manage_tui.run(target_root=target, stack_root=_stack_root())
+
+
 def cmd_bare(target: Path) -> int:
     """`./install.sh` with no args.
 
@@ -178,6 +195,8 @@ def cmd_bare(target: Path) -> int:
         print("  ./install.sh doctor      # audit")
         print("  ./install.sh status      # quick read-only view")
         print("  ./install.sh add <name>  # install another adapter")
+        print("  ./install.sh remove <name>  # remove an adapter (with confirm)")
+        print("  ./install.sh manage      # interactive TUI for everything")
         return 2
 
     installed = set(doc.get("adapters", {}).keys())
@@ -253,6 +272,9 @@ def main(argv: list[str] | None = None) -> int:
         if verb == "status":
             target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
             return cmd_status(target)
+        if verb == "manage":
+            target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
+            return cmd_manage(target)
 
     # Treat as adapter name (existing UX)
     adapter = first
