@@ -6,7 +6,7 @@ triggers: ["implementation plan", "break this down", "plan this feature", "task 
 tools: [recall, git, bash]
 sources:
   superpowers: writing-plans (primary)
-  gstack: autoplan (reference — not pulled in v1)
+  gstack: autoplan (6 decision principles + decision classification)
 preconditions: ["spec or requirements written down somewhere"]
 constraints:
   - no TBD/TODO placeholders in plan body
@@ -44,6 +44,22 @@ The planner turns a spec into a sequence of bite-sized tasks an engineer with ze
 - **Undefined names:** a method `clearLayers()` in Task 3 and `clearFullLayers()` in Task 7 is a bug in the plan, not in the code.
 - **Run steps without expected output:** "Run the tests" is a trap. Every run step declares what success looks like.
 - **Coverage gaps:** every spec requirement maps to at least one task. Self-review catches misses.
+
+## Principles for in-plan decisions
+
+Writing a plan forces choices: which approach, what to include, what to defer. Apply these so choices don't stall the plan (from gstack `/autoplan`):
+
+1. **Choose completeness.** Pick the approach that covers more edge cases.
+2. **Boil lakes.** Fix everything in the blast radius (files modified + direct importers). Expansions inside blast radius AND < 1 day of effort (< 5 files, no new infra) go into the plan; larger ones get flagged, not silently absorbed.
+3. **Pragmatic.** If two options fix the same thing, pick the cleaner one in 5 seconds, not 5 minutes.
+4. **DRY.** Duplicates existing functionality? Reject and reuse.
+5. **Explicit over clever.** The 10-line obvious fix beats the 200-line abstraction. Optimize for a new contributor reading in 30 seconds.
+6. **Bias toward action.** Merge > review cycles > stale deliberation. Flag concerns, don't block.
+
+**Classify each decision** before writing it into the plan:
+- **Mechanical** — one right answer. Decide silently and write.
+- **Taste** — reasonable people disagree (close approaches, borderline scope, blast-radius ambiguity). Pick and note the tradeoff in the plan so the reader knows it was a judgment call.
+- **User challenge** — the plan would change what the user asked for (merge/split/add/remove features). Never decide silently. Surface at the pre-handoff review with: what they asked, what the plan suggests instead, why, what we might be missing, cost if we're wrong.
 
 ## Examples
 
