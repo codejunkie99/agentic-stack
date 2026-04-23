@@ -38,7 +38,12 @@ def remove(
         return 1
 
     entry = doc["adapters"][adapter_name]
+    # Only delete files we created. Files that pre-existed (e.g., the
+    # user's own AGENTS.md, settings.json, run.py) are tracked in
+    # files_overwritten and we leave them alone — destroying a user's
+    # pre-install file is exactly the kind of thing remove must NOT do.
     files_to_delete = list(entry.get("files_written", []))
+    files_to_preserve = list(entry.get("files_overwritten", []))
     skills_link = entry.get("skills_link")
     post_install_results = entry.get("post_install_results", [])
 
@@ -46,12 +51,18 @@ def remove(
     log("")
     log("the following files will be DELETED (no quarantine, no undo):")
     if not files_to_delete and not skills_link:
-        log("  (no files tracked — adapter entry will just be removed from install.json)")
+        log("  (no files tracked for cleanup — adapter entry will just be removed from install.json)")
     for f in files_to_delete:
         marker = "(missing)" if not (target_root / f).exists() else ""
         log(f"  - {f} {marker}".rstrip())
     if skills_link:
         log(f"  - {skills_link['dst']} (skills_link, will be unlinked/removed)")
+    if files_to_preserve:
+        log("")
+        log("the following files were modified by install but pre-existed in your project")
+        log("and will be PRESERVED (we never delete user-owned content):")
+        for f in files_to_preserve:
+            log(f"  ~ {f} (use git or your own backup to recover the original if needed)")
     log("")
 
     # Reverse post_install actions

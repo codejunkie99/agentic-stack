@@ -58,10 +58,15 @@ def _list_adapters() -> str:
     return ", ".join(names)
 
 
-def _maybe_run_onboard(target: Path, wizard_flags: list[str]) -> None:
+def _maybe_run_onboard(target: Path, wizard_flags: list[str]) -> int:
     """Run onboard.py against target after install (mirrors install.sh:249).
 
-    Skipped if onboard.py missing or python3 missing (mirror of bash check).
+    Returns the wizard's exit code so cmd_install can propagate failures
+    (Ctrl-C in the wizard, exception in onboard.py, etc.). Pre-v0.9.0
+    install.sh did `exec python3 onboard.py` so failures naturally
+    flowed up — this preserves that contract for CI / scripted users.
+
+    Returns 0 if onboard.py or python3 is missing (matches bash tip-and-skip).
     """
     onboard = _stack_root() / "onboard.py"
     if not onboard.is_file():
@@ -69,15 +74,23 @@ def _maybe_run_onboard(target: Path, wizard_flags: list[str]) -> None:
             f"tip: customize {target}/.agent/memory/personal/PREFERENCES.md "
             "with your conventions."
         )
-        return
+        return 0
     cmd = [sys.executable, str(onboard), str(target), *wizard_flags]
     try:
-        subprocess.run(cmd, check=False)
+        result = subprocess.run(cmd, check=False)
+        return result.returncode
     except FileNotFoundError:
         print(
             "tip: python3 not found — edit "
             ".agent/memory/personal/PREFERENCES.md manually."
         )
+        return 0
+    except KeyboardInterrupt:
+        # User Ctrl-C'd the wizard. Treat as a real failure so callers
+        # know the install is incomplete.
+        print()
+        print("onboarding cancelled by user; install state may be partial.")
+        return 130
 
 
 # ---- subcommands -----------------------------------------------------
@@ -91,8 +104,10 @@ def cmd_install(adapter_name: str, target: Path, wizard_flags: list[str]) -> int
         adapter_dir=_adapter_dir(adapter_name),
         stack_root=_stack_root(),
     )
-    _maybe_run_onboard(target, wizard_flags)
-    return 0
+    # Propagate the onboarding wizard's exit code: Ctrl-C, exception, or
+    # explicit failure inside onboard.py should fail the install command,
+    # matching the pre-v0.9.0 `exec python3 onboard.py` semantics.
+    return _maybe_run_onboard(target, wizard_flags)
 
 
 def cmd_add(adapter_name: str, target: Path) -> int:

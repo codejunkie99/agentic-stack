@@ -80,14 +80,44 @@ def _audit_adapter(
     """Returns (status, list_of_detail_lines)."""
     lines: list[str] = []
 
-    # Check tracked files exist
+    # Check all tracked files (both freshly-written and overwritten) still exist.
+    # Both categories matter for "is the adapter still wired" — only the
+    # remove-time semantics differ (overwritten files are user-owned and
+    # NOT deleted on remove).
     missing = []
-    for f in entry.get("files_written", []):
+    for f in entry.get("files_written", []) + entry.get("files_overwritten", []):
         if not (target_root / f).exists():
             missing.append(f)
     if missing:
         lines.append(f"missing files: {', '.join(missing)}")
         return RED, lines
+
+    status_overall = GREEN
+
+    # Files where install hit `merge_or_alert` and the existing file did
+    # NOT reference .agent/. The adapter is "installed" in the sense that
+    # we recorded the entry, but the brain is not actually wired until
+    # the user merges the snippet. Re-check current file content — they
+    # may have merged it since install. Yellow if still un-merged; green
+    # if they merged.
+    still_alerted = []
+    for f in entry.get("files_alerted", []):
+        p = target_root / f
+        if not p.is_file():
+            still_alerted.append(f"{f} (file missing entirely)")
+            continue
+        try:
+            content = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            still_alerted.append(f"{f} (unreadable)")
+            continue
+        if ".agent/" not in content:
+            still_alerted.append(f)
+    if still_alerted:
+        lines.append(
+            f"merge required: {', '.join(still_alerted)} — install printed a snippet to paste in"
+        )
+        status_overall = YELLOW
 
     # Check skills_link target exists
     sl = entry.get("skills_link")
@@ -102,7 +132,6 @@ def _audit_adapter(
             return RED, lines
 
     # Check post_install state
-    status_overall = GREEN
     for r in entry.get("post_install_results", []):
         action = r.get("action", "?")
         st = r.get("status", "?")
