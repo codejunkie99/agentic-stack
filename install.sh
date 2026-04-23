@@ -133,15 +133,31 @@ case "$ADAPTER" in
       echo "  + AGENTS.md"
     fi
     mkdir -p "$TARGET/.pi"
-    # symlink .pi/skills -> .agent/skills so pi sees the one true skill tree.
-    # ln -sfn atomically replaces an existing symlink; fall back to cp -R
-    # on filesystems that don't support symlinks (e.g. Windows without dev mode).
+    # Keep .pi/skills in sync with .agent/skills (the one true skill tree).
+    # Handle three shapes explicitly: `ln -sfn src dest` against a REAL
+    # directory silently creates `dest/<basename-of-src>` INSIDE the dir
+    # on macOS/Linux and exits 0, which would leave stale orphans forever.
+    # Check -L before -d so existing symlinks take the cheap repoint path,
+    # and reserve the rsync path for real dirs left from a prior copy
+    # fallback install.
     SKILLS_SRC="$(cd "$TARGET/.agent/skills" && pwd)"
-    if ln -sfn "$SKILLS_SRC" "$TARGET/.pi/skills" 2>/dev/null; then
+    SKILLS_DEST="$TARGET/.pi/skills"
+    if [[ -L "$SKILLS_DEST" ]]; then
+      ln -sfn "$SKILLS_SRC" "$SKILLS_DEST"
+      echo "  + .pi/skills -> $SKILLS_SRC"
+    elif [[ -d "$SKILLS_DEST" ]]; then
+      if command -v rsync >/dev/null 2>&1; then
+        rsync -a --delete "$SKILLS_SRC/" "$SKILLS_DEST/"
+        echo "  ~ synced .agent/skills → .pi/skills (rsync --delete)"
+      else
+        rm -rf "$SKILLS_DEST"
+        cp -R "$SKILLS_SRC" "$SKILLS_DEST"
+        echo "  ~ replaced .pi/skills with current .agent/skills (no rsync)"
+      fi
+    elif ln -sfn "$SKILLS_SRC" "$SKILLS_DEST" 2>/dev/null; then
       echo "  + .pi/skills -> $SKILLS_SRC"
     else
-      rm -rf "$TARGET/.pi/skills"
-      cp -R "$SKILLS_SRC" "$TARGET/.pi/skills"
+      cp -R "$SKILLS_SRC" "$SKILLS_DEST"
       echo "  + .pi/skills (copy; symlink not supported here)"
     fi
     ;;
