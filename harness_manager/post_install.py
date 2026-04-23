@@ -8,6 +8,8 @@ This is deliberately not a plugin DSL or arbitrary command runner. The
 codex review of the v1.0 vision plan flagged generalized run_command as
 DSL creep; named built-ins are the constrained alternative.
 """
+import hashlib
+import platform
 import re
 import shutil
 import string
@@ -64,14 +66,19 @@ def _posix_cksum(data: bytes) -> int:
 
 
 def _openclaw_agent_name(target_root: Path | str) -> str:
-    """Match the algorithm install.sh used pre-v0.9.0 for agent-name stability.
+    """Match whichever pre-v0.9.0 algorithm was used on this platform.
 
-    install.sh (PR #15):
-      OC_PATH_CKSUM="$(printf '%s' "$OC_ABS" | cksum | awk '{print $1}')"
-      OC_AGENT_NAME="${OC_BN_SAFE}-$(printf '%06d' "$((OC_PATH_CKSUM % 1000000))")"
+    The legacy install scripts used DIFFERENT hash functions per platform:
+      install.sh:    cksum(abs_path) % 1_000_000  →  6-digit decimal suffix
+      install.ps1:   sha1(abs_path)[:6]            →  6-hex-char suffix
 
-    We replicate exactly: lowercase basename + 6-digit cksum-mod-1M suffix.
-    Same name across re-runs and across pre-v0.9.0 → v0.9.0 upgrades.
+    Switching either platform to the other algorithm on v0.9.0 upgrade
+    would compute a different agent name → register a duplicate agent →
+    `remove` targets the new one and leaves the original orphaned in
+    ~/.openclaw/openclaw.json.
+
+    So: keep cksum on POSIX, SHA1 on Windows. The agent name is naturally
+    platform-locked anyway because absolute paths differ between OSes.
     """
     abs_target = _abs_target(target_root)
     bn_raw = abs_target.name.lower()
@@ -80,12 +87,17 @@ def _openclaw_agent_name(target_root: Path | str) -> str:
     # case range moot). Non-ASCII letters are intentionally NOT preserved.
     safe = "".join(c if c in _OPENCLAW_AGENT_NAME_ALLOWED else "-" for c in bn_raw)
     # Collapse runs of dashes (regex equivalent of `sed 's/-\{2,\}/-/g'`).
-    # str.replace("--", "-") is single-pass and would leave `a----b` as `a--b`.
     safe = re.sub(r"-{2,}", "-", safe).strip("-")
     if not safe:
         safe = "project"
-    suffix = _posix_cksum(str(abs_target).encode("utf-8")) % 1_000_000
-    return f"{safe}-{suffix:06d}"
+    abs_str = str(abs_target)
+    if platform.system() == "Windows":
+        # Match the legacy install.ps1: 6-hex-char prefix of SHA1.
+        suffix = hashlib.sha1(abs_str.encode("utf-8")).hexdigest()[:6]
+    else:
+        # Match the legacy install.sh: cksum mod 1M, zero-padded 6-digit.
+        suffix = f"{_posix_cksum(abs_str.encode('utf-8')) % 1_000_000:06d}"
+    return f"{safe}-{suffix}"
 
 
 def openclaw_register_workspace(target_root: Path | str, **_kwargs) -> dict:

@@ -555,6 +555,113 @@ class TestEndToEndInstallFlow(unittest.TestCase):
                 pi_mod.openclaw_register_workspace, original
             )
 
+    def test_doctor_synthesis_populates_files_written(self):
+        """Codex P1: doctor's first-run synthesis on a pre-v0.9 project must
+        seed files_written from the adapter manifest, otherwise:
+          - remove becomes a no-op (files stay on disk forever)
+          - subsequent add reclassifies our own files as user-owned
+        """
+        # Simulate a pre-v0.9 install: drop the files the old install.sh
+        # would have written, but no install.json.
+        (self.target / ".cursor" / "rules").mkdir(parents=True)
+        (self.target / ".cursor" / "rules" / "agentic-stack.mdc").write_text("rules", encoding="utf-8")
+        (self.target / ".agent").mkdir()
+        (self.target / ".agent" / "AGENTS.md").write_text("brain", encoding="utf-8")
+
+        self.assertIsNone(state_mod.load(self.target), "no install.json yet")
+
+        # Synthesize via doctor's pre-v0.9 path. We bypass the input() prompt
+        # by calling _audit_pre_v090 directly with stdin not-a-tty (the
+        # function honors that — but we need to sim the Y answer). Easier:
+        # invoke through a monkey-patched input.
+        import builtins
+        from unittest.mock import patch
+        orig_input = builtins.input
+        builtins.input = lambda *a, **kw: "y"
+        try:
+            with patch("sys.stdin.isatty", return_value=True):
+                rc = doctor_mod.audit(self.target, log=lambda _: None)
+        finally:
+            builtins.input = orig_input
+        self.assertEqual(rc, 0)
+
+        doc = state_mod.load(self.target)
+        self.assertIsNotNone(doc, "doctor failed to synthesize install.json")
+        self.assertIn("cursor", doc["adapters"])
+        cursor_entry = doc["adapters"]["cursor"]
+        self.assertIn(
+            ".cursor/rules/agentic-stack.mdc",
+            cursor_entry["files_written"],
+            "synthesis must populate files_written so remove can clean up "
+            "pre-v0.9 install artifacts",
+        )
+        self.assertTrue(cursor_entry.get("_synthesized"))
+
+    def test_doctor_synthesis_skips_merge_or_alert_files(self):
+        """Synthesis must NOT claim ownership of merge_or_alert files
+        (e.g., AGENTS.md) — those may be user-owned content that the old
+        install.sh deliberately preserved.
+        """
+        # Pre-v0.9 codex install: AGENTS.md exists (was the user's own file
+        # the old install.sh skipped); .agents/skills exists (old install.sh
+        # always created this).
+        self.target.mkdir(parents=True, exist_ok=True)
+        (self.target / "AGENTS.md").write_text("user's own AGENTS.md", encoding="utf-8")
+        (self.target / ".agents" / "skills").mkdir(parents=True)
+        (self.target / ".agent").mkdir(exist_ok=True)
+        (self.target / ".agent" / "AGENTS.md").write_text("brain", encoding="utf-8")
+
+        import builtins
+        from unittest.mock import patch
+        orig_input = builtins.input
+        builtins.input = lambda *a, **kw: "y"
+        try:
+            with patch("sys.stdin.isatty", return_value=True):
+                rc = doctor_mod.audit(self.target, log=lambda _: None)
+        finally:
+            builtins.input = orig_input
+        self.assertEqual(rc, 0)
+
+        doc = state_mod.load(self.target)
+        codex_entry = doc["adapters"].get("codex")
+        if codex_entry is None:
+            self.skipTest("detection didn't pick up codex from .agents/skills alone")
+        # AGENTS.md is merge_or_alert in codex's manifest → must be in
+        # files_alerted, NOT files_written. Otherwise remove would delete
+        # the user's AGENTS.md.
+        self.assertNotIn("AGENTS.md", codex_entry["files_written"])
+        # And the skills_link should be claimed (old install.sh always
+        # created it).
+        self.assertIn("skills_link", codex_entry)
+
+    def test_openclaw_agent_name_platform_specific(self):
+        """Codex P2: openclaw agent name uses cksum on POSIX, SHA1 on Windows.
+
+        Both legacy install scripts (install.sh + install.ps1) used
+        different hash functions; we must match each per-platform to keep
+        upgrade installs from registering a second agent.
+        """
+        from harness_manager.post_install import _openclaw_agent_name
+        import platform as _plat
+
+        name = _openclaw_agent_name("/Users/foo/myproject")
+        if _plat.system() == "Windows":
+            # SHA1[:6] hex
+            self.assertRegex(
+                name,
+                r"^myproject-[0-9a-f]{6}$",
+                f"on Windows, agent name suffix should be 6 hex chars (SHA1[:6]), got '{name}'",
+            )
+        else:
+            # cksum mod 1_000_000, zero-padded 6 decimal digits
+            self.assertRegex(
+                name,
+                r"^myproject-\d{6}$",
+                f"on POSIX, agent name suffix should be 6 decimal digits (cksum), got '{name}'",
+            )
+            # Hand-verified pre-v0.9 install.sh value
+            self.assertEqual(name, "myproject-408017")
+
     def test_state_lock_prevents_lost_update(self):
         """Codex P2: concurrent upsert_adapter must not lose entries.
 

@@ -267,22 +267,68 @@ def _audit_pre_v090(target_root: Path, log: Callable[[str], None]) -> int:
             "per adapter to register explicitly.")
         return 0
 
-    # Synthesize install.json from detected adapters.
+    # Synthesize install.json from detected adapters. Crucially, walk each
+    # adapter's manifest and populate files_written / skills_link with what
+    # the old install.sh would have written. Without this, `remove` is a
+    # no-op for migrated installs (files stay on disk) and a follow-up
+    # `./install.sh add <name>` would reclassify our own files as
+    # user-owned — codex P1 caught this on the migration path.
     doc = state_mod.empty(target_root, __version__)
     now = state_mod._iso_now()  # type: ignore  # internal helper, fine here
+
+    # Defer the import to avoid circulars.
+    from . import schema as schema_mod
+
+    stack_root = Path(__file__).resolve().parent.parent
     for name, _sig in detected:
-        # Best-effort entry — files_written is empty because we don't know
-        # what was written historically. Future audits will treat this as
-        # "registered but no files tracked"; subsequent re-installs of
-        # the adapter via ./install.sh <name> will populate files_written.
-        doc["adapters"][name] = {
+        manifest_path = stack_root / "adapters" / name / "adapter.json"
+        files_written: list[str] = []
+        files_alerted: list[str] = []
+        skills_link = None
+        if manifest_path.is_file():
+            try:
+                manifest = schema_mod.validate(manifest_path)
+                # Claim ownership for files the old install.sh would have written.
+                # Skip merge_or_alert entries — the user's existing AGENTS.md
+                # may be their own content; claiming it would let us delete it.
+                for entry in manifest.get("files", []):
+                    dst = entry.get("dst")
+                    if not dst:
+                        continue
+                    if (target_root / dst).exists():
+                        if entry.get("merge_policy") == "merge_or_alert":
+                            files_alerted.append(dst)
+                        else:
+                            files_written.append(dst)
+                # Skills_link: pre-v0.9 install.sh always created this, so
+                # claim ownership (skills_link_pre_existed=False).
+                if "skills_link" in manifest:
+                    sl_dst = target_root / manifest["skills_link"]["dst"]
+                    if sl_dst.exists() or sl_dst.is_symlink():
+                        skills_link = manifest["skills_link"]
+            except Exception:
+                # If the manifest is missing or invalid, fall back to the
+                # bare-minimum entry. Doctor will still flag missing files
+                # later because there's nothing to check.
+                pass
+
+        adapter_entry = {
             "installed_at": now,
-            "files_written": [],
+            "files_written": files_written,
+            "files_overwritten": [],
+            "files_alerted": files_alerted,
             "file_results": [],
             "post_install_results": [],
             "_synthesized": True,  # marker for future migrations
         }
+        if skills_link is not None:
+            adapter_entry["skills_link"] = skills_link
+            adapter_entry["skills_link_pre_existed"] = False
+        doc["adapters"][name] = adapter_entry
+
     state_mod.save(target_root, doc)
     log(f"  ✓ wrote install.json with {len(detected)} synthesized adapter(s)")
-    log("  tip: re-run `./install.sh <adapter>` per adapter to populate files_written.")
+    if any(doc["adapters"][n].get("files_alerted") for n in doc["adapters"]):
+        log("  ! some AGENTS.md files were marked as alerted (existing content"
+            " preserved); next doctor run will check for the .agent/ marker.")
     return 0
