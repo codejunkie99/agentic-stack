@@ -26,3 +26,9 @@ Pre-deployment verification against a structured checklist.
 Triggers: "deploy", "ship", "release", "go live"
 Constraints: all tests passing, no unresolved TODOs in diff,
 requires human approval for production.
+
+## planner
+Turns a spec into task-by-task implementation plan an engineer with zero
+codebase context can execute end-to-end.
+Triggers: "implementation plan", "break this down", "plan this feature"
+Constraints: no placeholders, code shown in every step, TDD ordering.
