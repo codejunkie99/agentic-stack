@@ -73,22 +73,65 @@ switch ($Adapter) {
         Copy-Item (Join-Path $Src 'AGENTS.md') (Join-Path $TargetDir 'AGENTS.md') -Force
     }
     'codex' {
+        # Mirror install.sh: openclaw-style merge-or-alert on existing AGENTS.md.
         $agentsMd = Join-Path $TargetDir 'AGENTS.md'
         if (Test-Path $agentsMd -PathType Leaf) {
-            Write-Host "  ~ $agentsMd already exists — skipping (codex reads whatever is there)"
+            $existing = Get-Content -Path $agentsMd -Raw -ErrorAction SilentlyContinue
+            if ($existing -match '\.agent/') {
+                Write-Host "  ~ AGENTS.md already references .agent/ — leaving alone"
+            } else {
+                Write-Host "  ! AGENTS.md exists but does not reference .agent/; not overwriting."
+                Write-Host "    merge this block into your AGENTS.md to wire the brain:"
+                Write-Host "    ---8<---"
+                Get-Content -Path (Join-Path $Src 'AGENTS.md') | ForEach-Object { Write-Host "    $_" }
+                Write-Host "    --->8---"
+            }
         } else {
             Copy-Item (Join-Path $Src 'AGENTS.md') $agentsMd -Force
             Write-Host "  + AGENTS.md"
         }
 
+        # Codex scans .agents/skills/ — keep the portable brain authoritative.
         $agentsDir = Join-Path $TargetDir '.agents'
         New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
         $skillsSrc = Join-Path $TargetAgent 'skills'
         $skillsDst = Join-Path $agentsDir 'skills'
 
-        if (Test-Path $skillsDst) {
-            Copy-Item -Path (Join-Path $skillsSrc '*') -Destination $skillsDst -Recurse -Force
-            Write-Host "  ~ merged .agent/skills into existing .agents/skills"
+        # Detect symlink/junction BEFORE Remove-Item: on PowerShell 5.1
+        # `Remove-Item -Recurse` on a symlink can delete the target's
+        # contents. Use IsLink detection + .NET Delete (or repoint).
+        $skillsDstItem = Get-Item -LiteralPath $skillsDst -Force -ErrorAction SilentlyContinue
+        $isLink = $false
+        if ($skillsDstItem) {
+            $isLink = ($skillsDstItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq [System.IO.FileAttributes]::ReparsePoint
+        }
+
+        if ($skillsDstItem -and $isLink) {
+            # Existing link: delete the link only (NOT its target), then re-create.
+            try {
+                [System.IO.Directory]::Delete($skillsDst, $false)
+            } catch {
+                # Some Windows configurations require File.Delete for file-style links.
+                [System.IO.File]::Delete($skillsDst)
+            }
+            try {
+                New-Item -ItemType SymbolicLink -Path $skillsDst -Target $skillsSrc -ErrorAction Stop | Out-Null
+                Write-Host "  + .agents/skills -> $skillsSrc (relinked)"
+            } catch {
+                Copy-Item -Path $skillsSrc -Destination $skillsDst -Recurse
+                Write-Host "  + .agents/skills (copy; symlink not supported here)"
+            }
+        } elseif ($skillsDstItem) {
+            # Real directory: sync with delete-orphans by replacing it whole.
+            # Removing a real directory with -Recurse is safe; only links are dangerous.
+            Remove-Item -LiteralPath $skillsDst -Recurse -Force
+            try {
+                New-Item -ItemType SymbolicLink -Path $skillsDst -Target $skillsSrc -ErrorAction Stop | Out-Null
+                Write-Host "  + .agents/skills -> $skillsSrc (replaced stale copy)"
+            } catch {
+                Copy-Item -Path $skillsSrc -Destination $skillsDst -Recurse
+                Write-Host "  ~ replaced .agents/skills with current .agent/skills (no symlink)"
+            }
         } else {
             try {
                 New-Item -ItemType SymbolicLink -Path $skillsDst -Target $skillsSrc -ErrorAction Stop | Out-Null

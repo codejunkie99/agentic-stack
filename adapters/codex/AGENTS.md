@@ -3,6 +3,9 @@
 Codex reads `AGENTS.md` before doing any work. This file points it at
 the portable brain in `.agent/`.
 
+> **Python invocation**: examples below use `python3`. On stock Windows
+> only `python` is on PATH; use whichever resolves on your system.
+
 ## Startup (read in order)
 1. `.agent/AGENTS.md` — the map
 2. `.agent/memory/personal/PREFERENCES.md` — user conventions
@@ -10,10 +13,13 @@ the portable brain in `.agent/`.
 4. `.agent/protocols/permissions.md` — hard rules
 
 ## Skills
-Codex scans `.agents/skills/` for repository-scoped skills. The install
-script symlinks or copies `.agents/skills` from `.agent/skills` so the
-portable brain remains the one source of truth. Load a full `SKILL.md`
-only when its triggers match the task (progressive disclosure).
+Codex scans `.agents/skills/` for repository-scoped skills (per
+[OpenAI Codex docs](https://developers.openai.com/codex/skills)). The
+install script symlinks or syncs `.agents/skills` from `.agent/skills`
+so the portable brain remains the one source of truth. Load a full
+`SKILL.md` only when its triggers match the task (progressive
+disclosure). Edit skills in `.agent/skills/` — `.agents/skills/` is a
+mirror and re-running the installer will sync it back.
 
 ## Recall before non-trivial tasks
 For deploy / ship / migration / schema / timestamp / date / failing test /

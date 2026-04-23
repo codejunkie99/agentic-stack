@@ -86,27 +86,51 @@ case "$ADAPTER" in
     fi
     ;;
   codex)
-    # codex, pi, hermes, and opencode can all read the same AGENTS.md
+    # codex reads AGENTS.md (like pi, hermes, opencode). Many other tools
+    # also write AGENTS.md (aider, amp, cline, existing codex setups), so
+    # we follow the openclaw pattern: merge-or-alert, never blind overwrite,
+    # never blind skip.
     if [[ -f "$TARGET/AGENTS.md" ]]; then
-      echo "  ~ $TARGET/AGENTS.md already exists — skipping (codex reads whatever is there)"
+      if grep -q '\.agent/' "$TARGET/AGENTS.md" 2>/dev/null; then
+        echo "  ~ AGENTS.md already references .agent/ — leaving alone"
+      else
+        echo "  ! AGENTS.md exists but does not reference .agent/; not overwriting."
+        echo "    merge this block into your AGENTS.md to wire the brain:"
+        echo "    ---8<---"
+        sed 's/^/    /' "$SRC/AGENTS.md"
+        echo "    --->8---"
+      fi
     else
       cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
       echo "  + AGENTS.md"
     fi
+
+    # Codex scans .agents/skills/ (plural) for repo-scoped skills — per
+    # OpenAI docs https://developers.openai.com/codex/skills. Keep the
+    # portable brain authoritative: .agents/skills mirrors .agent/skills.
     mkdir -p "$TARGET/.agents"
     SKILLS_SRC="$(cd "$TARGET/.agent/skills" && pwd)"
     SKILLS_DEST="$TARGET/.agents/skills"
     if [[ -L "$SKILLS_DEST" ]]; then
+      # Existing symlink: repoint at current .agent/skills (cheap, safe)
       ln -sfn "$SKILLS_SRC" "$SKILLS_DEST"
       echo "  + .agents/skills -> $SKILLS_SRC"
     elif [[ -d "$SKILLS_DEST" ]]; then
-      cp -R "$SKILLS_SRC/." "$SKILLS_DEST/"
-      echo "  ~ merged .agent/skills into existing .agents/skills"
+      # Real directory from a prior copy-fallback install: sync with
+      # delete-orphans so removed/renamed skills don't linger. Use rsync
+      # if available, otherwise rm+cp as a safe-but-blunt replacement.
+      if command -v rsync >/dev/null 2>&1; then
+        rsync -a --delete "$SKILLS_SRC/" "$SKILLS_DEST/"
+        echo "  ~ synced .agent/skills → .agents/skills (rsync --delete)"
+      else
+        rm -rf "$SKILLS_DEST"
+        cp -R "$SKILLS_SRC" "$SKILLS_DEST"
+        echo "  ~ replaced .agents/skills with current .agent/skills (no rsync)"
+      fi
     elif ln -sfn "$SKILLS_SRC" "$SKILLS_DEST" 2>/dev/null; then
       echo "  + .agents/skills -> $SKILLS_SRC"
     else
-      mkdir -p "$SKILLS_DEST"
-      cp -R "$SKILLS_SRC/." "$SKILLS_DEST/"
+      cp -R "$SKILLS_SRC" "$SKILLS_DEST"
       echo "  + .agents/skills (copy; symlink not supported here)"
     fi
     ;;
