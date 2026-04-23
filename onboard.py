@@ -68,6 +68,10 @@ def _wizard(target, force):
         f"Enable FTS memory search  {ORANGE}[BETA]{R}?",
         default=False,
     )
+    a["feature_tldraw"] = ask_confirm(
+        f"Enable tldraw visual memory  {ORANGE}[BETA]{R}?",
+        default=False,
+    )
     return a
 
 
@@ -85,6 +89,7 @@ def main():
         # --yes defaults all optional beta features to off
         features_file = write_features(target, {
             "memory_search_fts": {"enabled": False, "beta": True},
+            "tldraw": {"enabled": False, "beta": True},
         })
         print(f"{GREEN}◆{R}  {WHITE}{B}PREFERENCES.md{R} written with defaults")
         print(f"{MUTED}   {path}{R}")
@@ -99,6 +104,10 @@ def main():
         features = {
             "memory_search_fts": {
                 "enabled": bool(answers.get("feature_memory_search")),
+                "beta": True,
+            },
+            "tldraw": {
+                "enabled": bool(answers.get("feature_tldraw")),
                 "beta": True,
             },
         }
