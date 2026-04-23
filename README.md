@@ -194,7 +194,7 @@ adapters/                       # one small shim per harness
 ├── cursor/        (.cursor/rules/*.mdc)
 ├── windsurf/      (.windsurfrules)
 ├── opencode/      (AGENTS.md + opencode.json)
-├── openclaw/      (system-prompt include)
+├── openclaw/      (AGENTS.md + system-prompt include; auto-registers per-project agent)
 ├── hermes/        (AGENTS.md)
 ├── pi/            (AGENTS.md + .pi/skills symlink)
 ├── codex/         (AGENTS.md)
@@ -223,9 +223,9 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 | **Cursor** | `.cursor/rules/*.mdc` | no (manual reflect calls) |
 | **Windsurf** | `.windsurfrules` | no (manual reflect calls) |
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |
-| **OpenClaw** | system-prompt include | varies by fork |
+| **OpenClaw** | `AGENTS.md` (auto-injected) + per-project `openclaw agents add --workspace` | varies by fork |
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
-| **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` | no (extension system) |
+| **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` + `.pi/extensions/` | yes (`tool_result` event) |
 | **Codex** | `AGENTS.md` + `.agents/skills/` | no (manual reflect calls) |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
 | **Antigravity** | `ANTIGRAVITY.md` | yes (system context) |

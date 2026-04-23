@@ -1,6 +1,7 @@
 """Failures are learning. High pain score + rewrite flag after repeat offenses."""
 import json, datetime, os
 from ._provenance import build_source
+from ._episodic_io import append_jsonl
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 EPISODIC = os.path.join(ROOT, "memory/episodic/AGENT_LEARNINGS.jsonl")
@@ -69,7 +70,4 @@ def on_failure(skill_name, action, error, context="", confidence=0.9,
             f"Flag for rewrite."
         )
         entry["pain_score"] = 10
-    os.makedirs(os.path.dirname(EPISODIC), exist_ok=True)
-    with open(EPISODIC, "a") as f:
-        f.write(json.dumps(entry) + "\n")
-    return entry
+    return append_jsonl(EPISODIC, entry)
