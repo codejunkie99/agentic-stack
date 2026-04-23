@@ -143,13 +143,16 @@ def _emit_malformed(reason: str, raw_excerpt: str) -> None:
     JSON, this surfaces in AGENT_LEARNINGS.jsonl as a real signal.
     """
     excerpt = raw_excerpt[:200] if isinstance(raw_excerpt, str) else ""
+    # importance MUST be numeric — downstream salience_score() does
+    # `importance / 10.0` and a string would crash context_budget,
+    # show.py, and auto_dream readers. 5 ≈ "medium" on the 1-10 scale.
     on_failure(
         skill_name="pi",
         action="hook:malformed_payload",
         error=f"pi tool_result payload malformed: {reason}",
         context=excerpt,
         confidence=0.95,
-        importance="medium",
+        importance=5,
         pain_score=2,
     )
 

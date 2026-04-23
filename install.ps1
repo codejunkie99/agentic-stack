@@ -182,6 +182,13 @@ switch ($Adapter) {
         New-Item -ItemType Directory -Path $extensionsDir -Force | Out-Null
         Copy-Item (Join-Path $Src 'memory-hook.ts') (Join-Path $extensionsDir 'memory-hook.ts') -Force
         Write-Host "  + .pi/extensions/memory-hook.ts"
+        # Upgrade path: the .agent copy higher up is skipped when .agent
+        # already exists, but the pi extension calls this python hook,
+        # so sync it explicitly.
+        $hooksDir = Join-Path $TargetAgent 'harness/hooks'
+        New-Item -ItemType Directory -Path $hooksDir -Force | Out-Null
+        Copy-Item (Join-Path $Here '.agent/harness/hooks/pi_post_tool.py') (Join-Path $hooksDir 'pi_post_tool.py') -Force
+        Write-Host "  + .agent/harness/hooks/pi_post_tool.py (synced for upgrades)"
     }
     'standalone-python' {
         Copy-Item (Join-Path $Src 'run.py') (Join-Path $TargetDir 'run.py') -Force
