@@ -156,8 +156,33 @@ core one (e.g., compliance-archive routing for `client/<id>/` writes) —
 composing, not replacing.
 
 ### The six feedback loops
-<!-- TODO (Pulkit): in your own words, what makes this system "compound" instead
-     of "stay static"? Name any ONE of the six loops and explain the cycle. -->
+**What makes it compound vs. static.** Each session's episodes become candidate
+patterns via the dream cycle. Each graduated lesson informs future sessions via
+recall. Each failure pushes a skill toward evolution. Each upstream change
+becomes reviewable. Nothing is lost; everything accumulates selectively. Over
+four-week BCG engagements, the compounding IS the mechanism for
+cross-engagement learning — the second engagement starts with the first's
+filtered lessons preloaded.
+
+**Loop #4 (recall) as illustration.** **Trigger:** the agent reads v0.8.0's
+`CLAUDE.md`, sees a task keyword (deploy, migration, schema change, timestamp,
+debug, refactor, etc.), and runs `recall.py "<intent>"` *before* acting.
+**Matching:** `recall.py` tokenizes the intent, tokenizes every accepted
+lesson's `claim` + `conditions`, and scores by lexical overlap — `conditions`
+weighted 2× because it's the explicit trigger vocabulary. **Output:** top-*k*
+matches are presented in a `Consulted lessons before acting:` block —
+agent-authored text, **advisory not hook-enforced** (the asymmetric cousin of
+`pre_tool_call.py`). **Impact:** the agent now acts with prior knowledge in
+context; if a surfaced lesson would be violated, it pauses and explains. This
+is the loop that turns accumulated lessons into visible behavior change —
+without it, lessons exist but never influence anything.
+
+**The other five loops** (named for reference, not walked through):
+1. Post-tool → episodic (every tool call logged via `claude_code_post_tool.py`).
+2. Episodic → dream → stage (`auto_dream.py` clusters by Jaccard; stages on `cluster_size ≥ 2` AND `canonical_salience ≥ 7.0`).
+3. Stage → graduate → semantic (human-in-the-loop via `graduate.py --rationale`; rubber-stamp filter).
+5. Failure → rewrite (≥3 failures in 14d fires the skill-rewrite flag at `pain_score=10`).
+6. Upstream → sync → staged review (nightly `upstream_sync.py` / `superpowers_sync.py` / `gstack_sync.py`; stage-only, never auto-apply).
 
 ---
 
@@ -169,20 +194,24 @@ repo module by module. Established fork at github.com/pulkittalwar/agentic-stack
 Created this file using gbrain compiled-truth + timeline format. Planned 10-step
 buildout toward a PDLC-SDLC team in Claude Code (see plan file).
 
-### 2026-04-22 → 2026-04-23 — Modules 1–6 filled
-Filled Modules 1 (AGENTS.md as harness-agnostic map + constitution),
+### 2026-04-22 → 2026-04-23 — DOMAIN_KNOWLEDGE.md complete (all 7 TODOs filled)
+Filled all seven sections of the compiled-truth layer via Socratic Q&A in
+Claude Code: Modules 1 (AGENTS.md as harness-agnostic map + constitution),
 2 (memory four layers — what-question + who-writes dual lens),
 3 (skills / progressive disclosure — token + cache economics),
 4 (protocols — deterministic enforcement, architectural claim vs. advisory),
 5 (tools — review surface, `--rationale` as generalizability filter,
-discovered-vs-declared test), and 6 (harness — Claude Code IS the conductor;
-one hook-wire-point as the composability surface) via Socratic Q&A in Claude
-Code. Feedback-loops section remains TODO. v0.8.0 baseline merged from
-upstream; D1/D2/D3 locked (single fork + gitignored `memory/client/<id>/`;
-hybrid core + `adapters/bcg/`; all four deliverables — Phase 3 non-optional).
-Also surveyed gstack ≥ v1.0.0.0 — bootstrap-target note added to plan,
-convergence on host-adapter pattern (Hermes + GBrain hosts, brain-first
-resolver) noted as architectural validation.
+discovered-vs-declared test),
+6 (harness — Claude Code IS the conductor; one hook-wire-point as the
+composability surface), and the feedback-loops section (six loops named;
+loop #4 recall walked through; compound-vs-static principle articulated with
+BCG cross-engagement framing). v0.8.0 baseline merged from upstream;
+D1/D2/D3 locked (single fork + gitignored `memory/client/<id>/`; hybrid core
++ `adapters/bcg/`; all four deliverables — Phase 3 non-optional). Also
+surveyed gstack ≥ v1.0.0.0 — bootstrap-target note added to plan, convergence
+on host-adapter pattern (Hermes + GBrain hosts, brain-first resolver) noted
+as architectural validation. Completes Step 2 of the 10-step plan. Next:
+Step 3 (PREFERENCES + permissions + 4 forward-compat hooks).
 
 ### [future entries]
 - When something above is wrong, rewrite the compiled-truth section and add
