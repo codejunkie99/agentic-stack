@@ -372,6 +372,84 @@ class TestEndToEndInstallFlow(unittest.TestCase):
             f"skipped at install time. log:\n{all_text}",
         )
 
+    def test_reinstall_preserves_installer_ownership(self):
+        """Codex P1: re-installing an adapter must NOT reclassify our own files
+        as user-owned, otherwise remove leaves them behind on upgrade.
+        """
+        # First install: we create CLAUDE.md fresh.
+        self._install("claude-code")
+        doc1 = state_mod.load(self.target)
+        self.assertIn("CLAUDE.md", doc1["adapters"]["claude-code"]["files_written"])
+
+        # Second install: CLAUDE.md exists (we wrote it), but we still own it.
+        # The re-install should NOT move it to files_overwritten.
+        self._install("claude-code")
+        doc2 = state_mod.load(self.target)
+        entry = doc2["adapters"]["claude-code"]
+        self.assertIn(
+            "CLAUDE.md",
+            entry["files_written"],
+            "reinstall reclassified installer-owned CLAUDE.md as user-owned; "
+            "remove will now leave it behind",
+        )
+        self.assertNotIn("CLAUDE.md", entry["files_overwritten"])
+
+        # Sanity: remove on the re-installed adapter still cleans up our files.
+        rc = remove_mod.remove(self.target, "claude-code", yes=True, log=lambda _: None)
+        self.assertEqual(rc, 0)
+        self.assertFalse((self.target / "CLAUDE.md").exists())
+
+    def test_remove_does_not_reverse_skipped_post_install(self):
+        """Codex P2: remove must NOT reverse post_install actions that never
+        succeeded at install time. Reversing a never-completed openclaw
+        registration could delete a manually-created agent.
+        """
+        # Construct an install.json directly with a synthetic post_install
+        # result that recorded binary_missing. Then run remove with --yes
+        # and verify the reverse list is empty (no openclaw subprocess call).
+        from harness_manager import post_install as pi_mod
+
+        # Plant a fake adapter entry where openclaw_register_workspace was
+        # recorded as binary_missing.
+        state_mod.upsert_adapter(
+            self.target,
+            "openclaw",
+            {
+                "installed_at": "x",
+                "files_written": [],
+                "files_overwritten": [],
+                "files_alerted": [],
+                "file_results": [],
+                "post_install_results": [
+                    {
+                        "action": "openclaw_register_workspace",
+                        "status": "binary_missing",
+                        "agent_name": "would-be-agent-name",
+                    }
+                ],
+            },
+            "0.9.0",
+        )
+
+        # Spy on pi_mod.reverse to ensure it is NOT called for the
+        # binary_missing entry.
+        original_reverse = pi_mod.reverse
+        called_with = []
+        def _spy(action, target_root, **kwargs):
+            called_with.append(action)
+            return original_reverse(action, target_root, **kwargs)
+        pi_mod.reverse = _spy
+        try:
+            rc = remove_mod.remove(self.target, "openclaw", yes=True, log=lambda _: None)
+            self.assertEqual(rc, 0)
+            self.assertEqual(
+                called_with, [],
+                f"remove called reverse() for an unsuccessful post_install: {called_with}. "
+                f"This could delete a manually-created openclaw agent."
+            )
+        finally:
+            pi_mod.reverse = original_reverse
+
     def test_state_lock_prevents_lost_update(self):
         """Codex P2: concurrent upsert_adapter must not lose entries.
 

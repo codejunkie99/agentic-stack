@@ -65,11 +65,16 @@ def remove(
             log(f"  ~ {f} (use git or your own backup to recover the original if needed)")
     log("")
 
-    # Reverse post_install actions
+    # Reverse post_install actions — but ONLY for actions that succeeded
+    # at install time. Reversing a failed/skipped registration is wrong:
+    # if `openclaw_register_workspace` was binary_missing at install, a
+    # subsequent `openclaw agents remove` could delete a manually-created
+    # agent for the same workspace that was never ours to manage.
     reverse_actions = []
     for r in post_install_results:
         action = r.get("action")
-        if action and action in post_install_mod.ACTIONS:
+        status = r.get("status")
+        if action in post_install_mod.ACTIONS and status in ("ok", "already_exists"):
             reverse_actions.append(action)
     if reverse_actions:
         log("the following post-install state will be reversed:")

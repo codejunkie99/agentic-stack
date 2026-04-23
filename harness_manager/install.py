@@ -181,6 +181,16 @@ def install(
     files_alerted: list[str] = []        # merge_or_alert that left existing alone — needs user action
     file_results: list[dict] = []
 
+    # On reinstall, look up the previous install.json entry for this adapter
+    # so we can preserve installer-owned classification across re-runs. A
+    # naive "if it exists now, it pre-existed" misclassifies our own
+    # installer-created files as user-owned the second time around — then
+    # `remove` would silently leave behind CLAUDE.md / .cursor/rules/*.mdc
+    # because it stopped seeing them as ours.
+    prior_doc = state_mod.load(target_root) or {}
+    prior_entry = (prior_doc.get("adapters") or {}).get(adapter_name) or {}
+    prior_owned = set(prior_entry.get("files_written") or [])
+
     # 2. Process file entries.
     for entry in manifest["files"]:
         from_stack = entry.get("from_stack", False)
@@ -209,7 +219,14 @@ def install(
         if result == "written_new":
             files_written.append(entry["dst"])
         elif result == "written_overwrite":
-            files_overwritten.append(entry["dst"])
+            # If we created this file in a previous install (recorded in the
+            # prior install.json's files_written), this is a re-install
+            # overwriting our OWN file, not a user file. Keep it classified
+            # as installer-owned so remove will clean it up.
+            if entry["dst"] in prior_owned:
+                files_written.append(entry["dst"])
+            else:
+                files_overwritten.append(entry["dst"])
         elif result == "merge_alert":
             files_alerted.append(entry["dst"])
         file_results.append({"dst": entry["dst"], "result": result})
