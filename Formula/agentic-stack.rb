@@ -1,9 +1,15 @@
 class AgenticStack < Formula
   desc "One brain, many harnesses — portable .agent/ folder for AI coding agents"
   homepage "https://github.com/codejunkie99/agentic-stack"
-  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.8.0.tar.gz"
-  sha256 "7b26dbea6ff28eb3561c6a6514021713f6e6291cabbf5a362627ff0d3464d8a0"
-  version "0.8.0"
+  # NOTE: sha256 must be updated after the v0.9.0 GitHub release is cut.
+  # The url/sha256 chicken-and-egg is the same pattern as the v0.8.0 release
+  # (commit abaa352 "chore: update Formula sha256 for v0.8.0 tarball" did the
+  # post-release sha256 bump). Tag v0.9.0, then run:
+  #   curl -L https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.9.0.tar.gz | shasum -a 256
+  # and replace the placeholder below.
+  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.9.0.tar.gz"
+  sha256 "0000000000000000000000000000000000000000000000000000000000000000"  # TODO: update post-tag
+  version "0.9.0"
   license "Apache-2.0"
 
   def install
