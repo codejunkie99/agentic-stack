@@ -9,6 +9,7 @@ codex review of the v1.0 vision plan flagged generalized run_command as
 DSL creep; named built-ins are the constrained alternative.
 """
 import hashlib
+import os
 import platform
 import re
 import shutil
@@ -26,7 +27,20 @@ _OPENCLAW_AGENT_NAME_ALLOWED = set(string.ascii_letters + string.digits + "._-")
 
 
 def _abs_target(target_root: Path | str) -> Path:
-    return Path(target_root).resolve()
+    """Absolute, dot-normalized path WITHOUT resolving symlinks.
+
+    Mirrors `cd "$TARGET" && pwd` from the legacy install.sh — POSIX `pwd`
+    defaults to the LOGICAL path (`-L`), preserving the symlink chain the
+    user invoked from. `Path.resolve()` is the wrong choice here because
+    it canonicalizes symlinks; if a user's workspace lives at e.g.
+    `~/src/app` (a symlink into another volume), `resolve()` returns the
+    target of the symlink, the cksum of that path differs from the cksum
+    of the original, and openclaw_register_workspace registers a SECOND
+    agent on upgrade. `os.path.abspath()` does what `cd && pwd` does:
+    normalizes `.` and `..`, prepends cwd if relative, but never reads
+    the filesystem to resolve symlinks.
+    """
+    return Path(os.path.abspath(str(target_root)))
 
 
 # POSIX cksum CRC-32 table. Polynomial 0x04C11DB7, no inversion, length-tagged.

@@ -111,7 +111,36 @@ def cmd_install(adapter_name: str, target: Path, wizard_flags: list[str]) -> int
 
 
 def cmd_add(adapter_name: str, target: Path) -> int:
-    """Append one adapter to an existing project (no onboard wizard re-run)."""
+    """Append one adapter to an existing project (no onboard wizard re-run).
+
+    Refuses on pre-v0.9 projects (no install.json yet). Without this check,
+    `add` would create a fresh install.json with ONLY the new adapter, and
+    every adapter previously installed via the old install.sh would
+    disappear from status/doctor/remove tracking even though their files
+    are still on disk.
+    """
+    if state_mod.load(target) is None:
+        # Pre-v0.9 project. Detect adapters and refuse with a clear path forward.
+        from . import doctor as doctor_mod
+        signals_present = []
+        for name, signals in doctor_mod.DETECT_SIGNALS.items():
+            if any((target / f).exists() for f, _ in signals):
+                signals_present.append(name)
+        if signals_present:
+            print(
+                f"error: {target}/.agent/install.json not present, but these adapters\n"
+                f"appear to already be installed: {sorted(signals_present)}\n"
+                f"\n"
+                f"run this first to register them safely:\n"
+                f"  ./install.sh doctor\n"
+                f"\n"
+                f"`add` would otherwise create a fresh install.json with only\n"
+                f"the new adapter, leaving the existing ones invisible to\n"
+                f"status/doctor/remove.",
+                file=sys.stderr,
+            )
+            return 2
+        # No prior install detected; safe to proceed (`add` on a clean repo).
     manifest = _adapter_manifest(adapter_name)
     install_mod.install(
         manifest=manifest,
