@@ -1,0 +1,17 @@
+{
+  "name": "openclaw",
+  "description": "OpenClaw — AGENTS.md auto-injection + per-project agent registration via `openclaw agents add --workspace`. Falls back to system-prompt include on forks without `agents add`.",
+  "files": [
+    {
+      "src": "AGENTS.md",
+      "dst": "AGENTS.md",
+      "merge_policy": "merge_or_alert"
+    },
+    {
+      "src": "config.md",
+      "dst": ".openclaw-system.md",
+      "merge_policy": "overwrite"
+    }
+  ],
+  "post_install": ["openclaw_register_workspace"]
+}
