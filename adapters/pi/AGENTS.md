@@ -45,4 +45,6 @@ them.
 - System prompt override: put `.pi/SYSTEM.md` at project root if you
   want to replace pi's default system prompt entirely.
 - Prompt templates go in `.pi/prompts/`.
-- TypeScript extensions go in `.pi/extensions/` (advanced).
+- TypeScript extensions go in `.pi/extensions/` (advanced). This adapter
+  installs `memory-hook.ts`, which logs `tool_result` events to episodic
+  memory automatically.

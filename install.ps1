@@ -1,6 +1,6 @@
 # install.ps1 — Windows PowerShell installer (parallel to install.sh)
 # Usage:  .\install.ps1 <adapter-name> [target-dir] [-Yes] [-Reconfigure] [-Force]
-#   adapter-name: claude-code | cursor | windsurf | opencode | openclaw | hermes | standalone-python | antigravity
+#   adapter-name: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python | antigravity
 #   target-dir:   where your project lives (default: current dir)
 #   -Yes          accept all wizard defaults (safe for CI)
 #   -Reconfigure  re-run the wizard on an existing project
@@ -24,7 +24,7 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $ValidAdapters = @(
     'claude-code', 'cursor', 'windsurf',
-    'opencode', 'openclaw', 'hermes',
+    'opencode', 'openclaw', 'hermes', 'pi',
     'standalone-python', 'antigravity'
 )
 if ($Adapter -notin $ValidAdapters) {
@@ -139,6 +139,56 @@ switch ($Adapter) {
     }
     'hermes' {
         Copy-Item (Join-Path $Src 'AGENTS.md') (Join-Path $TargetDir 'AGENTS.md') -Force
+    }
+    'pi' {
+        $agentsMd = Join-Path $TargetDir 'AGENTS.md'
+        if (Test-Path $agentsMd -PathType Leaf) {
+            Write-Host "  ~ $agentsMd already exists — skipping (pi reads whatever is there)"
+        } else {
+            Copy-Item (Join-Path $Src 'AGENTS.md') $agentsMd -Force
+            Write-Host "  + AGENTS.md"
+        }
+
+        $piDir = Join-Path $TargetDir '.pi'
+        New-Item -ItemType Directory -Path $piDir -Force | Out-Null
+
+        $skillsSrc = Join-Path $TargetAgent 'skills'
+        $skillsDst = Join-Path $piDir 'skills'
+
+        # CRITICAL: detect symlink BEFORE Remove-Item. On PowerShell 5.1
+        # (Windows default), `Remove-Item -Recurse -Force` on a symlink
+        # traverses INTO the target and deletes its contents. Re-running
+        # the installer would silently wipe .agent/skills via the link.
+        # Use IsLink detection + .NET Delete (link only, not target).
+        $skillsDstItem = Get-Item -LiteralPath $skillsDst -Force -ErrorAction SilentlyContinue
+        if ($skillsDstItem) {
+            $isLink = ($skillsDstItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq [System.IO.FileAttributes]::ReparsePoint
+            if ($isLink) {
+                try { [System.IO.Directory]::Delete($skillsDst, $false) }
+                catch { [System.IO.File]::Delete($skillsDst) }
+            } else {
+                Remove-Item -LiteralPath $skillsDst -Recurse -Force
+            }
+        }
+        try {
+            New-Item -ItemType SymbolicLink -Path $skillsDst -Target $skillsSrc -ErrorAction Stop | Out-Null
+            Write-Host "  + .pi/skills -> $skillsSrc"
+        } catch {
+            Copy-Item -Path $skillsSrc -Destination $skillsDst -Recurse
+            Write-Host "  + .pi/skills (copy; symlink not supported here)"
+        }
+
+        $extensionsDir = Join-Path $piDir 'extensions'
+        New-Item -ItemType Directory -Path $extensionsDir -Force | Out-Null
+        Copy-Item (Join-Path $Src 'memory-hook.ts') (Join-Path $extensionsDir 'memory-hook.ts') -Force
+        Write-Host "  + .pi/extensions/memory-hook.ts"
+        # Upgrade path: the .agent copy higher up is skipped when .agent
+        # already exists, but the pi extension calls this python hook,
+        # so sync it explicitly.
+        $hooksDir = Join-Path $TargetAgent 'harness/hooks'
+        New-Item -ItemType Directory -Path $hooksDir -Force | Out-Null
+        Copy-Item (Join-Path $Here '.agent/harness/hooks/pi_post_tool.py') (Join-Path $hooksDir 'pi_post_tool.py') -Force
+        Write-Host "  + .agent/harness/hooks/pi_post_tool.py (synced for upgrades)"
     }
     'standalone-python' {
         Copy-Item (Join-Path $Src 'run.py') (Join-Path $TargetDir 'run.py') -Force

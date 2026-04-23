@@ -160,6 +160,16 @@ case "$ADAPTER" in
       cp -R "$SKILLS_SRC" "$SKILLS_DEST"
       echo "  + .pi/skills (copy; symlink not supported here)"
     fi
+    mkdir -p "$TARGET/.pi/extensions"
+    cp "$SRC/memory-hook.ts" "$TARGET/.pi/extensions/memory-hook.ts"
+    echo "  + .pi/extensions/memory-hook.ts"
+    # Upgrade path: the top-level `.agent/` copy at line 39-42 is skipped
+    # when .agent already exists, but the pi extension calls this python
+    # hook, so sync it explicitly for installs on older agentic-stack
+    # projects that don't already have it.
+    mkdir -p "$TARGET/.agent/harness/hooks"
+    cp "$HERE/.agent/harness/hooks/pi_post_tool.py" "$TARGET/.agent/harness/hooks/pi_post_tool.py"
+    echo "  + .agent/harness/hooks/pi_post_tool.py (synced for upgrades)"
     ;;
   standalone-python)
     cp "$SRC/run.py" "$TARGET/run.py"
