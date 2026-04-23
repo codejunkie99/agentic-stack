@@ -8,7 +8,6 @@ This is deliberately not a plugin DSL or arbitrary command runner. The
 codex review of the v1.0 vision plan flagged generalized run_command as
 DSL creep; named built-ins are the constrained alternative.
 """
-import hashlib
 import shutil
 import subprocess
 from pathlib import Path
@@ -19,19 +18,57 @@ def _abs_target(target_root: Path | str) -> Path:
     return Path(target_root).resolve()
 
 
-def _openclaw_agent_name(target_root: Path | str) -> str:
-    """Match the algorithm install.sh uses today (PR #15) for stable names.
+# POSIX cksum CRC-32 table. Polynomial 0x04C11DB7, no inversion, length-tagged.
+# Matches `cksum(1)` output on macOS, Linux, and any POSIX system. Pre-computed
+# once at import time. Required for openclaw_register_workspace agent-name
+# stability across pre-v0.9.0 (bash) and v0.9.0+ (Python) installs — switching
+# to a different hash would create a duplicate openclaw agent on upgrade and
+# leave doctor/remove unable to find the original.
+def _build_posix_cksum_table() -> tuple[int, ...]:
+    table = []
+    for i in range(256):
+        c = i << 24
+        for _ in range(8):
+            c = ((c << 1) ^ 0x04C11DB7) & 0xFFFFFFFF if (c & 0x80000000) else (c << 1) & 0xFFFFFFFF
+        table.append(c)
+    return tuple(table)
 
-    Lowercase basename + 6-digit cksum-derived suffix. Same name across
-    re-runs of the same project, distinct across different projects.
+
+_POSIX_CKSUM_TABLE = _build_posix_cksum_table()
+
+
+def _posix_cksum(data: bytes) -> int:
+    """POSIX cksum(1) CRC-32 of `data` (no trailing newline added).
+
+    Bit-for-bit compatible with `printf '%s' "$data" | cksum | awk '{print $1}'`
+    which is what install.sh used pre-v0.9.0 to derive the openclaw agent name.
+    """
+    crc = 0
+    for b in data:
+        crc = ((crc << 8) ^ _POSIX_CKSUM_TABLE[((crc >> 24) ^ b) & 0xFF]) & 0xFFFFFFFF
+    # Append the length as the algorithm's tag.
+    length = len(data)
+    while length > 0:
+        crc = ((crc << 8) ^ _POSIX_CKSUM_TABLE[((crc >> 24) ^ (length & 0xFF)) & 0xFF]) & 0xFFFFFFFF
+        length >>= 8
+    return (~crc) & 0xFFFFFFFF
+
+
+def _openclaw_agent_name(target_root: Path | str) -> str:
+    """Match the algorithm install.sh used pre-v0.9.0 for agent-name stability.
+
+    install.sh (PR #15):
+      OC_PATH_CKSUM="$(printf '%s' "$OC_ABS" | cksum | awk '{print $1}')"
+      OC_AGENT_NAME="${OC_BN_SAFE}-$(printf '%06d' "$((OC_PATH_CKSUM % 1000000))")"
+
+    We replicate exactly: lowercase basename + 6-digit cksum-mod-1M suffix.
+    Same name across re-runs and across pre-v0.9.0 → v0.9.0 upgrades.
     """
     abs_target = _abs_target(target_root)
     bn_raw = abs_target.name.lower()
     safe = "".join(c if (c.isalnum() or c in "._-") else "-" for c in bn_raw)
     safe = safe.strip("-").replace("--", "-") or "project"
-    # cksum on macOS/Linux gives a CRC32-ish 32-bit value. Mirror that.
-    h = int(hashlib.sha1(str(abs_target).encode("utf-8")).hexdigest(), 16)
-    suffix = h % 1_000_000
+    suffix = _posix_cksum(str(abs_target).encode("utf-8")) % 1_000_000
     return f"{safe}-{suffix:06d}"
 
 

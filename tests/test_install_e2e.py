@@ -26,6 +26,14 @@ from harness_manager import schema as schema_mod  # noqa: E402
 from harness_manager import state as state_mod  # noqa: E402
 
 
+def _concurrent_upsert_worker(args):
+    """Module-level worker for the concurrency test (Py3.14 spawn needs picklable)."""
+    target, idx = args
+    sys.path.insert(0, str(REPO_ROOT))
+    from harness_manager import state as st
+    st.upsert_adapter(target, f"a{idx:02d}", {"installed_at": "x"}, "0.9.0")
+
+
 def _adapter_manifest(name: str) -> tuple[dict, Path]:
     p = REPO_ROOT / "adapters" / name / "adapter.json"
     return schema_mod.validate(p), p.parent
@@ -197,6 +205,135 @@ class TestEndToEndInstallFlow(unittest.TestCase):
         doc = state_mod.load(self.target)
         # Single entry, replaced not appended.
         self.assertEqual(list(doc["adapters"].keys()), ["cursor"])
+
+    # ---- regression tests from codex pre-PR review --------------------
+
+    def test_remove_preserves_pre_existing_user_files(self):
+        """Codex P1: files_overwritten must NOT be deleted by remove."""
+        # Simulate a user who already had .claude/settings.json with their
+        # own content — install (overwrite policy) replaces it; remove
+        # MUST NOT delete it (the user's original is gone, but neither
+        # should we delete what we left).
+        custom_settings = self.target / ".claude" / "settings.json"
+        custom_settings.parent.mkdir(parents=True, exist_ok=True)
+        custom_settings.write_text('{"user": "custom"}', encoding="utf-8")
+
+        self._install("claude-code")
+        # claude-code's settings.json has merge_policy: overwrite, so
+        # it replaced the file. Track it as files_overwritten, NOT files_written.
+        doc = state_mod.load(self.target)
+        entry = doc["adapters"]["claude-code"]
+        self.assertIn(".claude/settings.json", entry["files_overwritten"])
+        self.assertNotIn(".claude/settings.json", entry["files_written"])
+
+        # Now remove. The pre-existing file should NOT be deleted.
+        rc = remove_mod.remove(self.target, "claude-code", yes=True, log=lambda _: None)
+        self.assertEqual(rc, 0)
+        self.assertTrue(
+            custom_settings.exists(),
+            "remove deleted .claude/settings.json which pre-existed install — "
+            "this destroys user data",
+        )
+
+    def test_merge_alert_recorded_in_install_json(self):
+        """Codex P1: merge-alerted adapters must record they need manual merge."""
+        # Plant a pre-existing AGENTS.md without .agent/ reference (e.g. user's
+        # own Aider AGENTS.md). Install openclaw — its AGENTS.md uses
+        # merge_or_alert, so it leaves the existing alone but records the alert.
+        existing_agents = self.target / "AGENTS.md"
+        existing_agents.write_text(
+            "# my own AGENTS.md\nSome unrelated rules.\n", encoding="utf-8"
+        )
+        self._install("openclaw")
+        doc = state_mod.load(self.target)
+        entry = doc["adapters"]["openclaw"]
+        # The user's AGENTS.md was preserved, AND we recorded the alert.
+        self.assertIn("AGENTS.md", entry["files_alerted"])
+        self.assertNotIn("AGENTS.md", entry["files_written"])
+
+    def test_doctor_yellow_when_merge_alert_unresolved(self):
+        """Codex P1: doctor must flag yellow if merge_alert hasn't been resolved."""
+        existing_agents = self.target / "AGENTS.md"
+        existing_agents.write_text(
+            "# my own AGENTS.md\nNo .agent reference here.\n", encoding="utf-8"
+        )
+        self._install("openclaw")
+        # Doctor should return 0 (yellow is not red), but the audit text
+        # should mention the unresolved merge.
+        log_lines = []
+        rc = doctor_mod.audit(self.target, log=log_lines.append)
+        self.assertEqual(rc, 0)  # yellow ≠ red
+        all_text = "\n".join(log_lines)
+        self.assertIn("merge required", all_text)
+        self.assertIn("AGENTS.md", all_text)
+
+    def test_doctor_green_when_merge_alert_resolved(self):
+        """Once user merges the snippet (file references .agent/), doctor goes green."""
+        existing_agents = self.target / "AGENTS.md"
+        existing_agents.write_text(
+            "# my own AGENTS.md\nNo reference yet.\n", encoding="utf-8"
+        )
+        self._install("openclaw")
+        # User merges the snippet — append a .agent/ reference.
+        existing_agents.write_text(
+            existing_agents.read_text() + "\nSee .agent/AGENTS.md for the brain.\n",
+            encoding="utf-8",
+        )
+        log_lines = []
+        rc = doctor_mod.audit(self.target, log=log_lines.append)
+        self.assertEqual(rc, 0)
+        all_text = "\n".join(log_lines)
+        self.assertNotIn("merge required", all_text)
+
+    def test_openclaw_agent_name_matches_legacy_cksum(self):
+        """Codex P1: openclaw agent name must match the bash cksum algorithm.
+
+        Pre-v0.9.0 install.sh derived the suffix as:
+          printf '%s' "$ABS" | cksum | awk '{print $1}'  → suffix = N % 1000000
+        v0.9.0 must produce the SAME name for the SAME path, otherwise upgrade
+        installs create duplicate openclaw agents.
+        """
+        from harness_manager.post_install import _openclaw_agent_name, _posix_cksum
+        # Spot check: an absolute path, what the bash would have produced.
+        # Hand-verify against `printf '%s' '/Users/foo/myproject' | cksum | awk '{print $1}'`
+        # → 4089408017, mod 1_000_000 → 408017, padded → "408017"
+        # Basename "myproject" lowercased → "myproject"
+        # Final agent name → "myproject-408017"
+        self.assertEqual(
+            _openclaw_agent_name("/Users/foo/myproject"),
+            "myproject-408017",
+            "openclaw agent name diverged from legacy cksum-based formula",
+        )
+        # Also verify the cksum primitive itself matches POSIX cksum(1).
+        self.assertEqual(_posix_cksum(b"/Users/foo/myproject"), 4089408017)
+
+    def test_state_lock_prevents_lost_update(self):
+        """Codex P2: concurrent upsert_adapter must not lose entries.
+
+        Spawn N processes that each upsert a distinct adapter. With the lock
+        held around the read-modify-write, all N entries land in install.json.
+        Without the lock (the bug codex caught), some are lost.
+        """
+        import multiprocessing as mp
+
+        # Need an installed brain for state.upsert_adapter to write under.
+        self._install("cursor")
+        # Pre-clean: collapse to a known starting state.
+        doc = state_mod.load(self.target)
+        doc["adapters"] = {}
+        state_mod.save(self.target, doc)
+
+        n = 20
+        with mp.Pool(n) as pool:
+            pool.map(_concurrent_upsert_worker, [(str(self.target), i) for i in range(n)])
+
+        doc = state_mod.load(self.target)
+        names = sorted(doc["adapters"].keys())
+        self.assertEqual(
+            len(names),
+            n,
+            f"lost-update under concurrency: expected {n} adapters, got {len(names)}: {names}",
+        )
 
 
 if __name__ == "__main__":

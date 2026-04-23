@@ -26,18 +26,25 @@ def _apply_file(
 ) -> str:
     """Write src_content to dst_path according to merge_policy.
 
-    Returns: 'written' | 'skipped_existing' | 'merge_alert' | 'left_alone'
+    Returns one of:
+      'written_new'        — created the file fresh; safe for `remove` to delete
+      'written_overwrite'  — overwrote a pre-existing user file; remove must NOT delete it
+      'skipped_existing'   — left an existing file alone (skip_if_exists policy)
+      'left_alone'         — merge_or_alert: existing already references .agent/, no action needed
+      'merge_alert'        — merge_or_alert: existing did NOT reference .agent/; user must merge manually
     """
     dst_path.parent.mkdir(parents=True, exist_ok=True)
-    if not dst_path.exists():
+    pre_existed = dst_path.exists()
+
+    if not pre_existed:
         dst_path.write_bytes(src_content)
         log(f"  + {_short(dst_path)}")
-        return "written"
+        return "written_new"
 
     if merge_policy == "overwrite":
         dst_path.write_bytes(src_content)
-        log(f"  ~ {_short(dst_path)} (overwritten)")
-        return "written"
+        log(f"  ~ {_short(dst_path)} (overwritten — preserved on remove)")
+        return "written_overwrite"
 
     if merge_policy == "skip_if_exists":
         log(f"  ~ {_short(dst_path)} already exists — skipping")
@@ -169,7 +176,9 @@ def install(
         shutil.copytree(stack_root / ".agent", target_agent)
         log("  + .agent/ (portable brain)")
 
-    files_written: list[str] = []
+    files_written: list[str] = []        # we created — safe for remove to delete
+    files_overwritten: list[str] = []    # we modified but file pre-existed — DO NOT delete on remove
+    files_alerted: list[str] = []        # merge_or_alert that left existing alone — needs user action
     file_results: list[dict] = []
 
     # 2. Process file entries.
@@ -197,8 +206,12 @@ def install(
             merge_policy=merge_policy,
             log=log,
         )
-        if result == "written":
+        if result == "written_new":
             files_written.append(entry["dst"])
+        elif result == "written_overwrite":
+            files_overwritten.append(entry["dst"])
+        elif result == "merge_alert":
+            files_alerted.append(entry["dst"])
         file_results.append({"dst": entry["dst"], "result": result})
 
     # 3. Skills link.
@@ -234,7 +247,9 @@ def install(
     # 5. Build the install.json entry.
     entry = {
         "installed_at": _iso_now(),
-        "files_written": files_written,
+        "files_written": files_written,            # cleanup-safe (remove deletes these)
+        "files_overwritten": files_overwritten,    # pre-existed user content (remove leaves alone)
+        "files_alerted": files_alerted,            # merge_alert: needs manual merge by user
         "file_results": file_results,
         "post_install_results": post_install_results,
     }
@@ -244,6 +259,9 @@ def install(
         entry["brain_root_primitive"] = manifest["brain_root_primitive"]
 
     state_mod.upsert_adapter(target_root, adapter_name, entry, __version__)
+    if files_alerted:
+        log(f"  ! adapter installed BUT requires manual merge into: {', '.join(files_alerted)}")
+        log("    `./install.sh doctor` will flag this until you merge the snippet above.")
     log("done.")
     return entry
 
