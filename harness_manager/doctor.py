@@ -187,17 +187,24 @@ def _audit_adapter(
 
 
 def _check_openclaw_agent(agent_name: str) -> str:
-    """Check if openclaw agent is still registered. ok | missing | binary_missing"""
-    binary = shutil.which("openclaw")
-    if not binary:
-        return "binary_missing"
-    # Read ~/.openclaw/openclaw.json directly (faster + more deterministic
-    # than parsing `openclaw agents list` output).
+    """Check if openclaw agent is still registered. ok | missing | binary_missing
+
+    Reads ~/.openclaw/openclaw.json directly — does NOT require the
+    openclaw binary to be on PATH at audit time. The user may have
+    registered the agent on a machine where openclaw was installed,
+    then audited from a different shell where it's not. Reading the
+    config file is the source of truth either way.
+
+    Returns:
+      ok             — agent is in openclaw.json
+      missing        — openclaw.json exists but agent not in it
+      binary_missing — openclaw config file itself is absent (no install)
+    """
     try:
         import json
         cfg = Path.home() / ".openclaw" / "openclaw.json"
         if not cfg.is_file():
-            return "missing"
+            return "binary_missing"
         data = json.loads(cfg.read_text(encoding="utf-8"))
         agents = (data.get("agents") or {}).get("list") or []
         for a in agents:
