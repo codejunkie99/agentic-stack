@@ -41,6 +41,15 @@ are the exact failure mode this layer prevents.
 - Load a full `SKILL.md` only when its triggers match the current task
 - Every skill has a self-rewrite hook; invoke it after failures
 
+## Design Systems
+- If the project root contains `DESIGN.md`, treat it as the source of truth
+  for visual design decisions during UI, frontend, component, styling, or
+  prototype work.
+- Load `skills/design-md/SKILL.md` when a task mentions `DESIGN.md`, Google
+  Stitch, design tokens, visual systems, or frontend/UI styling.
+- Prefer exact tokens, component rules, and design rationale from
+  `DESIGN.md` over invented colors, typography, spacing, shadows, or motion.
+
 ## Protocols
 - `protocols/permissions.md` — read before any tool call
 - `protocols/tool_schemas/` — typed interfaces for external tools

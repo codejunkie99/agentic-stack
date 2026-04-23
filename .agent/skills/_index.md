@@ -26,3 +26,11 @@ Pre-deployment verification against a structured checklist.
 Triggers: "deploy", "ship", "release", "go live"
 Constraints: all tests passing, no unresolved TODOs in diff,
 requires human approval for production.
+
+## design-md
+Uses a root `DESIGN.md` as the portable visual system contract for UI,
+frontend, component, styling, and Google Stitch workflows.
+Triggers: "DESIGN.md", "design.md", "Google Stitch", "design tokens",
+"design system", "visual design", "UI", "frontend", "components", "styling"
+Constraints: prefer DESIGN.md tokens over invented values, preserve unknown
+sections, validate with `npx @google/design.md lint DESIGN.md` when available.

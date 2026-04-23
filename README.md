@@ -134,7 +134,9 @@ harnesses.
   a required rationale. No unattended reasoning, no provider coupling.
 - **Skills** — progressive disclosure. A lightweight manifest always
   loads; full `SKILL.md` files only load when triggers match the task.
-  Every skill ships with a self-rewrite hook.
+  Every skill ships with a self-rewrite hook. The bundled `design-md`
+  skill teaches agents to use a root `DESIGN.md` as the visual source of
+  truth for UI and Google Stitch workflows.
 - **Protocols** — typed tool schemas, a `permissions.md` that the
   pre-tool-call hook enforces, and a delegation contract for sub-agents.
 
@@ -237,6 +239,8 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 - **git-proxy** — all git ops, with safety constraints
 - **debug-investigator** — reproduce → isolate → hypothesize → verify
 - **deploy-checklist** — the fence between staging and production
+- **design-md** — uses Google Stitch-style `DESIGN.md` files as portable
+  design-system context for UI, frontend, and component work
 
 ## How it compounds
 
