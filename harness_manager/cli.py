@@ -1,0 +1,220 @@
+"""Argparse dispatcher. install.sh and install.ps1 invoke this.
+
+Verbs (subcommands): add, remove, doctor, status.
+Anything else in first position → treated as an adapter name (existing
+`./install.sh <adapter>` UX preserved).
+"""
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from . import doctor as doctor_mod
+from . import install as install_mod
+from . import remove as remove_mod
+from . import schema as schema_mod
+from . import state as state_mod
+from . import status as status_mod
+from . import __version__
+
+
+VERBS = {"add", "remove", "doctor", "status"}
+
+
+def _stack_root() -> Path:
+    """Path to the agentic-stack source root.
+
+    Honors AGENTIC_STACK_ROOT env override (CI / non-standard installs).
+    Otherwise: walk up from this file (.../harness_manager/cli.py) two
+    levels.
+    """
+    env = os.environ.get("AGENTIC_STACK_ROOT")
+    if env:
+        return Path(env).resolve()
+    return Path(__file__).resolve().parent.parent
+
+
+def _adapter_dir(adapter_name: str) -> Path:
+    return _stack_root() / "adapters" / adapter_name
+
+
+def _adapter_manifest(adapter_name: str) -> dict:
+    """Load and validate adapter.json for adapter_name."""
+    p = _adapter_dir(adapter_name) / "adapter.json"
+    if not p.is_file():
+        raise SystemExit(
+            f"error: adapter '{adapter_name}' has no adapter.json at {p}\n"
+            f"available adapters: {_list_adapters()}"
+        )
+    return schema_mod.validate(p)
+
+
+def _list_adapters() -> str:
+    root = _stack_root() / "adapters"
+    if not root.is_dir():
+        return "(adapters dir missing)"
+    names = sorted(p.name for p in root.iterdir() if p.is_dir())
+    return ", ".join(names)
+
+
+def _maybe_run_onboard(target: Path, wizard_flags: list[str]) -> None:
+    """Run onboard.py against target after install (mirrors install.sh:249).
+
+    Skipped if onboard.py missing or python3 missing (mirror of bash check).
+    """
+    onboard = _stack_root() / "onboard.py"
+    if not onboard.is_file():
+        print(
+            f"tip: customize {target}/.agent/memory/personal/PREFERENCES.md "
+            "with your conventions."
+        )
+        return
+    cmd = [sys.executable, str(onboard), str(target), *wizard_flags]
+    try:
+        subprocess.run(cmd, check=False)
+    except FileNotFoundError:
+        print(
+            "tip: python3 not found — edit "
+            ".agent/memory/personal/PREFERENCES.md manually."
+        )
+
+
+# ---- subcommands -----------------------------------------------------
+
+def cmd_install(adapter_name: str, target: Path, wizard_flags: list[str]) -> int:
+    """Install one adapter into target. Existing `./install.sh <adapter>` UX."""
+    manifest = _adapter_manifest(adapter_name)
+    install_mod.install(
+        manifest=manifest,
+        target_root=target,
+        adapter_dir=_adapter_dir(adapter_name),
+        stack_root=_stack_root(),
+    )
+    _maybe_run_onboard(target, wizard_flags)
+    return 0
+
+
+def cmd_add(adapter_name: str, target: Path) -> int:
+    """Append one adapter to an existing project (no onboard wizard re-run)."""
+    manifest = _adapter_manifest(adapter_name)
+    install_mod.install(
+        manifest=manifest,
+        target_root=target,
+        adapter_dir=_adapter_dir(adapter_name),
+        stack_root=_stack_root(),
+    )
+    return 0
+
+
+def cmd_remove(adapter_name: str, target: Path, yes: bool) -> int:
+    return remove_mod.remove(target_root=target, adapter_name=adapter_name, yes=yes)
+
+
+def cmd_doctor(target: Path) -> int:
+    return doctor_mod.audit(target_root=target)
+
+
+def cmd_status(target: Path) -> int:
+    return status_mod.show(target_root=target)
+
+
+def cmd_bare(target: Path) -> int:
+    """`./install.sh` with no args.
+
+    If install.json present: dispatch to add mode (offer adapters not yet
+    installed). If not: print usage and exit non-zero.
+    """
+    doc = state_mod.load(target)
+    if doc is None:
+        print("usage: ./install.sh <adapter-name> [target-dir]")
+        print(f"adapters: {_list_adapters()}")
+        print()
+        print("on a project that's already installed, run:")
+        print("  ./install.sh doctor      # audit")
+        print("  ./install.sh status      # quick read-only view")
+        print("  ./install.sh add <name>  # install another adapter")
+        return 2
+
+    installed = set(doc.get("adapters", {}).keys())
+    available = set()
+    root = _stack_root() / "adapters"
+    if root.is_dir():
+        for p in root.iterdir():
+            if p.is_dir() and (p / "adapter.json").is_file():
+                available.add(p.name)
+    not_installed = sorted(available - installed)
+    if not not_installed:
+        print(f"all available adapters already installed: {sorted(installed)}")
+        print("run `./install.sh status` for a summary.")
+        return 0
+
+    print(f"already installed: {sorted(installed)}")
+    print(f"available to add:  {not_installed}")
+    print()
+    print(f"to add one: ./install.sh add <name>")
+    return 0
+
+
+# ---- main ------------------------------------------------------------
+
+def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # Extract --yes / --reconfigure / --force into wizard_flags; these
+    # pass through to onboard.py for back-compat with the bash flow.
+    wizard_flags: list[str] = []
+    rest: list[str] = []
+    i = 0
+    yes = False
+    while i < len(argv):
+        a = argv[i]
+        if a in ("--yes", "-y"):
+            wizard_flags.append("--yes")
+            yes = True
+        elif a == "--reconfigure":
+            wizard_flags.append("--reconfigure")
+        elif a == "--force":
+            wizard_flags.append("--force")
+        else:
+            rest.append(a)
+        i += 1
+
+    if not rest:
+        target = Path.cwd()
+        return cmd_bare(target)
+
+    first = rest[0]
+
+    if first in VERBS:
+        verb = first
+        if verb == "add":
+            if len(rest) < 2:
+                print("usage: ./install.sh add <adapter-name> [target-dir]", file=sys.stderr)
+                return 2
+            adapter = rest[1]
+            target = Path(rest[2]) if len(rest) >= 3 else Path.cwd()
+            return cmd_add(adapter, target)
+        if verb == "remove":
+            if len(rest) < 2:
+                print("usage: ./install.sh remove <adapter-name> [target-dir] [--yes]", file=sys.stderr)
+                return 2
+            adapter = rest[1]
+            target = Path(rest[2]) if len(rest) >= 3 else Path.cwd()
+            return cmd_remove(adapter, target, yes=yes)
+        if verb == "doctor":
+            target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
+            return cmd_doctor(target)
+        if verb == "status":
+            target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
+            return cmd_status(target)
+
+    # Treat as adapter name (existing UX)
+    adapter = first
+    target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
+    return cmd_install(adapter, target, wizard_flags)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
