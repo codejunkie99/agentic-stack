@@ -55,6 +55,22 @@ cd agentic-stack && ./install.sh claude-code         # mac / linux / git-bash
 # adapters: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
 ```
 
+### Once installed: manage what's wired
+
+After the first `./install.sh <adapter>`, manage your project with
+verb-style subcommands (works with both `install.sh` and `install.ps1`):
+
+```bash
+./install.sh add cursor          # add a second adapter (Claude Code + Cursor in same repo)
+./install.sh status              # one-screen view: which adapters, brain stats
+./install.sh doctor              # read-only audit; green / yellow / red per adapter
+./install.sh remove cursor       # confirm prompt + delete; no quarantine, no undo
+```
+
+Bare `./install.sh` (no arguments) prints the available adapters, or
+— on a project that already has an install.json — lists what's still
+installable.
+
 ## Onboarding wizard
 
 After the adapter is installed, a terminal wizard populates
