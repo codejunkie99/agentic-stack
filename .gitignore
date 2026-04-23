@@ -27,3 +27,13 @@ venv/
 # Placed AFTER the negation above so the later rule wins.
 .agent/memory/.index/
 .agent/memory/.index/**
+
+# Client-scoped memory — gitignored to prevent cross-client leakage.
+# Each engagement lives in .agent/memory/client/<client-id>/ and never
+# leaves the machine. Only _template/ is committed.
+# Note: use **-only ignore (not dir/ form) so the negation below works —
+# once a directory is ignored with `dir/`, contents under it cannot be
+# un-ignored.
+.agent/memory/client/**
+!.agent/memory/client/_template/
+!.agent/memory/client/_template/**
