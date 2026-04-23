@@ -7,8 +7,11 @@ class AgenticStack < Formula
   license "Apache-2.0"
 
   def install
-    # install the brain + adapters alongside install.sh so relative paths hold
-    pkgshare.install ".agent", "adapters", "install.sh",
+    # install the brain + adapters alongside install.sh so relative paths hold.
+    # harness_manager/ is the v0.9.0 Python backend that install.sh dispatches
+    # into; without it brewed users hit ModuleNotFoundError on first install.
+    pkgshare.install ".agent", "adapters", "install.sh", "install.ps1",
+                     "harness_manager",
                      "onboard.py", "onboard_ui.py", "onboard_widgets.py",
                      "onboard_render.py", "onboard_write.py",
                      "onboard_features.py"

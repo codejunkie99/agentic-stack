@@ -307,6 +307,71 @@ class TestEndToEndInstallFlow(unittest.TestCase):
         # Also verify the cksum primitive itself matches POSIX cksum(1).
         self.assertEqual(_posix_cksum(b"/Users/foo/myproject"), 4089408017)
 
+    def test_openclaw_sanitizer_matches_legacy_bash(self):
+        """Codex P2: sanitizer must use ASCII-only [a-z0-9._-] and regex collapse.
+
+        The pre-v0.9.0 bash was:
+          tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-' | sed 's/-\\{2,\\}/-/g; s/^-//; s/-$//'
+
+        Edge cases that broke the early Python implementation:
+        - Non-ASCII letters (str.isalnum() preserves them; tr does not)
+        - Runs of dashes (str.replace("--","-") is single-pass; sed regex collapses fully)
+        """
+        from harness_manager.post_install import _openclaw_agent_name
+        # Hand-derived expectations, lowercased basename + cksum-based suffix.
+        # We only assert the basename portion (suffix is path-dependent).
+        # Non-ASCII test: "café" → bash would have produced "caf-" (ç → -)
+        # and the sanitizer would strip the trailing dash → "caf".
+        name = _openclaw_agent_name("/tmp/café")
+        self.assertTrue(
+            name.startswith("caf-"),
+            f"non-ASCII char ç should sanitize to '-' (then stripped or kept), "
+            f"got name '{name}'",
+        )
+        self.assertNotIn("é", name)  # accents must be gone, not preserved
+        # Run-of-dashes test: "a----b" basename
+        name = _openclaw_agent_name("/tmp/a----b")
+        self.assertTrue(
+            name.startswith("a-b-"),
+            f"runs of dashes should collapse to single '-', got name '{name}'",
+        )
+
+    def test_doctor_yellow_when_openclaw_register_was_skipped(self):
+        """Codex P1: doctor must NOT report red for adapters whose register
+        post_install was binary_missing at install time. The fallback hint
+        is the documented behavior, not a bug.
+        """
+        # Install openclaw — but openclaw binary is not in PATH on this box,
+        # so post_install will record status: binary_missing.
+        # (We rely on the test environment NOT having openclaw on PATH,
+        # OR the install simulating it — for this assertion, we just check
+        # that whatever status was recorded, doctor handles all branches
+        # correctly.)
+        self._install("openclaw")
+        doc = state_mod.load(self.target)
+        entry = doc["adapters"]["openclaw"]
+        results = entry.get("post_install_results", [])
+        if not results:
+            self.skipTest("openclaw didn't record post_install_results — skip")
+        register = next(
+            (r for r in results if r.get("action") == "openclaw_register_workspace"),
+            None,
+        )
+        if register is None or register.get("status") in ("ok", "already_exists"):
+            self.skipTest("openclaw was actually registered ok — different code path")
+        # Status is binary_missing or failed. Doctor must NOT mark red just
+        # because the agent isn't in ~/.openclaw/openclaw.json — the install
+        # never registered it, so absence is expected.
+        log_lines = []
+        rc = doctor_mod.audit(self.target, log=log_lines.append)
+        all_text = "\n".join(log_lines)
+        # Yellow allowed (rc=0), red is the bug we're guarding against.
+        self.assertEqual(
+            rc, 0,
+            f"doctor should not return red when openclaw registration was "
+            f"skipped at install time. log:\n{all_text}",
+        )
+
     def test_state_lock_prevents_lost_update(self):
         """Codex P2: concurrent upsert_adapter must not lose entries.
 

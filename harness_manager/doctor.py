@@ -131,27 +131,49 @@ def _audit_adapter(
             lines.append(f"skills_link {sl['dst']} dangles")
             return RED, lines
 
-    # Check post_install state
+    # Check post_install state. Only verify external state for actions that
+    # actually succeeded — if registration was skipped at install time
+    # (binary_missing, failed, etc.), the recorded result IS the source of
+    # truth and there's nothing on-disk to verify against.
     for r in entry.get("post_install_results", []):
         action = r.get("action", "?")
         st = r.get("status", "?")
         if action == "openclaw_register_workspace":
             agent = r.get("agent_name", "?")
-            check_status = _check_openclaw_agent(agent)
-            if check_status == "ok":
-                lines.append(f"openclaw agent '{agent}' registered")
-            elif check_status == "binary_missing":
+            if st in ("ok", "already_exists"):
+                # Registration claimed success at install time; verify it's
+                # still true. RED if the agent is now gone from openclaw config.
+                check_status = _check_openclaw_agent(agent)
+                if check_status == "ok":
+                    lines.append(f"openclaw agent '{agent}' registered")
+                elif check_status == "binary_missing":
+                    lines.append(
+                        f"openclaw agent '{agent}' was registered, but openclaw "
+                        f"binary not on PATH now — can't verify"
+                    )
+                    status_overall = max(status_overall, YELLOW, key=_status_rank)
+                elif check_status == "missing":
+                    lines.append(
+                        f"openclaw agent '{agent}' was registered, but no longer "
+                        f"present in ~/.openclaw/openclaw.json"
+                    )
+                    status_overall = RED
+            elif st == "binary_missing":
                 lines.append(
-                    f"openclaw agent '{agent}' was registered, but openclaw binary "
-                    f"not on PATH now — can't verify"
+                    f"openclaw registration skipped at install time (binary not "
+                    f"on PATH); fallback hint was printed. install with `openclaw` "
+                    f"present, or use the `--system-prompt-file` fallback."
                 )
                 status_overall = max(status_overall, YELLOW, key=_status_rank)
-            elif check_status == "missing":
+            else:
+                # Failed at install time and we recorded that. Don't escalate
+                # to red on every audit — the failure is already known and the
+                # user has a fallback hint.
                 lines.append(
-                    f"openclaw agent '{agent}' was registered, but no longer "
-                    f"present in ~/.openclaw/openclaw.json"
+                    f"openclaw registration {st} at install time "
+                    f"(see install.json for details / fallback hint)"
                 )
-                status_overall = RED
+                status_overall = max(status_overall, YELLOW, key=_status_rank)
         else:
             # Unknown post_install action — just record
             lines.append(f"post_install {action}: {st}")

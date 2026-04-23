@@ -8,10 +8,19 @@ This is deliberately not a plugin DSL or arbitrary command runner. The
 codex review of the v1.0 vision plan flagged generalized run_command as
 DSL creep; named built-ins are the constrained alternative.
 """
+import re
 import shutil
+import string
 import subprocess
 from pathlib import Path
 from typing import Callable
+
+# ASCII-only allowed set for openclaw agent name basenames. Mirrors
+# `tr -c 'A-Za-z0-9._-'` from the legacy bash. str.isalnum() is not safe
+# here because it accepts non-ASCII letters — `café`.isalnum() is True
+# but bash `tr` would have replaced ç with `-`. Without this exact match,
+# upgrade installs would generate different agent ids and create duplicates.
+_OPENCLAW_AGENT_NAME_ALLOWED = set(string.ascii_letters + string.digits + "._-")
 
 
 def _abs_target(target_root: Path | str) -> Path:
@@ -66,8 +75,15 @@ def _openclaw_agent_name(target_root: Path | str) -> str:
     """
     abs_target = _abs_target(target_root)
     bn_raw = abs_target.name.lower()
-    safe = "".join(c if (c.isalnum() or c in "._-") else "-" for c in bn_raw)
-    safe = safe.strip("-").replace("--", "-") or "project"
+    # ASCII-only sanitizer: replace any char outside [a-z0-9._-] with `-`.
+    # Mirrors `tr -c 'A-Za-z0-9._-' '-'` (the lowercase pre-step makes the
+    # case range moot). Non-ASCII letters are intentionally NOT preserved.
+    safe = "".join(c if c in _OPENCLAW_AGENT_NAME_ALLOWED else "-" for c in bn_raw)
+    # Collapse runs of dashes (regex equivalent of `sed 's/-\{2,\}/-/g'`).
+    # str.replace("--", "-") is single-pass and would leave `a----b` as `a--b`.
+    safe = re.sub(r"-{2,}", "-", safe).strip("-")
+    if not safe:
+        safe = "project"
     suffix = _posix_cksum(str(abs_target).encode("utf-8")) % 1_000_000
     return f"{safe}-{suffix:06d}"
 
