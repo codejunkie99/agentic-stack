@@ -42,11 +42,41 @@ def remove(
     # user's own AGENTS.md, settings.json, run.py) are tracked in
     # files_overwritten and we leave them alone — destroying a user's
     # pre-install file is exactly the kind of thing remove must NOT do.
-    files_to_delete = list(entry.get("files_written", []))
+    candidate_files_to_delete = list(entry.get("files_written", []))
     files_to_preserve = list(entry.get("files_overwritten", []))
     skills_link = entry.get("skills_link")
     skills_link_pre_existed = entry.get("skills_link_pre_existed", False)
     post_install_results = entry.get("post_install_results", [])
+
+    # Shared-file reference check: if another installed adapter also depends
+    # on a file we're about to delete (their file_results show left_alone /
+    # merge_alert / written_overwrite / written_new for the same dst), we
+    # must NOT delete it. Common case: codex writes AGENTS.md, then opencode
+    # is added later and sees AGENTS.md already references .agent/ → its
+    # file_results record `left_alone`. Removing codex must not orphan
+    # opencode by deleting their shared AGENTS.md.
+    other_adapter_paths: set[str] = set()
+    for other_name, other_entry in doc.get("adapters", {}).items():
+        if other_name == adapter_name:
+            continue
+        # All paths another adapter references in any role:
+        for r in other_entry.get("file_results", []):
+            if r.get("dst"):
+                other_adapter_paths.add(r["dst"])
+        for f in other_entry.get("files_written", []):
+            other_adapter_paths.add(f)
+        for f in other_entry.get("files_overwritten", []):
+            other_adapter_paths.add(f)
+        for f in other_entry.get("files_alerted", []):
+            other_adapter_paths.add(f)
+
+    files_to_delete = []
+    files_shared = []
+    for f in candidate_files_to_delete:
+        if f in other_adapter_paths:
+            files_shared.append(f)
+        else:
+            files_to_delete.append(f)
 
     log(f"removing adapter '{adapter_name}' from {target_root}")
     log("")
@@ -67,6 +97,12 @@ def remove(
         log("and will be PRESERVED (we never delete user-owned content):")
         for f in files_to_preserve:
             log(f"  ~ {f} (use git or your own backup to recover the original if needed)")
+    if files_shared:
+        log("")
+        log("the following files are SHARED with another installed adapter")
+        log("and will be PRESERVED (deleting would break the other adapter):")
+        for f in files_shared:
+            log(f"  ~ {f}")
     log("")
 
     # Reverse post_install actions — but ONLY for actions that succeeded

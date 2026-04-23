@@ -285,12 +285,26 @@ def _audit_pre_v090(target_root: Path, log: Callable[[str], None]) -> int:
         files_written: list[str] = []
         files_alerted: list[str] = []
         skills_link = None
+        files_overwritten: list[str] = []
+        post_install_results: list[dict] = []
+        skills_link_pre_existed = True  # conservative default for migration
         if manifest_path.is_file():
             try:
                 manifest = schema_mod.validate(manifest_path)
-                # Claim ownership for files the old install.sh would have written.
-                # Skip merge_or_alert entries — the user's existing AGENTS.md
-                # may be their own content; claiming it would let us delete it.
+                # Migration is conservative: we don't know whether the old
+                # install.sh adopted user content (overwrite/skip_if_exists
+                # paths could have been pre-existing user files like
+                # CLAUDE.md or run.py that the old installer just clobbered).
+                # Synthesizing those as files_written would let `remove`
+                # delete genuinely-user content.
+                #
+                # Bucketing rule for synthesis:
+                #   merge_or_alert → files_alerted   (user-owned by spec)
+                #   anything else  → files_overwritten (be conservative,
+                #                                       preserve on remove)
+                #
+                # User can re-run `./install.sh <adapter>` to get strict
+                # ownership (files_written) and full remove behavior.
                 for entry in manifest.get("files", []):
                     dst = entry.get("dst")
                     if not dst:
@@ -299,13 +313,30 @@ def _audit_pre_v090(target_root: Path, log: Callable[[str], None]) -> int:
                         if entry.get("merge_policy") == "merge_or_alert":
                             files_alerted.append(dst)
                         else:
-                            files_written.append(dst)
-                # Skills_link: pre-v0.9 install.sh always created this, so
-                # claim ownership (skills_link_pre_existed=False).
+                            files_overwritten.append(dst)
+                # Skills_link: same logic. Old install.sh COULD have adopted
+                # a pre-existing dir via -L/-d. Conservative synthesis says
+                # "user-owned" so remove won't delete it. User re-installs to
+                # get strict ownership tracking.
                 if "skills_link" in manifest:
                     sl_dst = target_root / manifest["skills_link"]["dst"]
                     if sl_dst.exists() or sl_dst.is_symlink():
                         skills_link = manifest["skills_link"]
+                        # already True from default
+
+                # If this is the openclaw adapter and the agent is currently
+                # registered in ~/.openclaw/openclaw.json, recover the
+                # post_install record so a future `remove` can reverse it.
+                if name == "openclaw":
+                    from .post_install import _openclaw_agent_name
+                    expected_name = _openclaw_agent_name(target_root)
+                    check = _check_openclaw_agent(expected_name)
+                    if check == "ok":
+                        post_install_results.append({
+                            "action": "openclaw_register_workspace",
+                            "status": "ok",
+                            "agent_name": expected_name,
+                        })
             except Exception:
                 # If the manifest is missing or invalid, fall back to the
                 # bare-minimum entry. Doctor will still flag missing files
@@ -314,16 +345,16 @@ def _audit_pre_v090(target_root: Path, log: Callable[[str], None]) -> int:
 
         adapter_entry = {
             "installed_at": now,
-            "files_written": files_written,
-            "files_overwritten": [],
+            "files_written": files_written,           # always [] for synthesized
+            "files_overwritten": files_overwritten,   # all non-merge_or_alert files (conservative)
             "files_alerted": files_alerted,
             "file_results": [],
-            "post_install_results": [],
+            "post_install_results": post_install_results,
             "_synthesized": True,  # marker for future migrations
         }
         if skills_link is not None:
             adapter_entry["skills_link"] = skills_link
-            adapter_entry["skills_link_pre_existed"] = False
+            adapter_entry["skills_link_pre_existed"] = skills_link_pre_existed
         doc["adapters"][name] = adapter_entry
 
     state_mod.save(target_root, doc)

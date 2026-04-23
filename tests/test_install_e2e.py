@@ -589,11 +589,14 @@ class TestEndToEndInstallFlow(unittest.TestCase):
         self.assertIsNotNone(doc, "doctor failed to synthesize install.json")
         self.assertIn("cursor", doc["adapters"])
         cursor_entry = doc["adapters"]["cursor"]
+        # Conservative migration: detected file goes to files_overwritten
+        # (we don't know whether it pre-existed user content). User can
+        # re-install for strict ownership tracking.
         self.assertIn(
             ".cursor/rules/agentic-stack.mdc",
-            cursor_entry["files_written"],
-            "synthesis must populate files_written so remove can clean up "
-            "pre-v0.9 install artifacts",
+            cursor_entry["files_overwritten"],
+            "synthesis must populate files_overwritten conservatively so "
+            "remove never destroys content we can't prove we created",
         )
         self.assertTrue(cursor_entry.get("_synthesized"))
 
@@ -661,6 +664,35 @@ class TestEndToEndInstallFlow(unittest.TestCase):
             )
             # Hand-verified pre-v0.9 install.sh value
             self.assertEqual(name, "myproject-408017")
+
+    def test_remove_preserves_shared_agents_md(self):
+        """Codex P1: a multi-adapter repo where another adapter still
+        depends on AGENTS.md must NOT see it deleted by remove.
+        """
+        # Install codex first — writes AGENTS.md (merge_or_alert; we create
+        # it because target is fresh).
+        self._install("codex")
+        doc = state_mod.load(self.target)
+        codex_entry = doc["adapters"]["codex"]
+        self.assertIn("AGENTS.md", codex_entry["files_written"])
+
+        # Add hermes — its AGENTS.md merge_policy is merge_or_alert; existing
+        # AGENTS.md already references .agent/ (codex's content) → left_alone.
+        self._install("hermes")
+        doc = state_mod.load(self.target)
+        hermes_entry = doc["adapters"]["hermes"]
+        # hermes recorded AGENTS.md in file_results as left_alone, NOT in files_written.
+        hermes_results = {r["dst"]: r["result"] for r in hermes_entry["file_results"]}
+        self.assertEqual(hermes_results.get("AGENTS.md"), "left_alone")
+
+        # Now remove codex. AGENTS.md is in codex's files_written, but hermes
+        # depends on it. The shared check must preserve it.
+        rc = remove_mod.remove(self.target, "codex", yes=True, log=lambda _: None)
+        self.assertEqual(rc, 0)
+        self.assertTrue(
+            (self.target / "AGENTS.md").exists(),
+            "remove deleted AGENTS.md while another adapter (hermes) still depends on it",
+        )
 
     def test_state_lock_prevents_lost_update(self):
         """Codex P2: concurrent upsert_adapter must not lose entries.
