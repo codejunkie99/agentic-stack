@@ -33,7 +33,8 @@ Three modules, one principle: the harness is dumb, the knowledge is in files.
 ## Why the separation matters
 
 You can swap the harness for any of the adapters (Claude Code, Cursor,
-Windsurf, OpenCode, OpenClaw, Hermes, standalone Python) and lose
-nothing. The brain is portable; only the glue changes.
+Windsurf, OpenCode, OpenClaw, Hermes, Pi, Codex, standalone Python,
+Antigravity) and lose nothing. The brain is portable; only the glue
+changes.
 
 See `diagram.svg` for a visual.

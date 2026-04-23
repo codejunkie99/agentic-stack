@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh — copy an adapter into the consuming project, then run the onboarding wizard
 # Usage: ./install.sh <adapter-name> [target-dir] [--yes] [--reconfigure]
-#   adapter-name:  claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | standalone-python | antigravity
+#   adapter-name:  claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
 #   target-dir:    where your project lives (default: current dir)
 #   --yes          accept all wizard defaults without prompting (safe for CI)
 #   --reconfigure  re-run the wizard even if PREFERENCES.md is already filled
@@ -13,7 +13,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 
 if [[ -z "$ADAPTER" ]]; then
   echo "usage: $0 <adapter-name> [target-dir]" >&2
-  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi standalone-python antigravity" >&2
+  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi codex standalone-python antigravity" >&2
   exit 2
 fi
 
@@ -170,6 +170,55 @@ case "$ADAPTER" in
     mkdir -p "$TARGET/.agent/harness/hooks"
     cp "$HERE/.agent/harness/hooks/pi_post_tool.py" "$TARGET/.agent/harness/hooks/pi_post_tool.py"
     echo "  + .agent/harness/hooks/pi_post_tool.py (synced for upgrades)"
+    ;;
+  codex)
+    # codex reads AGENTS.md (like pi, hermes, opencode). Many other tools
+    # also write AGENTS.md (aider, amp, cline, existing codex setups), so
+    # we follow the openclaw pattern: merge-or-alert, never blind overwrite,
+    # never blind skip.
+    if [[ -f "$TARGET/AGENTS.md" ]]; then
+      if grep -q '\.agent/' "$TARGET/AGENTS.md" 2>/dev/null; then
+        echo "  ~ AGENTS.md already references .agent/ — leaving alone"
+      else
+        echo "  ! AGENTS.md exists but does not reference .agent/; not overwriting."
+        echo "    merge this block into your AGENTS.md to wire the brain:"
+        echo "    ---8<---"
+        sed 's/^/    /' "$SRC/AGENTS.md"
+        echo "    --->8---"
+      fi
+    else
+      cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
+      echo "  + AGENTS.md"
+    fi
+
+    # Codex scans .agents/skills/ (plural) for repo-scoped skills — per
+    # OpenAI docs https://developers.openai.com/codex/skills. Keep the
+    # portable brain authoritative: .agents/skills mirrors .agent/skills.
+    mkdir -p "$TARGET/.agents"
+    SKILLS_SRC="$(cd "$TARGET/.agent/skills" && pwd)"
+    SKILLS_DEST="$TARGET/.agents/skills"
+    if [[ -L "$SKILLS_DEST" ]]; then
+      # Existing symlink: repoint at current .agent/skills (cheap, safe)
+      ln -sfn "$SKILLS_SRC" "$SKILLS_DEST"
+      echo "  + .agents/skills -> $SKILLS_SRC"
+    elif [[ -d "$SKILLS_DEST" ]]; then
+      # Real directory from a prior copy-fallback install: sync with
+      # delete-orphans so removed/renamed skills don't linger. Use rsync
+      # if available, otherwise rm+cp as a safe-but-blunt replacement.
+      if command -v rsync >/dev/null 2>&1; then
+        rsync -a --delete "$SKILLS_SRC/" "$SKILLS_DEST/"
+        echo "  ~ synced .agent/skills → .agents/skills (rsync --delete)"
+      else
+        rm -rf "$SKILLS_DEST"
+        cp -R "$SKILLS_SRC" "$SKILLS_DEST"
+        echo "  ~ replaced .agents/skills with current .agent/skills (no rsync)"
+      fi
+    elif ln -sfn "$SKILLS_SRC" "$SKILLS_DEST" 2>/dev/null; then
+      echo "  + .agents/skills -> $SKILLS_SRC"
+    else
+      cp -R "$SKILLS_SRC" "$SKILLS_DEST"
+      echo "  + .agents/skills (copy; symlink not supported here)"
+    fi
     ;;
   standalone-python)
     cp "$SRC/run.py" "$TARGET/run.py"
