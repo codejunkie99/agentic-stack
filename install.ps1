@@ -154,8 +154,21 @@ switch ($Adapter) {
 
         $skillsSrc = Join-Path $TargetAgent 'skills'
         $skillsDst = Join-Path $piDir 'skills'
-        if (Test-Path $skillsDst) {
-            Remove-Item -LiteralPath $skillsDst -Recurse -Force
+
+        # CRITICAL: detect symlink BEFORE Remove-Item. On PowerShell 5.1
+        # (Windows default), `Remove-Item -Recurse -Force` on a symlink
+        # traverses INTO the target and deletes its contents. Re-running
+        # the installer would silently wipe .agent/skills via the link.
+        # Use IsLink detection + .NET Delete (link only, not target).
+        $skillsDstItem = Get-Item -LiteralPath $skillsDst -Force -ErrorAction SilentlyContinue
+        if ($skillsDstItem) {
+            $isLink = ($skillsDstItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq [System.IO.FileAttributes]::ReparsePoint
+            if ($isLink) {
+                try { [System.IO.Directory]::Delete($skillsDst, $false) }
+                catch { [System.IO.File]::Delete($skillsDst) }
+            } else {
+                Remove-Item -LiteralPath $skillsDst -Recurse -Force
+            }
         }
         try {
             New-Item -ItemType SymbolicLink -Path $skillsDst -Target $skillsSrc -ErrorAction Stop | Out-Null

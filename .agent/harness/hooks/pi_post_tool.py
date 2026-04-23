@@ -33,7 +33,31 @@ _PI_TO_CANONICAL = {
     "ls": "LS",
     "task": "Task",
     "todowrite": "TodoWrite",
+    "todo_write": "TodoWrite",
     "webfetch": "WebFetch",
+    "web_fetch": "WebFetch",
+}
+
+# Pi tends to use camelCase for tool_input keys; the shared
+# claude_code_post_tool helpers (cc._action_label, cc._reflection,
+# cc._importance) expect the snake_case keys Claude Code sends.
+# Normalize a known set so action labels and reflections come out
+# meaningful instead of degrading to "edit: ?" / "Edited ?".
+_PI_INPUT_KEY_MAP = {
+    "filePath": "file_path",
+    "filepath": "file_path",
+    "path": "file_path",
+    "oldString": "old_string",
+    "oldstring": "old_string",
+    "newString": "new_string",
+    "newstring": "new_string",
+    "content": "content",
+    "command": "command",
+    "todos": "todos",
+    "todo": "todos",
+    "url": "url",
+    "pattern": "pattern",
+    "query": "query",
 }
 
 
@@ -41,7 +65,23 @@ def _tool_name(name: str) -> str:
     if not isinstance(name, str):
         return "Unknown"
     lowered = name.strip().lower()
-    return _PI_TO_CANONICAL.get(lowered, name[:1].upper() + name[1:])
+    if lowered in _PI_TO_CANONICAL:
+        return _PI_TO_CANONICAL[lowered]
+    if "_" in name:
+        return "".join(part[:1].upper() + part[1:] for part in name.split("_") if part)
+    return name[:1].upper() + name[1:]
+
+
+def _normalize_input(raw) -> dict:
+    """Map Pi tool_input keys to the snake_case shape cc.* helpers expect."""
+    if not isinstance(raw, dict):
+        if raw is None:
+            return {}
+        return {"raw": str(raw)}
+    out: dict = {}
+    for k, v in raw.items():
+        out[_PI_INPUT_KEY_MAP.get(k, k)] = v
+    return out
 
 
 def _extract_text(content) -> str:
@@ -97,17 +137,51 @@ def _normalize_response(event: dict) -> dict:
     return resp
 
 
+def _emit_malformed(reason: str, raw_excerpt: str) -> None:
+    """Record an explicit failure entry instead of silently logging a bogus
+    'Unknown success'. If Pi changes payload shape or sends malformed
+    JSON, this surfaces in AGENT_LEARNINGS.jsonl as a real signal.
+    """
+    excerpt = raw_excerpt[:200] if isinstance(raw_excerpt, str) else ""
+    on_failure(
+        skill_name="pi",
+        action="hook:malformed_payload",
+        error=f"pi tool_result payload malformed: {reason}",
+        context=excerpt,
+        confidence=0.95,
+        importance="medium",
+        pain_score=2,
+    )
+
+
 def main() -> None:
+    raw = ""
     try:
         raw = sys.stdin.read()
-        payload = json.loads(raw) if raw.strip() else {}
-    except (json.JSONDecodeError, OSError):
-        payload = {}
+    except OSError as e:
+        _emit_malformed(f"stdin read failed: {e}", "")
+        return
+
+    if not raw or not raw.strip():
+        _emit_malformed("empty payload", "")
+        return
+
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as e:
+        _emit_malformed(f"json decode error: {e.msg}", raw)
+        return
+
+    if not isinstance(payload, dict):
+        _emit_malformed(f"payload is {type(payload).__name__}, expected object", raw)
+        return
+
+    if "tool_name" not in payload:
+        _emit_malformed("missing tool_name", raw)
+        return
 
     tool_name = _tool_name(payload.get("tool_name") or "Unknown")
-    tool_input = payload.get("tool_input") or {}
-    if not isinstance(tool_input, dict):
-        tool_input = {"raw": str(tool_input)}
+    tool_input = _normalize_input(payload.get("tool_input"))
     tool_response = _normalize_response(payload)
 
     success = cc._is_success(tool_name, tool_input, tool_response)
