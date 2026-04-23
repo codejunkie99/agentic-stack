@@ -231,8 +231,26 @@ def install(
             files_alerted.append(entry["dst"])
         file_results.append({"dst": entry["dst"], "result": result})
 
-    # 3. Skills link.
+    # 3. Skills link. Track whether the destination pre-existed before
+    #    install touched it — if so, remove must NOT delete it (codex P1:
+    #    `./install.sh remove codex` would otherwise wipe a user-owned
+    #    `.agents/skills/` that the installer adopted, not created).
+    skills_link_pre_existed = False
     if "skills_link" in manifest:
+        skills_dst = target_root / manifest["skills_link"]["dst"]
+        skills_link_pre_existed = (
+            skills_dst.exists() or skills_dst.is_symlink()
+        )
+        # Preserve prior install.json's pre-existence flag across re-installs:
+        # if WE created the link first time, the second install detecting it
+        # exists doesn't make it user-owned now. (Same logic shape as the
+        # files_written ownership preservation above.)
+        prior_skills_pre_existed = (prior_entry.get("skills_link_pre_existed", False))
+        if entry_was_owned_in_prior_install := (
+            "skills_link" in prior_entry
+            and not prior_skills_pre_existed
+        ):
+            skills_link_pre_existed = False
         _resolve_skills_link(target_root, manifest["skills_link"], log)
 
     # 4. Post-install actions.
@@ -272,6 +290,7 @@ def install(
     }
     if "skills_link" in manifest:
         entry["skills_link"] = manifest["skills_link"]
+        entry["skills_link_pre_existed"] = skills_link_pre_existed
     if manifest.get("brain_root_primitive"):
         entry["brain_root_primitive"] = manifest["brain_root_primitive"]
 

@@ -450,6 +450,111 @@ class TestEndToEndInstallFlow(unittest.TestCase):
         finally:
             pi_mod.reverse = original_reverse
 
+    def test_remove_preserves_pre_existing_skills_link_dir(self):
+        """Codex P1: if user already had .agents/skills/ before installing
+        codex, remove must NOT delete it (we adopted, didn't create).
+        """
+        # Plant a pre-existing user-owned .agents/skills directory with
+        # custom content.
+        user_skills = self.target / ".agents" / "skills"
+        user_skills.mkdir(parents=True, exist_ok=True)
+        (user_skills / "user-skill").mkdir()
+        (user_skills / "user-skill" / "SKILL.md").write_text(
+            "---\nname: user-skill\ndescription: my own\n---\n", encoding="utf-8"
+        )
+
+        # Install codex — adopts the existing dir via rsync.
+        self._install("codex")
+        doc = state_mod.load(self.target)
+        entry = doc["adapters"]["codex"]
+        self.assertTrue(
+            entry.get("skills_link_pre_existed"),
+            "skills_link_pre_existed should be True when target dir was present pre-install",
+        )
+
+        # Remove codex. The skills_link dst should NOT be deleted.
+        rc = remove_mod.remove(self.target, "codex", yes=True, log=lambda _: None)
+        self.assertEqual(rc, 0)
+        self.assertTrue(
+            user_skills.exists(),
+            "remove deleted .agents/skills/ which pre-existed install — destroys user data",
+        )
+
+    def test_remove_deletes_installer_created_skills_link(self):
+        """Sanity check: when WE created the skills_link, remove DOES delete it."""
+        # Fresh project, no pre-existing .agents/skills.
+        self._install("codex")
+        doc = state_mod.load(self.target)
+        entry = doc["adapters"]["codex"]
+        self.assertFalse(
+            entry.get("skills_link_pre_existed", False),
+            "skills_link_pre_existed should be False on fresh install",
+        )
+        rc = remove_mod.remove(self.target, "codex", yes=True, log=lambda _: None)
+        self.assertEqual(rc, 0)
+        skills_dst = self.target / ".agents" / "skills"
+        self.assertFalse(
+            skills_dst.exists() and not skills_dst.is_symlink(),
+            "remove failed to clean up installer-created skills_link",
+        )
+
+    def test_openclaw_reverse_uses_stored_agent_name_not_recompute(self):
+        """Codex P2: openclaw reverse must use the agent_name recorded at
+        install time, not recompute from current target_root. Otherwise a
+        renamed/moved project tries to remove the wrong agent and orphans
+        the original.
+        """
+        from harness_manager import post_install as pi_mod
+        # Plant an install.json with a synthetic openclaw entry whose
+        # recorded agent_name does NOT match what _openclaw_agent_name
+        # would compute now (simulates: project was renamed after install).
+        recorded_name = "old-name-123456"
+        state_mod.upsert_adapter(
+            self.target,
+            "openclaw",
+            {
+                "installed_at": "x",
+                "files_written": [],
+                "files_overwritten": [],
+                "files_alerted": [],
+                "file_results": [],
+                "post_install_results": [
+                    {
+                        "action": "openclaw_register_workspace",
+                        "status": "ok",
+                        "agent_name": recorded_name,
+                    }
+                ],
+            },
+            "0.9.0",
+        )
+
+        # Spy on what name reverse() actually receives.
+        seen = {"agent_name": None}
+        original = pi_mod.openclaw_unregister_workspace
+        def _spy(target_root, **kwargs):
+            seen["agent_name"] = kwargs.get("agent_name") or pi_mod._openclaw_agent_name(target_root)
+            # Don't actually invoke openclaw — just record what would be called.
+            return {"action": "openclaw_unregister_workspace", "status": "ok",
+                    "agent_name": seen["agent_name"]}
+        pi_mod.ACTIONS["openclaw_register_workspace"] = (
+            pi_mod.openclaw_register_workspace, _spy
+        )
+        try:
+            rc = remove_mod.remove(self.target, "openclaw", yes=True, log=lambda _: None)
+            self.assertEqual(rc, 0)
+            self.assertEqual(
+                seen["agent_name"],
+                recorded_name,
+                f"remove called openclaw unregister with '{seen['agent_name']}' "
+                f"but install.json recorded '{recorded_name}'. A renamed project "
+                f"would orphan the original openclaw agent.",
+            )
+        finally:
+            pi_mod.ACTIONS["openclaw_register_workspace"] = (
+                pi_mod.openclaw_register_workspace, original
+            )
+
     def test_state_lock_prevents_lost_update(self):
         """Codex P2: concurrent upsert_adapter must not lose entries.
 

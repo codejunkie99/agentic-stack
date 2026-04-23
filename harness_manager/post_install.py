@@ -146,12 +146,20 @@ def openclaw_register_workspace(target_root: Path | str, **_kwargs) -> dict:
     }
 
 
-def openclaw_unregister_workspace(target_root: Path | str, **_kwargs) -> dict:
+def openclaw_unregister_workspace(target_root: Path | str, **kwargs) -> dict:
     """Reverse of register: `openclaw agents remove <name>`. Used by `remove`.
 
     Best-effort. Returns ok if the agent was removed OR didn't exist.
+
+    IMPORTANT: prefer the agent_name passed in via kwargs (recovered from
+    install.json's post_install_results record) over recomputing it from
+    the current target_root. Otherwise a project that's been moved/renamed
+    after install will compute a different agent name (cksum of the new
+    abs path), and we'll send `openclaw agents remove <new-name>`. The
+    new name doesn't exist → openclaw says "not found" → we treat as ok
+    → the original agent stays orphaned in ~/.openclaw/openclaw.json.
     """
-    agent_name = _openclaw_agent_name(target_root)
+    agent_name = kwargs.get("agent_name") or _openclaw_agent_name(target_root)
     binary = shutil.which("openclaw")
     if not binary:
         return {

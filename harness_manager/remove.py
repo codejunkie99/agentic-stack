@@ -45,6 +45,7 @@ def remove(
     files_to_delete = list(entry.get("files_written", []))
     files_to_preserve = list(entry.get("files_overwritten", []))
     skills_link = entry.get("skills_link")
+    skills_link_pre_existed = entry.get("skills_link_pre_existed", False)
     post_install_results = entry.get("post_install_results", [])
 
     log(f"removing adapter '{adapter_name}' from {target_root}")
@@ -56,7 +57,10 @@ def remove(
         marker = "(missing)" if not (target_root / f).exists() else ""
         log(f"  - {f} {marker}".rstrip())
     if skills_link:
-        log(f"  - {skills_link['dst']} (skills_link, will be unlinked/removed)")
+        if skills_link_pre_existed:
+            log(f"  ~ {skills_link['dst']} (skills_link target pre-existed install — PRESERVED)")
+        else:
+            log(f"  - {skills_link['dst']} (skills_link, will be unlinked/removed)")
     if files_to_preserve:
         log("")
         log("the following files were modified by install but pre-existed in your project")
@@ -106,8 +110,11 @@ def remove(
             except OSError as e:
                 log(f"  ! could not delete {f}: {e}")
 
-    # Remove skills_link (only the link/dir, not the target!)
-    if skills_link:
+    # Remove skills_link (only the link/dir, not the target!) — but only
+    # if the destination did NOT pre-exist install. If user had their own
+    # `.agents/skills/` or `.pi/skills/` before installing, we adopted it
+    # via rsync sync, but it's still theirs to keep on remove.
+    if skills_link and not skills_link_pre_existed:
         dst = target_root / skills_link["dst"]
         try:
             if dst.is_symlink():
@@ -118,11 +125,26 @@ def remove(
                 log(f"  - removed dir {skills_link['dst']}")
         except OSError as e:
             log(f"  ! could not remove {skills_link['dst']}: {e}")
+    elif skills_link and skills_link_pre_existed:
+        log(
+            f"  ~ leaving {skills_link['dst']} alone (it pre-existed install — "
+            f"may be user-owned content the installer adopted)"
+        )
 
-    # Reverse post_install actions
+    # Reverse post_install actions. Pass through any state recorded at
+    # install time (e.g. the openclaw agent_name) so the reverse targets
+    # the original registration even if the project has been moved or
+    # renamed since install.
     for action_name in reverse_actions:
         log(f"  → reversing {action_name}")
-        result = post_install_mod.reverse(action_name, target_root)
+        # Find the matching install-time result so we can forward its
+        # recorded fields (agent_name, etc.) as kwargs.
+        recorded = next(
+            (r for r in post_install_results if r.get("action") == action_name),
+            {},
+        )
+        kwargs = {k: v for k, v in recorded.items() if k not in ("action", "status", "stderr", "exit_code", "fallback_hint")}
+        result = post_install_mod.reverse(action_name, target_root, **kwargs)
         st = result.get("status", "?")
         if st == "ok":
             log(f"    ✓ reversed")
