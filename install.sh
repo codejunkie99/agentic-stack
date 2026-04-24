@@ -82,6 +82,30 @@ case "$ADAPTER" in
           echo "  + .claude/commands/ (${#bcg_commands[@]} BCG slash commands)"
         fi
       fi
+      # Agent-memory templates: copy per-role stubs without overwriting
+      # existing target memory. Fresh installs get stubs; re-installs
+      # preserve any in-progress per-agent memory that has accumulated.
+      # README.md in the templates dir is excluded from propagation
+      # (it documents the pattern, not a runtime artifact).
+      if [[ -d "$BCG_SRC/agent-memory-templates" ]]; then
+        mkdir -p "$TARGET/.claude/agent-memory"
+        shopt -s nullglob
+        bcg_memory=("$BCG_SRC/agent-memory-templates/"*.md)
+        shopt -u nullglob
+        copied=0
+        for src in "${bcg_memory[@]}"; do
+          base="$(basename "$src")"
+          [[ "$base" == "README.md" ]] && continue
+          dst="$TARGET/.claude/agent-memory/$base"
+          if [[ ! -e "$dst" ]]; then
+            cp "$src" "$dst"
+            copied=$((copied + 1))
+          fi
+        done
+        if (( copied > 0 )); then
+          echo "  + .claude/agent-memory/ ($copied BCG agent-memory stubs, existing preserved)"
+        fi
+      fi
     fi
     ;;
   cursor)
