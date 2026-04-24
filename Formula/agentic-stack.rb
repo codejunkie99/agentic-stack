@@ -8,7 +8,7 @@ class AgenticStack < Formula
 
   def install
     # install the brain + adapters alongside install.sh so relative paths hold
-    pkgshare.install ".agent", "adapters", "install.sh",
+    pkgshare.install ".agent", "adapters", "harness_manager", "install.sh",
                      "onboard.py", "onboard_ui.py", "onboard_widgets.py",
                      "onboard_render.py", "onboard_write.py",
                      "onboard_features.py"

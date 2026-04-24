@@ -6,13 +6,11 @@ and a TypeScript extension system. Our adapter layers the portable
 `.agent/` brain on top so you keep one knowledge base across harnesses.
 
 ## What the adapter installs
-- `AGENTS.md` at project root (pi reads this natively). Skipped if one
-  already exists, since pi/hermes/opencode share this file.
-- `.pi/` directory
-- `.pi/skills` symlinked to `.agent/skills` (falls back to copy on
-  platforms without symlinks, e.g. Windows without developer mode)
-- `.pi/extensions/memory-hook.ts`, auto-discovered by pi at startup and
-  wired to the `tool_result` event for episodic logging
+| Path | What |
+|------|------|
+| `AGENTS.md` | Root-level context file pi reads natively. Skipped if one already exists (pi / hermes / opencode share this file). |
+| `.pi/skills` | Symlink → `.agent/skills`. Falls back to copy on platforms without symlink support (e.g. Windows without developer mode). |
+| `.pi/extensions/memory-hook.ts` | Project-local extension auto-discovered by pi at startup. Logs `bash`/`edit`/`write` tool results to `.agent/memory/episodic/AGENT_LEARNINGS.jsonl` and runs `auto_dream.py` on session end. |
 
 ## Install
 ```bash
@@ -28,26 +26,54 @@ npm install -g @mariozechner/pi-coding-agent
 pi
 ```
 
-## How it works
-- Pi loads `AGENTS.md` (or `CLAUDE.md`) from `~/.pi/agent/` and walks
-  the current directory up to the filesystem root, aggregating
-  context.
-- Skills at `.pi/skills/<name>/SKILL.md` use the same frontmatter-plus
-  -body shape as agentskills.io and our `.agent/skills/` layout.
-- Pi extensions live in `.pi/extensions/` (TypeScript). The adapter's
-  `memory-hook.ts` listens to `tool_result` and forwards each tool result
-  to `.agent/harness/hooks/pi_post_tool.py`, which reuses the same
-  scoring / reflection logic as the Claude Code hook.
+## How episodic logging works
+The extension subscribes to pi's `tool_result` event (the equivalent of
+Claude Code's `PostToolUse`). It:
+
+1. **Filters** — only `bash`, `edit`, `write` are logged. `read`, `find`,
+   `ls`, `grep` are skipped (noise). Routine low-importance bash calls
+   (cat, echo, ls, grep) are also skipped.
+2. **Scores** — importance (1–10) and pain_score are computed inline from
+   the command / path using the same regex patterns as
+   `claude_code_post_tool.py`. User-defined patterns in
+   `.agent/protocols/hook_patterns.json` are also loaded.
+3. **Writes** — a structured JSONL entry is appended directly via
+   `fs.appendFileSync`. No Python subprocess is spawned per tool call.
+4. **Dreams** — on session shutdown (quit / new session / resume) the
+   extension runs `python3 .agent/memory/auto_dream.py` to cluster and
+   stage episodic entries. This mirrors Claude Code's `Stop` hook.
+
+## Verify
+After installing, run pi and execute any bash command. Then:
+
+```bash
+tail -1 .agent/memory/episodic/AGENT_LEARNINGS.jsonl
+```
+
+You should see a JSON entry with `"skill": "pi"` and an `action` derived
+from the tool that just ran.
+
+In pi: ask "what's in my LESSONS file?" — it should read
+`.agent/memory/semantic/LESSONS.md`.
 
 ## Troubleshooting
-- If pi doesn't see your skills, run `pi skills list` — it should
-  print entries from `.pi/skills/`. If the directory is a broken
-  symlink, re-run `./install.sh pi` to rebuild.
-- If episodic logging stays empty, make sure Python is available as
-  `python3`, `python`, or via `AGENT_PYTHON`, since the extension shells
-  out to `.agent/harness/hooks/pi_post_tool.py`.
-- On Windows without symlink support, the installer copies
-  `.agent/skills/` instead. Changes to `.agent/skills/` won't
-  propagate — re-run the installer to sync.
-- Pi's multi-provider gateway is independent of the brain. The
-  portable `.agent/` doesn't care which model you use.
+- **Skills not visible** — run `pi skills list`. If `.pi/skills` is a
+  broken symlink, re-run `./install.sh pi` to rebuild it.
+- **AGENT_LEARNINGS.jsonl stays empty** — check that the extension
+  loaded: pi's startup header lists loaded extensions. If
+  `memory-hook.ts` is absent, re-run `./install.sh pi`. If it's listed
+  but entries are missing, make sure you ran `bash`/`edit`/`write` tools
+  (read-only sessions produce no entries by design).
+- **Dream cycle never runs** — the extension runs `auto_dream.py` on
+  `session_shutdown`. If you killed pi with SIGKILL instead of a clean
+  exit, the shutdown event won't fire. Add a fallback cron for those
+  cases:
+  ```bash
+  crontab -e
+  # add:
+  0 3 * * * python3 /path/to/project/.agent/memory/auto_dream.py \
+    >> /path/to/project/.agent/memory/dream.log 2>&1
+  ```
+- **Windows without symlink support** — the installer copies
+  `.agent/skills/` instead. Changes to `.agent/skills/` won't propagate
+  automatically; re-run `.\install.ps1 pi` to sync.
