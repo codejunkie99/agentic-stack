@@ -124,7 +124,19 @@ def _resolve_skills_link(
         log(f"  ~ replaced {_short(dst)} with current {_short(target_link)}")
         return "rsynced"
 
-    # Case 3: dst doesn't exist → try symlink, fall back to copy
+    # Case 3: dst exists as a regular file (not symlink, not dir).
+    # Rare but possible — a user created a literal file at the skills
+    # path. Symlink_to and copytree both fail with FileExistsError in
+    # this state. Bail loudly so the user knows to resolve it; silently
+    # clobbering could delete content we can't prove we created.
+    if dst.exists() and not dst.is_dir() and not dst.is_symlink():
+        raise FileExistsError(
+            f"skills_link destination {dst} exists as a regular file, "
+            f"not a directory or symlink. move or delete it first and "
+            f"re-run install."
+        )
+
+    # Case 4: dst doesn't exist → try symlink, fall back to copy
     try:
         dst.symlink_to(target_abs)
         log(f"  + {_short(dst)} -> {target_abs}")
@@ -190,6 +202,15 @@ def install(
     prior_doc = state_mod.load(target_root) or {}
     prior_entry = (prior_doc.get("adapters") or {}).get(adapter_name) or {}
     prior_owned = set(prior_entry.get("files_written") or [])
+    # Intentionally NOT promoting synthesized files_overwritten or
+    # files_alerted into prior_owned. Reinstalling after pre-v0.9
+    # migration does not recover whether a file originally pre-existed
+    # the legacy install; even an overwrite-policy file like CLAUDE.md
+    # could have had user content that the old installer clobbered,
+    # and we'd have no way to know. Conservative tradeoff: installer-
+    # created files from pre-v0.9 may linger on disk after `remove` if
+    # the user migrated via doctor. Users who want strict ownership
+    # tracking should install via v0.9+ from the start.
 
     # 2. Process file entries.
     for entry in manifest["files"]:
@@ -227,6 +248,17 @@ def install(
                 files_written.append(entry["dst"])
             else:
                 files_overwritten.append(entry["dst"])
+        elif result in ("skipped_existing", "left_alone"):
+            # File wasn't touched on this pass. But if we created it in a
+            # prior install, keep it in files_written so `remove` can
+            # still clean it up later — otherwise any reinstall of an
+            # adapter using skip_if_exists / merge_or_alert silently
+            # drops the file from ownership tracking on the second pass
+            # (e.g. run.py for standalone-python, AGENTS.md for pi).
+            # Not in prior_owned → file pre-existed before we ever
+            # touched this project; it's user-owned and stays untracked.
+            if entry["dst"] in prior_owned:
+                files_written.append(entry["dst"])
         elif result == "merge_alert":
             files_alerted.append(entry["dst"])
         file_results.append({"dst": entry["dst"], "result": result})
@@ -246,6 +278,13 @@ def install(
         # exists doesn't make it user-owned now. (Same logic shape as the
         # files_written ownership preservation above.)
         prior_skills_pre_existed = (prior_entry.get("skills_link_pre_existed", False))
+        # Intentionally NOT flipping pre_existed on synthesized entries.
+        # Doctor conservatively marks `.agents/skills` or `.pi/skills`
+        # as pre-existing because we can't know if the user's own
+        # skills dir was there before the legacy install. Flipping on
+        # reinstall would let remove delete a directory that predated
+        # us, potentially containing user content. Same conservative
+        # tradeoff as the files_overwritten case above.
         if entry_was_owned_in_prior_install := (
             "skills_link" in prior_entry
             and not prior_skills_pre_existed

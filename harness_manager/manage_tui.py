@@ -67,8 +67,27 @@ def _brain_summary(target_root: Path) -> str:
 # ---- menu actions ----------------------------------------------------
 
 def _action_add(target_root: Path, stack_root: Path) -> None:
-    """Multi-select adapters NOT already installed; install each."""
-    doc = state_mod.load(target_root) or {}
+    """Multi-select adapters NOT already installed; install each.
+
+    Refuses on pre-v0.9 projects (no install.json yet) when adapter
+    signals are already on disk — same migration gate cmd_add uses in
+    cli.py. Without this, the TUI would create a fresh install.json
+    tracking only the newly-added adapters and orphan every pre-v0.9
+    install, making them invisible to status/doctor/remove even though
+    their files are still on disk.
+    """
+    doc = state_mod.load(target_root)
+    was_fresh = doc is None
+    if doc is None:
+        detected = state_mod.legacy_unregistered_adapters(target_root)
+        if detected:
+            print(f"  {ORANGE}pre-v0.9 project detected.{R}")
+            print(f"  .agent/ exists but install.json does not yet.")
+            print(f"  adapters on disk: {detected}")
+            print(f"  {MUTED}pick 'Run doctor (audit)' from this menu "
+                  f"first to register them safely.{R}")
+            return
+        doc = {}
     installed = set(doc.get("adapters") or {})
     available = sorted(
         n for n, _ in schema_mod.discover_all(stack_root)
@@ -93,6 +112,18 @@ def _action_add(target_root: Path, stack_root: Path) -> None:
             adapter_dir=stack_root / "adapters" / name,
             stack_root=stack_root,
         )
+    # First-time install via the manage TUI: run onboard.py so the
+    # PREFERENCES step happens, matching what ./install.sh <adapter>
+    # and the bare wizard do. Skipping this would leave TUI-first
+    # installs with an uninitialized PREFERENCES.md.
+    if was_fresh:
+        onboard = stack_root / "onboard.py"
+        if onboard.is_file():
+            import subprocess
+            subprocess.run(
+                [sys.executable, str(onboard), str(target_root)],
+                check=False,
+            )
 
 
 def _action_remove(target_root: Path) -> None:
@@ -178,7 +209,15 @@ def _sigint_handler_factory():
 
 def run(target_root: Path | str, stack_root: Path | str) -> int:
     """Enter the menu loop. Returns exit code on quit."""
-    target_root = Path(target_root).resolve()
+    # os.path.abspath (not Path.resolve) deliberately: normalizes `.`
+    # and `..` but does NOT canonicalize symlinks. The openclaw agent
+    # name is derived from this path via cksum in post_install.py, so
+    # resolving symlinks here would produce a different hash than
+    # ./install.sh add openclaw (which doesn't resolve) — installs via
+    # the TUI would register a DIFFERENT agent for symlinked
+    # workspaces, creating duplicate entries in ~/.openclaw/openclaw.json.
+    # Same logical-path discipline doctor.audit uses.
+    target_root = Path(os.path.abspath(str(target_root)))
     stack_root = Path(stack_root)
 
     # Install our SIGINT handler.

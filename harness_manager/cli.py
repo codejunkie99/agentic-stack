@@ -96,7 +96,37 @@ def _maybe_run_onboard(target: Path, wizard_flags: list[str]) -> int:
 # ---- subcommands -----------------------------------------------------
 
 def cmd_install(adapter_name: str, target: Path, wizard_flags: list[str]) -> int:
-    """Install one adapter into target. Existing `./install.sh <adapter>` UX."""
+    """Install one adapter into target. Existing `./install.sh <adapter>` UX.
+
+    Refuses on pre-v0.9 projects (no install.json) when STRONG adapter
+    signals are already on disk — without this guard, the install would
+    create a fresh install.json containing only the newly-installed
+    adapter, orphaning every pre-v0.9 install (they'd vanish from
+    status/doctor/remove even though their files remain on disk). The
+    same gate cmd_add uses. Weak signals (plain CLAUDE.md, AGENTS.md,
+    run.py) are ignored to avoid false-refusing clean repos that happen
+    to contain one of those common files.
+    """
+    detected = state_mod.legacy_unregistered_adapters(target)
+    if detected:
+        # Pre-v0.9 project: brain is present AND adapter signals exist.
+        # Refuse so doctor can synthesize install.json first and
+        # preserve the prior install(s). Brain-without-signals is NOT
+        # gated — cloning agentic-stack itself, or copying the brain
+        # template before first install, shouldn't deadlock the user.
+        print(
+            f"error: {target}/.agent/ exists but install.json does not.\n"
+            f"this looks like a pre-v0.9 install. detected adapters: {detected}\n"
+            f"\n"
+            f"run this first to register them safely:\n"
+            f"  ./install.sh doctor\n"
+            f"\n"
+            f"proceeding would otherwise create a fresh install.json with only\n"
+            f"the new adapter, leaving the existing ones invisible to\n"
+            f"status/doctor/remove.",
+            file=sys.stderr,
+        )
+        return 2
     manifest = _adapter_manifest(adapter_name)
     install_mod.install(
         manifest=manifest,
@@ -107,7 +137,51 @@ def cmd_install(adapter_name: str, target: Path, wizard_flags: list[str]) -> int
     # Propagate the onboarding wizard's exit code: Ctrl-C, exception, or
     # explicit failure inside onboard.py should fail the install command,
     # matching the pre-v0.9.0 `exec python3 onboard.py` semantics.
-    return _maybe_run_onboard(target, wizard_flags)
+    rc = _maybe_run_onboard(target, wizard_flags)
+    if rc != 0:
+        return rc
+    # Post-install: offer the manage TUI so users who installed one
+    # adapter can immediately add others without re-running install.sh.
+    # Skip if --yes (scripted) or non-TTY (CI safety).
+    if "--yes" not in wizard_flags and sys.stdin.isatty() and sys.stdout.isatty():
+        _maybe_offer_manage(target)
+    return 0
+
+
+def _maybe_offer_manage(target: Path) -> None:
+    """Offer the manage TUI after a single-adapter install.
+
+    Only invoked from cmd_install when the shell is interactive and the
+    user didn't pass --yes. If every available adapter is already
+    installed, skip the prompt — nothing useful to do in the TUI. Default
+    is no, so just hitting enter dismisses without entering the TUI.
+    """
+    doc = state_mod.load(target) or {}
+    installed = set(doc.get("adapters") or {})
+    available = set()
+    root = _stack_root() / "adapters"
+    if root.is_dir():
+        for p in root.iterdir():
+            if p.is_dir() and (p / "adapter.json").is_file():
+                available.add(p.name)
+    not_installed = sorted(available - installed)
+    if not not_installed:
+        return
+    sys.path.insert(0, str(_stack_root()))
+    import onboard_widgets as widgets  # noqa: E402
+    print()
+    try:
+        choice = widgets.ask_confirm(
+            f"install or manage other adapters? ({len(not_installed)} available)",
+            default=False,
+        )
+    except KeyboardInterrupt:
+        # Install already succeeded; treat Ctrl-C at the offer as "no."
+        print()
+        return
+    if choice:
+        from . import manage_tui
+        manage_tui.run(target_root=target, stack_root=_stack_root())
 
 
 def cmd_add(adapter_name: str, target: Path) -> int:
@@ -119,28 +193,21 @@ def cmd_add(adapter_name: str, target: Path) -> int:
     disappear from status/doctor/remove tracking even though their files
     are still on disk.
     """
-    if state_mod.load(target) is None:
-        # Pre-v0.9 project. Detect adapters and refuse with a clear path forward.
-        from . import doctor as doctor_mod
-        signals_present = []
-        for name, signals in doctor_mod.DETECT_SIGNALS.items():
-            if any((target / f).exists() for f, _ in signals):
-                signals_present.append(name)
-        if signals_present:
-            print(
-                f"error: {target}/.agent/install.json not present, but these adapters\n"
-                f"appear to already be installed: {sorted(signals_present)}\n"
-                f"\n"
-                f"run this first to register them safely:\n"
-                f"  ./install.sh doctor\n"
-                f"\n"
-                f"`add` would otherwise create a fresh install.json with only\n"
-                f"the new adapter, leaving the existing ones invisible to\n"
-                f"status/doctor/remove.",
-                file=sys.stderr,
-            )
-            return 2
-        # No prior install detected; safe to proceed (`add` on a clean repo).
+    detected = state_mod.legacy_unregistered_adapters(target)
+    if detected:
+        print(
+            f"error: {target}/.agent/ exists but install.json does not.\n"
+            f"this looks like a pre-v0.9 install. detected adapters: {detected}\n"
+            f"\n"
+            f"run this first to register them safely:\n"
+            f"  ./install.sh doctor\n"
+            f"\n"
+            f"`add` would otherwise create a fresh install.json with only\n"
+            f"the new adapter, leaving the existing ones invisible to\n"
+            f"status/doctor/remove.",
+            file=sys.stderr,
+        )
+        return 2
     manifest = _adapter_manifest(adapter_name)
     install_mod.install(
         manifest=manifest,
@@ -180,43 +247,151 @@ def cmd_manage(target: Path) -> int:
     return manage_tui.run(target_root=target, stack_root=_stack_root())
 
 
-def cmd_bare(target: Path) -> int:
+def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     """`./install.sh` with no args.
 
-    If install.json present: dispatch to add mode (offer adapters not yet
-    installed). If not: print usage and exit non-zero.
+    Behavior:
+      - install.json present  → list what's still installable
+      - no install.json + TTY → enter the onboarding wizard (multi-select
+        harness step, then per-adapter install, then PREFERENCES.md flow)
+      - no install.json + non-TTY → print usage and exit 2 (CI safety)
     """
     doc = state_mod.load(target)
-    if doc is None:
-        print("usage: ./install.sh <adapter-name> [target-dir]")
-        print(f"adapters: {_list_adapters()}")
+    if doc is not None:
+        installed = set(doc.get("adapters", {}).keys())
+        available = set()
+        root = _stack_root() / "adapters"
+        if root.is_dir():
+            for p in root.iterdir():
+                if p.is_dir() and (p / "adapter.json").is_file():
+                    available.add(p.name)
+        not_installed = sorted(available - installed)
+        if not not_installed:
+            print(f"all available adapters already installed: {sorted(installed)}")
+            print("run `./install.sh status` for a summary.")
+            return 0
+        print(f"already installed: {sorted(installed)}")
+        print(f"available to add:  {not_installed}")
         print()
-        print("on a project that's already installed, run:")
-        print("  ./install.sh doctor      # audit")
-        print("  ./install.sh status      # quick read-only view")
-        print("  ./install.sh add <name>  # install another adapter")
-        print("  ./install.sh remove <name>  # remove an adapter (with confirm)")
-        print("  ./install.sh manage      # interactive TUI for everything")
-        return 2
-
-    installed = set(doc.get("adapters", {}).keys())
-    available = set()
-    root = _stack_root() / "adapters"
-    if root.is_dir():
-        for p in root.iterdir():
-            if p.is_dir() and (p / "adapter.json").is_file():
-                available.add(p.name)
-    not_installed = sorted(available - installed)
-    if not not_installed:
-        print(f"all available adapters already installed: {sorted(installed)}")
-        print("run `./install.sh status` for a summary.")
+        print(f"to add one: ./install.sh add <name>")
+        print(f"or interactively: ./install.sh manage")
         return 0
 
-    print(f"already installed: {sorted(installed)}")
-    print(f"available to add:  {not_installed}")
+    # No install.json. Pre-v0.9 migration gate: if this is a legacy
+    # install (brain AND adapter signals present) we must register
+    # via doctor first. Brain-only (no signals) falls through to the
+    # wizard — someone dropped the template here but never installed
+    # anything, so there's nothing to migrate.
+    detected = state_mod.legacy_unregistered_adapters(target)
+    if detected:
+        print(
+            f"pre-v0.9 install detected at {target}.",
+            file=sys.stderr,
+        )
+        print(
+            f".agent/ exists but install.json does not. detected adapters: "
+            f"{detected}",
+            file=sys.stderr,
+        )
+        print(file=sys.stderr)
+        print(
+            "run this first to register them safely:", file=sys.stderr,
+        )
+        print("  ./install.sh doctor", file=sys.stderr)
+        print(file=sys.stderr)
+        print(
+            "then re-run ./install.sh to add more adapters or use "
+            "./install.sh manage.",
+            file=sys.stderr,
+        )
+        return 2
+
+    # No install.json and not a legacy install — fresh project. Two paths.
+    if sys.stdin.isatty() and sys.stdout.isatty():
+        return _run_install_wizard(target, wizard_flags)
+
+    # Non-TTY (CI, scripted) → print usage, exit 2.
+    print("usage: ./install.sh <adapter-name> [target-dir]")
+    print(f"adapters: {_list_adapters()}")
     print()
-    print(f"to add one: ./install.sh add <name>")
-    return 0
+    print("on a project that's already installed, run:")
+    print("  ./install.sh doctor      # audit")
+    print("  ./install.sh status      # quick read-only view")
+    print("  ./install.sh add <name>  # install another adapter")
+    print("  ./install.sh remove <name>  # remove an adapter (with confirm)")
+    print("  ./install.sh manage      # interactive TUI for everything")
+    return 2
+
+
+def _run_install_wizard(target: Path, wizard_flags: list[str]) -> int:
+    """Onboarding wizard: detect → multi-select → install each → PREFERENCES.md.
+
+    The original "give people options like Claude Code and all of that"
+    flow. Reuses the manage TUI's multi-select widget for harness pick.
+    Auto-checks adapters whose detection signals are present in `target`,
+    so a user who already has CLAUDE.md / .cursor/ in their repo gets
+    those pre-selected.
+    """
+    # Lazy imports — wizard path only.
+    sys.path.insert(0, str(_stack_root()))
+    import onboard_widgets as widgets  # noqa: E402
+    from onboard_ui import print_banner, intro, R, MUTED, GREEN  # noqa: E402
+    from . import doctor as doctor_mod
+
+    print_banner()
+    intro("agentic-stack onboarding")
+
+    # Discover all available adapters.
+    available = sorted(n for n, _ in schema_mod.discover_all(_stack_root()))
+    if not available:
+        print(f"  {MUTED}no adapters available — repo seems empty{R}")
+        return 1
+
+    # Auto-detect what's already on disk in the target. Only STRONG
+    # signals count for default-check — a weak signal like a generic
+    # CLAUDE.md, AGENTS.md, or run.py can belong to any project; pre-
+    # checking one and hitting Enter at the multiselect would silently
+    # overwrite the user's file (claude-code's CLAUDE.md is
+    # merge_policy: overwrite). Weak-only matches still surface to the
+    # user via the adapter list but stay unchecked until toggled.
+    detected = set()
+    for name in available:
+        signals = doctor_mod.DETECT_SIGNALS.get(name, [])
+        if any(
+            (target / f).exists()
+            for f, strength in signals
+            if strength == "strong"
+        ):
+            detected.add(name)
+    defaults = [available.index(n) for n in available if n in detected]
+
+    if detected:
+        print(f"  {GREEN}detected{R}: {sorted(detected)} — pre-checked below.")
+        print()
+
+    chosen = widgets.ask_multiselect(
+        "which harnesses are you using?",
+        available,
+        defaults=defaults,
+    )
+    if not chosen:
+        print(f"  {MUTED}no adapters selected; brain not installed.{R}")
+        print(f"  {MUTED}you can run `./install.sh <adapter>` later.{R}")
+        return 0
+
+    # Install each selected adapter via the manifest backend.
+    for name in chosen:
+        manifest_path = _stack_root() / "adapters" / name / "adapter.json"
+        manifest = schema_mod.validate(manifest_path)
+        install_mod.install(
+            manifest=manifest,
+            target_root=target,
+            adapter_dir=_stack_root() / "adapters" / name,
+            stack_root=_stack_root(),
+        )
+
+    # Continue to existing PREFERENCES.md flow.
+    return _maybe_run_onboard(target, wizard_flags)
 
 
 # ---- main ------------------------------------------------------------
@@ -246,7 +421,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not rest:
         target = Path.cwd()
-        return cmd_bare(target)
+        return cmd_bare(target, wizard_flags)
 
     first = rest[0]
 

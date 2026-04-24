@@ -15,8 +15,14 @@ from typing import Any
 try:
     import fcntl  # POSIX
     _HAVE_FLOCK = True
+    _HAVE_MSVCRT = False
 except ImportError:
     _HAVE_FLOCK = False
+    try:
+        import msvcrt  # Windows
+        _HAVE_MSVCRT = True
+    except ImportError:
+        _HAVE_MSVCRT = False
 
 
 SCHEMA_VERSION = 1
@@ -25,6 +31,75 @@ SCHEMA_VERSION = 1
 def install_state_path(target_root: Path | str) -> Path:
     """Return the path where install.json lives for a given project."""
     return Path(target_root) / ".agent" / "install.json"
+
+
+def brain_present(target_root: Path | str) -> bool:
+    """True if .agent/ has the distinctive agentic-stack brain layout.
+
+    Checking for `.agent/` alone false-positives on projects that use
+    `.agent/` for unrelated purposes (some repos adopt the convention
+    generically). We require the characteristic subdir triple that
+    only the agentic-stack brain template installs: memory/, skills/,
+    and protocols/. If all three are directories, the brain template
+    was dropped here at some point.
+
+    NOTE: brain-present is NECESSARY but NOT SUFFICIENT for legacy-
+    install detection — a user could clone the agentic-stack repo
+    itself, or copy the brain template into a repo, without ever
+    installing an adapter. Use `legacy_unregistered_adapters` when
+    you need to actually gate against a pre-v0.9 install.
+    """
+    agent = Path(target_root) / ".agent"
+    if not agent.is_dir():
+        return False
+    return (
+        (agent / "memory").is_dir()
+        and (agent / "skills").is_dir()
+        and (agent / "protocols").is_dir()
+    )
+
+
+def legacy_unregistered_adapters(target_root: Path | str) -> list[str]:
+    """Detect pre-v0.9 install(s): returns the list of adapter signals.
+
+    Returns [] when the project is NOT a legacy install — either
+    install.json exists (already tracked), or the brain isn't present
+    (fresh repo), or the brain is present but no adapter signals are
+    on disk (brain-only template, nothing to migrate).
+
+    Returns a sorted list of adapter names when the project needs
+    migration via `doctor`. Caller gates installs on truthiness.
+
+    We require BOTH a distinctive brain layout AND at least one
+    adapter signal. Brain-only (e.g. cloning agentic-stack itself,
+    or copying the template into a fresh repo before any adapter
+    install) is NOT a legacy install — there's nothing to migrate,
+    and gating would deadlock the user since doctor synthesizes
+    nothing when no signals exist.
+    """
+    p = install_state_path(target_root)
+    if p.is_file():
+        return []
+    if not brain_present(target_root):
+        return []
+    # Lazy import: doctor imports state, so inverse would cycle.
+    from . import doctor as doctor_mod
+    # STRONG signals only. Weak signals (plain CLAUDE.md / AGENTS.md /
+    # run.py) are ambiguous even in a brain-present repo: users may
+    # have the brain template from cloning agentic-stack AND their own
+    # AGENTS.md. Gating on weak signals there false-refuses. Weak-only
+    # adapters (hermes, standalone-python) won't auto-gate on upgrade
+    # from pre-v0.9, but `./install.sh doctor` (which DOES consider
+    # weak signals) is the documented path for legacy migration.
+    return sorted(
+        name
+        for name, signals in doctor_mod.DETECT_SIGNALS.items()
+        if any(
+            (Path(target_root) / f).exists()
+            for f, strength in signals
+            if strength == "strong"
+        )
+    )
 
 
 def load(target_root: Path | str) -> dict | None:
@@ -106,12 +181,30 @@ class _lock:
         self.lock_f = open(self.lock_path, "a+")
         if _HAVE_FLOCK:
             fcntl.flock(self.lock_f.fileno(), fcntl.LOCK_EX)
+        elif _HAVE_MSVCRT:
+            # Windows: lock 1 byte at offset 0 of the lock sidecar.
+            # LK_LOCK blocks until acquired (vs LK_NBLCK which would
+            # raise immediately). Byte-range locking is the only
+            # cross-process locking primitive msvcrt exposes, but a
+            # 1-byte span on the sidecar file is enough for our
+            # read-modify-write semantics here.
+            self.lock_f.seek(0)
+            msvcrt.locking(self.lock_f.fileno(), msvcrt.LK_LOCK, 1)
         return self
 
     def __exit__(self, exc_type, exc, tb):
         if self.lock_f is not None:
             if _HAVE_FLOCK:
                 fcntl.flock(self.lock_f.fileno(), fcntl.LOCK_UN)
+            elif _HAVE_MSVCRT:
+                try:
+                    self.lock_f.seek(0)
+                    msvcrt.locking(self.lock_f.fileno(), msvcrt.LK_UNLCK, 1)
+                except OSError:
+                    # Unlock can fail if the handle is already closed
+                    # by a crashed caller; the OS releases the lock on
+                    # process exit anyway.
+                    pass
             self.lock_f.close()
 
 

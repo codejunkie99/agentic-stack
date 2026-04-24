@@ -105,16 +105,19 @@ def remove(
             log(f"  ~ {f}")
     log("")
 
-    # Reverse post_install actions — but ONLY for actions that succeeded
-    # at install time. Reversing a failed/skipped registration is wrong:
-    # if `openclaw_register_workspace` was binary_missing at install, a
-    # subsequent `openclaw agents remove` could delete a manually-created
-    # agent for the same workspace that was never ours to manage.
+    # Reverse post_install actions — but ONLY for actions we actually
+    # performed ourselves. status == "ok" means WE ran the registration.
+    # status == "already_exists" means the agent was there BEFORE we
+    # installed (user had manually registered earlier, or they re-ran
+    # install idempotently), so reversing would delete a user-managed
+    # registration we never created. status == "binary_missing" / other
+    # skipped states also never ran the action, so reversing would
+    # delete something that isn't ours.
     reverse_actions = []
     for r in post_install_results:
         action = r.get("action")
         status = r.get("status")
-        if action in post_install_mod.ACTIONS and status in ("ok", "already_exists"):
+        if action in post_install_mod.ACTIONS and status == "ok":
             reverse_actions.append(action)
     if reverse_actions:
         log("the following post-install state will be reversed:")
@@ -188,6 +191,48 @@ def remove(
             log(f"    ~ binary not on PATH; reverse skipped (manual cleanup may be needed)")
         else:
             log(f"    ! {st}: {result.get('stderr', '')}")
+
+    # Ownership handoff for shared files: only transfer when another
+    # adapter PROVABLY wrote the file (file_results recorded written_new
+    # or written_overwrite). Looser criteria — transferring on
+    # left_alone / merge_alert / skipped_existing observations — risks
+    # letting a future `remove B` delete a user-owned file that B just
+    # observed but never wrote. The conservative tradeoff: shared files
+    # whose next owner can't be proved may linger after the last
+    # installed adapter is removed; users can git-clean manually.
+    handoffs: dict[str, list[str]] = {}
+    for f in files_shared:
+        for other_name, other_entry in doc.get("adapters", {}).items():
+            if other_name == adapter_name:
+                continue
+            if (
+                f in other_entry.get("files_written", [])
+                or f in other_entry.get("files_overwritten", [])
+            ):
+                # Already tracked as owned or user-preserved by this
+                # adapter; no handoff needed.
+                break
+            wrote_it = any(
+                r.get("dst") == f
+                and r.get("result") in ("written_new", "written_overwrite")
+                for r in other_entry.get("file_results", [])
+            )
+            if wrote_it:
+                handoffs.setdefault(other_name, []).append(f)
+                break
+    if handoffs:
+        from . import __version__ as _asv
+        version = doc.get("agentic_stack_version", _asv)
+        for other_name, files in handoffs.items():
+            new_entry = dict(doc["adapters"][other_name])
+            new_entry["files_written"] = (
+                list(new_entry.get("files_written", [])) + files
+            )
+            state_mod.upsert_adapter(
+                target_root, other_name, new_entry, version,
+            )
+            for f in files:
+                log(f"  ~ {f}: ownership transferred to {other_name}")
 
     # Drop from install.json
     state_mod.remove_adapter(target_root, adapter_name)

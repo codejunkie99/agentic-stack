@@ -562,11 +562,18 @@ class TestEndToEndInstallFlow(unittest.TestCase):
           - subsequent add reclassifies our own files as user-owned
         """
         # Simulate a pre-v0.9 install: drop the files the old install.sh
-        # would have written, but no install.json.
+        # would have written, but no install.json. Brain triple
+        # (memory/skills/protocols) is required so state.brain_present
+        # returns True — doctor's synthesis gates on that to avoid
+        # writing bogus install.json in random repos that happen to
+        # contain a common filename.
         (self.target / ".cursor" / "rules").mkdir(parents=True)
         (self.target / ".cursor" / "rules" / "agentic-stack.mdc").write_text("rules", encoding="utf-8")
         (self.target / ".agent").mkdir()
         (self.target / ".agent" / "AGENTS.md").write_text("brain", encoding="utf-8")
+        (self.target / ".agent" / "memory").mkdir()
+        (self.target / ".agent" / "skills").mkdir()
+        (self.target / ".agent" / "protocols").mkdir()
 
         self.assertIsNone(state_mod.load(self.target), "no install.json yet")
 
@@ -613,6 +620,9 @@ class TestEndToEndInstallFlow(unittest.TestCase):
         (self.target / ".agents" / "skills").mkdir(parents=True)
         (self.target / ".agent").mkdir(exist_ok=True)
         (self.target / ".agent" / "AGENTS.md").write_text("brain", encoding="utf-8")
+        (self.target / ".agent" / "memory").mkdir()
+        (self.target / ".agent" / "skills").mkdir()
+        (self.target / ".agent" / "protocols").mkdir()
 
         import builtins
         from unittest.mock import patch

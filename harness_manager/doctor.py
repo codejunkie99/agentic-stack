@@ -8,6 +8,7 @@ First run on a pre-v0.9.0 project (no install.json) detects adapters
 from filesystem signals and ASKS before synthesizing — never silently
 writes. Codex's UX framing: doctor must not mutate without consent.
 """
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -49,7 +50,17 @@ def audit(target_root: Path | str, log: Callable[[str], None] | None = None) -> 
     if log is None:
         log = print
 
-    target_root = Path(target_root).resolve()
+    # os.path.abspath (not Path.resolve) is deliberate: it normalizes
+    # `.`/`..` and prepends cwd for relative paths but does NOT canon-
+    # icalize symlinks. The legacy bash installer used the logical
+    # path (`cd "$TARGET" && pwd`) to derive the openclaw agent name
+    # via cksum, and post_install.py does the same. If doctor resolves
+    # symlinks here, a pre-v0.9 openclaw install under e.g. a symlinked
+    # `~/src/app` workspace gets a DIFFERENT hashed agent name during
+    # synthesis than the bash installer registered — doctor then can't
+    # recover the agent from ~/.openclaw/openclaw.json, and a later
+    # remove has no agent_name to unregister, orphaning the entry.
+    target_root = Path(os.path.abspath(str(target_root)))
     doc = state_mod.load(target_root)
 
     if doc is None:
@@ -88,6 +99,18 @@ def _audit_adapter(
     for f in entry.get("files_written", []) + entry.get("files_overwritten", []):
         if not (target_root / f).exists():
             missing.append(f)
+    # Also check file_results for paths that install recorded as
+    # skipped_existing (merge_policy: skip_if_exists, file pre-existed)
+    # or left_alone (merge_or_alert, file already referenced .agent/).
+    # These aren't in files_written/files_overwritten but are still part
+    # of the adapter's wiring — without this check, deleting e.g. run.py
+    # after installing standalone-python leaves the adapter visibly
+    # green in doctor when it's actually broken.
+    for r in entry.get("file_results", []):
+        if r.get("result") in ("skipped_existing", "left_alone"):
+            dst = r.get("dst")
+            if dst and not (target_root / dst).exists() and dst not in missing:
+                missing.append(dst)
     if missing:
         lines.append(f"missing files: {', '.join(missing)}")
         return RED, lines
@@ -130,6 +153,25 @@ def _audit_adapter(
         if dst.is_symlink() and not dst.exists():
             lines.append(f"skills_link {sl['dst']} dangles")
             return RED, lines
+        # Verify the link (or rsynced dir) still resolves to the manifest
+        # target. A user who repoints `.agents/skills` / `.pi/skills` to
+        # a different directory would otherwise get a green doctor even
+        # though the adapter is no longer reading the project's
+        # .agent/skills tree.
+        expected_target = sl.get("target")
+        if expected_target and dst.is_symlink():
+            try:
+                resolved = dst.resolve()
+                expected_abs = (target_root / expected_target).resolve()
+                if resolved != expected_abs:
+                    lines.append(
+                        f"skills_link {sl['dst']} points to {resolved} "
+                        f"(expected {expected_abs})"
+                    )
+                    status_overall = RED
+            except OSError as e:
+                lines.append(f"skills_link {sl['dst']} unreadable: {e}")
+                status_overall = RED
 
     # Check post_install state. Only verify external state for actions that
     # actually succeeded — if registration was skipped at install time
@@ -147,11 +189,20 @@ def _audit_adapter(
                 if check_status == "ok":
                     lines.append(f"openclaw agent '{agent}' registered")
                 elif check_status == "binary_missing":
+                    # "binary_missing" is a historical misnomer here —
+                    # _check_openclaw_agent reads ~/.openclaw/openclaw.json
+                    # directly rather than calling the binary, so this
+                    # status means the CONFIG FILE is absent. For a
+                    # registration that was previously ok, an absent
+                    # config file means every registered agent is gone
+                    # — the adapter is objectively broken, not merely
+                    # unverifiable. RED, not YELLOW.
                     lines.append(
-                        f"openclaw agent '{agent}' was registered, but openclaw "
-                        f"binary not on PATH now — can't verify"
+                        f"openclaw agent '{agent}' was registered, but "
+                        f"~/.openclaw/openclaw.json no longer exists — "
+                        f"registration lost"
                     )
-                    status_overall = max(status_overall, YELLOW, key=_status_rank)
+                    status_overall = RED
                 elif check_status == "missing":
                     lines.append(
                         f"openclaw agent '{agent}' was registered, but no longer "
@@ -233,7 +284,19 @@ def _audit_pre_v090(target_root: Path, log: Callable[[str], None]) -> int:
 
     Codex UX rule: never silently mutate. Show user what we found, ask Y/N,
     write only on confirmation. On N or non-tty, exit 0 with no write.
+
+    Synthesis requires the distinctive brain layout (.agent/memory/,
+    skills/, protocols/) to exist. Without this gate, a random repo
+    that happens to contain a common filename like `run.py` or
+    `AGENTS.md` would prompt the user and on Enter write a bogus
+    install.json for adapters that were never installed.
     """
+    if not state_mod.brain_present(target_root):
+        log(f"no install.json found at {target_root / '.agent/install.json'}")
+        log(f"no agentic-stack brain found at {target_root / '.agent'} either.")
+        log("nothing to audit. install an adapter with: ./install.sh <adapter-name>")
+        return 0
+
     detected: list[tuple[str, str]] = []  # (name, signal_strength_summary)
     for name, signals in DETECT_SIGNALS.items():
         present = [(f, strength) for f, strength in signals
@@ -246,7 +309,7 @@ def _audit_pre_v090(target_root: Path, log: Callable[[str], None]) -> int:
 
     if not detected:
         log(f"no install.json found at {target_root / '.agent/install.json'}")
-        log("no adapter signals detected either. nothing to audit.")
+        log("brain is present but no adapter signals detected.")
         log("install an adapter with: ./install.sh <adapter-name>")
         return 0
 
