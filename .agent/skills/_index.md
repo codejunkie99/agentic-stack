@@ -130,3 +130,14 @@ memory recall — this searches project context, not agent memory.
 Triggers: "find context on", "what do we know about", "pull the background"
 Constraints: read-only; cite sources explicitly; flag gaps as
 [CONTEXT GAP: ...]; surface contradictions, never resolve silently.
+Paths adapted in Step 8.2.3 to `.agent/memory/client/<active_client>/`
+(client-scoped) + `adapters/<firm>/context/` (firm-scoped).
+
+## draft-status-update (knowledge-work)
+Drafts a weekly status update from the action tracker, RAID log, and
+workstream pages. Produces a draft for human edit — never auto-publishes.
+Section order follows firm adapter's formatting conventions
+(e.g. `adapters/bcg/protocols/formatting.md`).
+Triggers: "draft weekly status", "this week's update", "weekly status draft"
+Constraints: never publish directly; executive summary partner-readable
+in 30 seconds; wins first, then risks; specificity over vagueness.
