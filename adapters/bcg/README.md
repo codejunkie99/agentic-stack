@@ -17,10 +17,14 @@ adapters/bcg/
 ├── protocols/         # BCG protocol overlays (Atlassian safety, data classification)
 ├── templates/         # BCG deliverable templates (weekly-status, meeting-notes, config.yaml)
 ├── context/           # BCG-specific semantic context
-│   ├── firm/          # Firm-wide: BCG hierarchy, engagement model, quality standards
-│   ├── frameworks/    # BCG analytical frameworks (MECE, Pyramid, BCG Matrix, driver trees)
-│   ├── glossary/      # Consulting terminology
+│   ├── firm/          # Firm-wide: BCG hierarchy + engagement model (generic quality
+│   │                  # standards live in .agent/context/quality-standards.md)
+│   ├── frameworks/    # BCG-attributed frameworks (Growth-Share Matrix; generic frameworks
+│   │                  # — Issue Tree, Pyramid, 7-S, etc. — live in .agent/context/frameworks.md)
 │   └── industries/    # Industry context modules (consumer-goods, financial-services, ...)
+│
+│   Note: `glossary/` used to live here but the consulting terminology was firm-generic
+│   and moved to `.agent/context/glossary.md` in Step 8.2.4.
 ├── personas/          # BCG-specific reviewer style overlays (partner archetypes)
 ├── agents/            # BCG consulting program roster — program/case execution roles
 │                      # (distinct from adapters/claude-code/agents/ which holds SDLC roles)

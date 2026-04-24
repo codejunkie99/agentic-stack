@@ -1,6 +1,10 @@
 # Consulting Glossary
 
-## BCG / Consulting Terms
+Generic consulting-industry terminology. Terms below are firm-generic
+(not BCG-proprietary) and are useful across any analytical engagement
+— consulting work, personal analysis, strategy reviews.
+
+## Core Terms
 
 **Action Item (AI)** — A specific task with a named owner and deadline, tracked in the action item tracker.
 
