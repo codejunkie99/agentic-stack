@@ -102,3 +102,27 @@ Workflow↔roster reconciliation (e.g., `framework-lead`, `case-analyst`, `deliv
 **Alternatives considered:** (a) Leave both `architect` files, rely on install-ordering — rejected because the second `cp` would silently clobber the first and the user would see only one, varying by adapter order. (b) Namespace agents by directory (`.claude/agents/sdlc/`, `.claude/agents/bcg/`) — rejected because Claude Code does not recursively scan subdirectories. (c) Put BCG agents in `adapters/claude-code/agents/` with a prefix — rejected because that dir is the harness-level generic roster; BCG content belongs under `adapters/bcg/`. (d) Add a runtime dependency on `jq` for the install.sh config read — rejected; grep handles the single flag fine and keeps install.sh portable to stripped-down shells.
 
 **Status:** active
+
+## 2026-04-24: Step 8.2.2 — workflow↔roster reconciliation (hybrid path)
+**Decision:** Stage 2 of Step 8.2 (Option C / hybrid from pre-work scoping). Imported workflows referenced nine role labels absent from the 13-agent roster; resolved as follows:
+
+**Authored as new BCG agents** (genuine distinct review lenses, not reducible to existing roles):
+- `adapters/bcg/agents/partner-strategy.md` — reviews business logic, strategic direction, client-readiness
+- `adapters/bcg/agents/partner-analytics.md` — reviews analytical rigor, data accuracy, MECE discipline
+- `adapters/bcg/agents/principal-delivery.md` — reviews workplan feasibility, delivery risk, resourcing
+
+**Relabeled in workflow files** (six orphan labels → canonical roster names, 17 replacements across 5 workflow files):
+- `framework-lead` → `analyst`
+- `case-analyst` → `analyst`
+- `transcript-analyst` → `analyst`
+- `jira-tracker-analyst` → `analyst`
+- `delivery-lead` → `program-manager`
+- `io-qa-auditor` → `test-lead`
+
+Done via Python `\b...\b` regex (macOS `sed` does not support `\b`). Substring matches like "analytical" and "analysis" preserved. Post-commit state: every role reference in every workflow file resolves to a real agent in either the SDLC roster (`adapters/claude-code/agents/`) or the BCG roster (`adapters/bcg/agents/`). Roster after this stage: 5 SDLC + 16 BCG = 21 agents total when adapter enabled.
+
+**Rationale:** The starter-kit workflows used two naming conventions that did not reconcile (13-role program roster vs. ad-hoc per-workflow labels); shipping both as-is would have meant workflow recipes referencing nonexistent agents. Three of the nine orphan labels were distinct review lenses (partner-strategy ≠ partner-analytics ≠ principal-delivery in real BCG practice), so collapsing them into one reviewer agent or into executive-sponsor would blur the review process. Authoring three new agents for those lenses is cheap (~50 lines each) and preserves the workflow design intent. The other six labels were not distinct roles — they were situational aliases for existing roster members; relabeling was lossless.
+
+**Alternatives considered:** (a) Option A: author all 9 missing agents — rejected because 22 agents crowds the roster and treats situational aliases as distinct roles. (b) Option B: relabel all 9 to existing roster members, including the three review lenses — rejected; collapsing partner-strategy / partner-analytics / principal-delivery into `executive-sponsor` or a single `reviewer` loses the review-lens distinction that the workflows rely on at quality gates. (c) Leave the workflow refs as-is and mark them "aspirational" — rejected; unresolved references in canonical workflow definitions are a latent failure mode, not documentation.
+
+**Status:** active
