@@ -2,7 +2,7 @@
 
 **Keep one portable memory-and-skills layer across coding-agent harnesses, so switching tools doesn't reset how your agent works.**
 
-A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, or a DIY Python loop — and keeps its knowledge when you switch.
+A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
 
 <p align="center">
   <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
@@ -78,16 +78,33 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 ./install.sh add cursor          # add a second adapter (Claude Code + Cursor in same repo)
 ./install.sh status              # one-screen view: which adapters, brain stats
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
+./install.sh manage              # interactive TUI: header pane + menu loop for add/remove/audit
 ./install.sh remove cursor       # confirm prompt + delete; no quarantine, no undo
 ```
 
-Bare `./install.sh` (no arguments) prints the available adapters, or
-— on a project that already has an install.json — lists what's still
-installable.
+Bare `./install.sh` (no arguments) opens a **multi-select wizard** on
+a fresh project — check every harness you actually use, hit enter,
+each one gets installed. The wizard auto-detects harnesses already on
+disk and pre-checks them. On a project that already has an
+`install.json`, bare `./install.sh` lists what's still installable.
+In non-TTY shells (CI), it prints usage and exits with code 2.
+
+Upgrading from pre-v0.9? Run `./install.sh doctor` first — it
+synthesizes `install.json` from on-disk adapter signals so the new
+backend can track them. Installing on top without migration would
+orphan the prior installs.
 
 ## Onboarding wizard
 
-After the adapter is installed, a terminal wizard populates
+If you ran bare `./install.sh` (no adapter name), the wizard starts
+with a **multi-select harness step**: it lists all 10 adapters, pre-
+checks any it detects on disk, and installs each one you confirm with
+space + enter. After the install(s), the preferences flow runs.
+
+If you ran `./install.sh <adapter>` directly, only the preferences
+flow runs.
+
+Either way, the preferences step populates
 `.agent/memory/personal/PREFERENCES.md` — the **first file your AI reads
 at the start of every session** — and writes a feature-toggle file at
 `.agent/memory/.features.json`.
@@ -219,21 +236,32 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── reject.py
     └── reopen.py
 
-adapters/                       # one small shim per harness
-├── claude-code/   (CLAUDE.md + settings.json hooks)
+adapters/                       # one small shim per harness, each with adapter.json manifest
+├── claude-code/   (CLAUDE.md + settings.json hooks — $CLAUDE_PROJECT_DIR wired, closes #18)
 ├── cursor/        (.cursor/rules/*.mdc)
 ├── windsurf/      (.windsurfrules)
 ├── opencode/      (AGENTS.md + opencode.json)
 ├── openclaw/      (AGENTS.md + system-prompt include; auto-registers per-project agent)
 ├── hermes/        (AGENTS.md)
 ├── pi/            (AGENTS.md + .pi/skills symlink)
-├── codex/         (AGENTS.md)
+├── codex/         (AGENTS.md + .agents/skills symlink)
 ├── standalone-python/  (DIY conductor entrypoint)
 └── antigravity/   (ANTIGRAVITY.md)
 
+harness_manager/                # v0.9.0 manifest-driven Python backend
+├── schema.py                   # adapter.json validator (path-safe on POSIX + Windows)
+├── install.py                  # applies file entries per merge_policy
+├── state.py                    # install.json read/write with fcntl/msvcrt locking
+├── doctor.py                   # read-only audit + pre-v0.9 migration synthesis
+├── remove.py                   # safe uninstall with shared-file detection + ownership handoff
+├── post_install.py             # named built-ins (openclaw_register_workspace)
+├── manage_tui.py               # interactive menu loop for add/remove/audit
+└── cli.py                      # argparse dispatcher for install.sh / install.ps1
+
 docs/                           # architecture, getting-started, per-harness
-install.sh                      # mac / linux / git-bash installer
-install.ps1                     # Windows PowerShell installer
+install.sh                      # mac / linux / git-bash installer (thin Python dispatcher)
+install.ps1                     # Windows PowerShell installer (thin Python dispatcher)
+Formula/agentic-stack.rb        # Homebrew formula
 CHANGELOG.md                    # per-version release notes (v0.1.0 onward)
 onboard.py                      # onboarding wizard entry point
 onboard_features.py             # .features.json read/write
