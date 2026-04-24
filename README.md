@@ -12,6 +12,20 @@ A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
+### New in v0.9.0 — harness manager
+
+<p align="center">
+  <img src="docs/harness-manager.svg" alt="harness manager v0.9.0" width="880"/>
+</p>
+
+Manifest-driven adapter system: every harness is now declared by an
+`adapter.json`, applied by a shared Python backend, and managed via
+verb subcommands or an interactive TUI. Cross-platform (POSIX +
+Windows) with concurrent-write protection, pre-v0.9 migration via
+`./install.sh doctor`, and shared-file ownership tracking so removing
+one adapter never orphans another. See [CHANGELOG.md](CHANGELOG.md)
+for the full list.
+
 [![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 Made by https://x.com/Av1dlive
