@@ -14,69 +14,75 @@
   <text x="490" y="42" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">agentic-stack — one brain, many harnesses</text>
   <text x="490" y="66" text-anchor="middle" font-size="13" fill="#475569">Memory + Skills + Protocols stay constant. Swap the harness; keep the knowledge.</text>
 
-  <!-- Harness row: 9 adapters -->
+  <!-- Harness row: 10 adapters -->
   <g transform="translate(40,100)">
-    <text x="0" y="-8" font-size="12" font-weight="600" fill="#334155">HARNESSES (9 adapters)</text>
+    <text x="0" y="-8" font-size="12" font-weight="600" fill="#334155">HARNESSES (10 adapters)</text>
     <g font-size="11" fill="#0f172a">
       <g transform="translate(0,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">Claude Code</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">CLAUDE.md + hooks</text>
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Claude Code</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">CLAUDE.md + hooks</text>
       </g>
-      <g transform="translate(101,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">Cursor</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">.cursor/rules</text>
+      <g transform="translate(91,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Cursor</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">.cursor/rules</text>
       </g>
-      <g transform="translate(202,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">Windsurf</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">.windsurfrules</text>
+      <g transform="translate(182,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Windsurf</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">.windsurfrules</text>
       </g>
-      <g transform="translate(303,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">OpenCode</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">AGENTS.md + cfg</text>
+      <g transform="translate(273,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">OpenCode</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">AGENTS.md + cfg</text>
       </g>
-      <g transform="translate(404,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">OpenClaw</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">system prompt</text>
+      <g transform="translate(364,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">OpenClaw</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">system prompt</text>
       </g>
-      <g transform="translate(505,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">Hermes</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">AGENTS.md</text>
+      <g transform="translate(455,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Hermes</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">AGENTS.md</text>
       </g>
-      <g transform="translate(606,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">Pi</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">.pi/skills symlink</text>
+      <g transform="translate(546,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Pi</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">.pi/skills symlink</text>
       </g>
-      <g transform="translate(707,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">Standalone</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">run.py</text>
+      <g transform="translate(637,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Codex</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">.agents/skills</text>
       </g>
-      <g transform="translate(808,0)">
-        <rect width="92" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
-        <text x="46" y="20" text-anchor="middle" font-weight="600">Antigravity</text>
-        <text x="46" y="37" text-anchor="middle" font-size="9" fill="#64748b">ANTIGRAVITY.md</text>
+      <g transform="translate(728,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Standalone</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">run.py</text>
+      </g>
+      <g transform="translate(819,0)">
+        <rect width="82" height="50" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <text x="41" y="20" text-anchor="middle" font-weight="600">Antigravity</text>
+        <text x="41" y="37" text-anchor="middle" font-size="9" fill="#64748b">ANTIGRAVITY.md</text>
       </g>
     </g>
   </g>
 
-  <!-- Arrows down to brain (9 of them) -->
+  <!-- Arrows down to brain (10 of them) -->
   <g stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#arr)">
-    <path d="M86,160 L242,215"/>
-    <path d="M187,160 L304,215"/>
-    <path d="M288,160 L366,215"/>
-    <path d="M389,160 L428,215"/>
-    <path d="M490,160 L490,215"/>
-    <path d="M591,160 L552,215"/>
-    <path d="M692,160 L614,215"/>
-    <path d="M793,160 L676,215"/>
-    <path d="M894,160 L738,215"/>
+    <path d="M81,160 L210,215"/>
+    <path d="M172,160 L272,215"/>
+    <path d="M263,160 L334,215"/>
+    <path d="M354,160 L396,215"/>
+    <path d="M445,160 L458,215"/>
+    <path d="M536,160 L520,215"/>
+    <path d="M627,160 L582,215"/>
+    <path d="M718,160 L644,215"/>
+    <path d="M809,160 L706,215"/>
+    <path d="M900,160 L768,215"/>
   </g>
 
   <!-- Brain box -->
