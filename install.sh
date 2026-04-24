@@ -46,6 +46,12 @@ case "$ADAPTER" in
     cp "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md"
     mkdir -p "$TARGET/.claude"
     cp "$SRC/settings.json" "$TARGET/.claude/settings.json"
+    # PDLC/SDLC subagent team — copy into target's .claude/agents/
+    if [[ -d "$SRC/agents" ]]; then
+      mkdir -p "$TARGET/.claude/agents"
+      cp "$SRC/agents/"*.md "$TARGET/.claude/agents/"
+      echo "  + .claude/agents/ ($(ls "$SRC/agents/" | wc -l | tr -d ' ') subagents)"
+    fi
     ;;
   cursor)
     mkdir -p "$TARGET/.cursor/rules"

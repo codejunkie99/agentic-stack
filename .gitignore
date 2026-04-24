@@ -14,6 +14,10 @@ venv/
 .DS_Store
 .idea/
 *.swp
+.obsidian/
+
+# Claude Code per-user local settings (never committed)
+.claude/settings.local.json
 
 # runtime logs
 .agent/memory/dream.log
