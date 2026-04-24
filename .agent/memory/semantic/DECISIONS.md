@@ -126,3 +126,30 @@ Done via Python `\b...\b` regex (macOS `sed` does not support `\b`). Substring m
 **Alternatives considered:** (a) Option A: author all 9 missing agents — rejected because 22 agents crowds the roster and treats situational aliases as distinct roles. (b) Option B: relabel all 9 to existing roster members, including the three review lenses — rejected; collapsing partner-strategy / partner-analytics / principal-delivery into `executive-sponsor` or a single `reviewer` loses the review-lens distinction that the workflows rely on at quality gates. (c) Leave the workflow refs as-is and mark them "aspirational" — rejected; unresolved references in canonical workflow definitions are a latent failure mode, not documentation.
 
 **Status:** active
+
+## 2026-04-24: Step 8.2.3 — orphans cleanup (paths, status-update skill, agent-memory, personas)
+**Decision:** Stage 3 of Step 8.2 — the four items deferred from 8.1 and earlier 8.2 stages. Five commits:
+
+1. **context-search path adaptation.** Rewrote the skill's path table from starter-kit conventions (`context/projects/{project}/...`, `context/account/frameworks/`) to agent-stack conventions — client-scoped paths resolve to `.agent/memory/client/<active_client>/` (D1-Option-B), firm-scoped paths resolve to `adapters/<firm>/context/` when a firm adapter is enabled. Added a new optional `path_adapted_in:` frontmatter field as a pair to `bootstrapped_from:` so drift vs. upstream stays traceable. When no firm adapter is active, firm rows collapse to [CONTEXT GAP] rather than failing on missing paths.
+
+2. **draft-status-update skill bootstrapped** into `.agent/skills/` (5th knowledge-work skill). Verbatim import with `bootstrapped_from:` citing 8.2.3 (not 8.1 — deferred to orphans cleanup). Generic enough for the shared brain: content contract is "structured status update with canonical section order"; the exact section list is delegated to the active firm adapter's formatting protocol.
+
+3. **BCG agent-memory templates** added under new `adapters/bcg/agent-memory-templates/` — 16 per-role stubs (12 imported verbatim, `architect.md` renamed to `program-architect.md` with header line updated to match 8.2.1 agent rename, 3 authored for the 8.2.2 reviewer-lens agents). `install.sh` extended with a copy-if-missing loop (not `cp -R` overwrite) so re-installs preserve in-progress per-agent memory. README.md is excluded from install-time propagation. Smoke-test verified fresh install gets 16 stubs; re-install after seeding preserves the seeded entry.
+
+4. **Firm-generic personas** imported to `.agent/personas/` (not `adapters/bcg/personas/`): `executive-sponsor.md` and `program-director.md`. Both source files are fully firm-generic (no BCG markers, no named individuals), so they matched the `.agent/personas/README.md` rule that firm-generic archetypes live in the shared brain. `sample-` prefix dropped per the naming convention ("named after the archetype, not by sample label"). No filename collision with `adapters/bcg/agents/{executive-sponsor,program-director}.md` because the directories are semantically distinct (agent definition vs. reviewer bar).
+
+**Rationale:** 8.2.3 is the "stop leaving orphans" stage. Every starter-kit artifact we imported in 8.1 or referenced in 8.2 now either lives at its correct home or has been explicitly declined. The context-search paths were the most important to fix because a broken path table in a high-use skill silently produces wrong results (empty searches, not errors). The `cp -if-missing` semantics for agent-memory templates matters because per-role memory is exactly the kind of content that accumulates value over time — clobbering on re-install would destroy it. Placing personas at `.agent/personas/` (not the bcg adapter) is a direct read of the pre-existing README policy: firm-generic archetypes are shareable, and the two starter-kit samples contained zero BCG specificity.
+
+Final roster state after Step 8.2 (8.2.1 + 8.2.2 + 8.2.3):
+- **Agents**: 5 SDLC (always installed) + 16 BCG (installed when `bcg_adapter: "enabled"`) = 21 total
+- **Skills**: 11 SDLC + 5 knowledge-work (analysis, review, document-assembly, context-search, draft-status-update) = 16 total
+- **Workflows**: 6 canonical patterns in `.agent/workflows/`, every role ref resolves to a real agent
+- **Personas**: 2 firm-generic (executive-sponsor, program-director) in `.agent/personas/`
+- **Agent-memory templates**: 16 per-role stubs in `adapters/bcg/agent-memory-templates/`, install-propagated with preservation
+- **BCG adapter content**: scripts (1), commands (1), protocols (2), context (4), templates (3), skills (1 — confluence-access), agents (16), agent-memory-templates (16)
+
+Step 8.3 (real-case dry-run) can now execute against a completed roster.
+
+**Alternatives considered:** (a) Leave context-search paths as starter-kit refs and document the mismatch — rejected; silent-failure surface in a high-use skill. (b) Import draft-status-update to `adapters/bcg/skills/` — rejected; content contract is generic, only the formatting delegate is firm-specific. (c) Skip agent-memory templates entirely (option 3b) — rejected; a populated roster with empty memory scaffolding is a worse UX than a populated roster with 3-line init stubs. (d) Use `cp -R` (overwrite) for agent-memory templates to match the agents/commands propagation pattern — rejected; per-agent memory is the one content type where preservation across re-installs is load-bearing. (e) Import personas to `adapters/bcg/personas/` per my initial plan — rejected after checking content; both samples are firm-generic, and the BCG-personas README explicitly says firm-generic archetypes belong in `.agent/personas/`. The gitignore in `adapters/bcg/personas/` would also have silently dropped them.
+
+**Status:** active
