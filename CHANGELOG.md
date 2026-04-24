@@ -46,6 +46,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Thanks to @palamp for the report and the proposal that shaped the
   larger feature.
 
+### Security
+- **Manifest path-safety hardening (`harness_manager/schema.py`).** The
+  pre-existing path-traversal guard only tokenized on `/` and only
+  treated `/`-prefixed paths as absolute, so Windows-style inputs
+  (`..\..\outside`, `\\server\share`, `C:\temp\x`, `C:foo`) bypassed
+  validation and could let install/remove read or write outside the
+  adapter/project roots when run on Windows. Also extended the same
+  validation to `skills_link.target` and `skills_link.dst`, which were
+  previously only checked for presence — a manifest could otherwise
+  point the symlink/rsync into arbitrary filesystem locations on any
+  platform. Both POSIX and Windows separators are now normalized
+  before traversal detection, and every common absolute-path form
+  (POSIX root, Windows root, UNC, drive-letter) is rejected.
+
 ### Changed
 - `install.sh` shrinks from 175 lines of bash case-statements to 35
   lines of dispatcher. All install logic moved to `harness_manager/`.

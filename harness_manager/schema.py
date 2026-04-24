@@ -51,6 +51,39 @@ def _check_optional(d: dict, key: str, types: tuple, source: str) -> Any:
     return val
 
 
+def _check_path_safe(p: str, source: str, field: str) -> None:
+    """Reject path traversal and absolute paths on POSIX AND Windows.
+
+    Manifests are read by an installer that joins these paths with
+    target_root and writes/symlinks the result. A malicious or buggy
+    manifest with `../../outside`, `..\\..\\outside`, `/tmp/x`,
+    `\\\\server\\share`, or `C:\\temp\\x` would otherwise let install
+    or remove touch arbitrary filesystem locations. The original guard
+    only tokenized on `/` and only treated `/`-prefixed paths as
+    absolute, so Windows-style inputs slipped through. Tokenize on
+    both separators and reject every common absolute-path form.
+    """
+    parts = p.replace("\\", "/").split("/")
+    if ".." in parts:
+        raise ManifestError(
+            source,
+            f"'{field}': '..' path components not allowed (path traversal)",
+        )
+    # POSIX absolute (/foo) or Windows root/UNC (\foo, \\server\share).
+    if p.startswith("/") or p.startswith("\\"):
+        raise ManifestError(
+            source,
+            f"'{field}': absolute paths not allowed; use repo-relative paths",
+        )
+    # Windows drive prefix: C:foo (drive-relative), C:\foo / C:/foo
+    # (absolute). Catches every X:... form regardless of separator.
+    if len(p) >= 2 and p[1] == ":" and p[0].isalpha():
+        raise ManifestError(
+            source,
+            f"'{field}': drive-letter paths not allowed; use repo-relative paths",
+        )
+
+
 def _validate_files(files: list, source: str) -> None:
     if not files:
         raise ManifestError(source, "'files' must contain at least one entry")
@@ -62,10 +95,8 @@ def _validate_files(files: list, source: str) -> None:
         dst = _require(entry, "dst", (str,), es)
         if not src or not dst:
             raise ManifestError(es, "'src' and 'dst' must be non-empty strings")
-        if ".." in src.split("/") or ".." in dst.split("/"):
-            raise ManifestError(es, "'..' path components not allowed (path traversal)")
-        if src.startswith("/") or dst.startswith("/"):
-            raise ManifestError(es, "absolute paths not allowed; use repo-relative paths")
+        _check_path_safe(src, es, "src")
+        _check_path_safe(dst, es, "dst")
         policy = _check_optional(entry, "merge_policy", (str,), es)
         if policy is not None and policy not in VALID_MERGE_POLICIES:
             raise ManifestError(
@@ -78,11 +109,19 @@ def _validate_files(files: list, source: str) -> None:
 def _validate_skills_link(link: dict, source: str) -> None:
     if not isinstance(link, dict):
         raise ManifestError(source, "'skills_link' must be an object")
-    target = _require(link, "target", (str,), f"{source} skills_link")
-    dst = _require(link, "dst", (str,), f"{source} skills_link")
+    sl_source = f"{source} skills_link"
+    target = _require(link, "target", (str,), sl_source)
+    dst = _require(link, "dst", (str,), sl_source)
     if not target or not dst:
-        raise ManifestError(f"{source} skills_link", "'target' and 'dst' must be non-empty")
-    fallback = _check_optional(link, "fallback", (str,), f"{source} skills_link")
+        raise ManifestError(sl_source, "'target' and 'dst' must be non-empty")
+    # Same path-safety check as file entries: skills_link.target and
+    # skills_link.dst are joined with target_root in _resolve_skills_link
+    # without normalization, so a manifest with `..\..\outside` or
+    # `/tmp/x` here would let install/remove symlink or rsync into
+    # arbitrary filesystem locations on either POSIX or Windows.
+    _check_path_safe(target, sl_source, "target")
+    _check_path_safe(dst, sl_source, "dst")
+    fallback = _check_optional(link, "fallback", (str,), sl_source)
     if fallback is not None and fallback not in VALID_FALLBACKS:
         raise ManifestError(
             f"{source} skills_link",
