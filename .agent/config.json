@@ -1,0 +1,5 @@
+{
+  "$schema": "./config.schema.json",
+  "bcg_adapter": "disabled",
+  "active_client": null
+}

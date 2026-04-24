@@ -5,10 +5,38 @@ and protocols live in `.agent/`.
 
 ## Session start — read in this order
 1. `.agent/AGENTS.md` — the map of the whole brain
-2. `.agent/memory/personal/PREFERENCES.md` — how the user works
-3. `.agent/memory/working/REVIEW_QUEUE.md` — pending lessons awaiting review
-4. `.agent/memory/semantic/LESSONS.md` — what we've already learned
-5. `.agent/protocols/permissions.md` — hard constraints, read before any tool call
+2. `.agent/config.json` — resolve adapter + active-client flags (see below)
+3. `.agent/memory/personal/PREFERENCES.md` — how the user works
+4. `.agent/memory/working/REVIEW_QUEUE.md` — pending lessons awaiting review
+5. `.agent/memory/semantic/LESSONS.md` — what we've already learned
+6. `.agent/protocols/permissions.md` — hard constraints, read before any tool call
+
+### Conditional mounts (based on `config.json`)
+
+After reading `config.json`, extend the session-start load set as follows:
+
+- If `bcg_adapter == "enabled"`, also read:
+  - `adapters/bcg/README.md` — adapter map
+  - `adapters/bcg/protocols/` — BCG protocol overlays (Atlassian safety,
+    data classification)
+  - `adapters/bcg/context/firm/` — BCG hierarchy + engagement model
+  - `adapters/bcg/context/frameworks/` — BCG analytical canon
+  - `adapters/bcg/context/glossary/` — consulting terminology
+  - BCG-specific slash commands in `adapters/bcg/commands/` become
+    available (e.g. `/sync-harness`).
+
+  When this adapter is enabled, BCG context is **ambient** — treat it as
+  the default frame for any task. No need for the user to annotate tasks
+  with "this is BCG." If a task is explicitly non-BCG (OSS, personal
+  side-project), the user will say so.
+
+- If `active_client` is non-null, also read:
+  - `.agent/memory/client/<active_client>/` — engagement-scoped context
+    takes precedence over generic BCG context for anything the two
+    disagree on.
+
+Until Step 8.1 populates the adapter subdirectories, the conditional mount
+is a no-op — `config.json` defaults to `"bcg_adapter": "disabled"`.
 
 ## Before every non-trivial action — recall first
 

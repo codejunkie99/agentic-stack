@@ -46,6 +46,17 @@ are the exact failure mode this layer prevents.
 - `protocols/tool_schemas/` — typed interfaces for external tools
 - `protocols/delegation.md` — rules for sub-agent handoff
 
+## Config (`config.json`)
+Toggle file read at session start. Fields:
+- `bcg_adapter` — `"enabled"` auto-mounts `adapters/bcg/` content
+  (BCG context, protocols, personas, MCP tool allowlists, `/sync-harness`
+  slash command). `"disabled"` keeps the brain generic and shareable.
+  Default: `"disabled"`.
+- `active_client` — `null` or a client-id that matches a
+  `memory/client/<id>/` directory. When set, scopes
+  client-sensitive context to that engagement. Resolved per
+  `protocols/permissions.md` lookup order (env var > parent dir > config).
+
 ## Host-agent CLI tools (in `tools/`)
 Daily driver, highest-leverage first:
 - `recall.py "<intent>"` — surface graduated lessons relevant to what
