@@ -17,11 +17,11 @@ Present the case team's interim findings to the client steering committee — wh
 6. Next Steps (refined workplan to final deliverable)
 
 ## Team Structure: Coordinated
-- **framework-lead** leads and coordinates:
-  - **case-analyst** — Per-workstream findings
+- **analyst** leads and coordinates:
+  - **analyst** — Per-workstream findings
   - **deck-builder** — Slide structure and titles
-  - **delivery-lead** — Next steps and workplan
-- framework-lead runs internal coherence review before director escalation
+  - **program-manager** — Next steps and workplan
+- analyst runs internal coherence review before director escalation
 
 ## Review Panel (independent, parallel)
 - **partner-strategy** — Strategic direction and client-readiness

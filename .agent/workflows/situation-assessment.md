@@ -18,9 +18,9 @@ Produce a structured situation assessment that aligns the case team on the clien
 
 ## Team Structure: Flat
 Orchestrator spawns specialists directly:
-- **framework-lead** — Issue tree and hypothesis structure
-- **case-analyst** — Client context and market benchmarks
-- **delivery-lead** — Workstream and workplan structure
+- **analyst** — Issue tree and hypothesis structure
+- **analyst** — Client context and market benchmarks
+- **program-manager** — Workstream and workplan structure
 
 ## Review
 - **partner-strategy** — Business logic and problem framing

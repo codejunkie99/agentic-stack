@@ -17,8 +17,8 @@ Transform a case question into a MECE issue tree with a supporting hypothesis ne
 6. Analytical Work Package List (what analyses to run and in what sequence)
 
 ## Team Structure: Flat
-- **framework-lead** — Owns end-to-end structure
-- **case-analyst** — Provides analytical grounding for each branch
+- **analyst** — Owns end-to-end structure
+- **analyst** — Provides analytical grounding for each branch
 
 ## Review
 - **partner-analytics** — Analytical rigor and completeness

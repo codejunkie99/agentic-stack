@@ -18,10 +18,10 @@ This workflow converts daily meeting transcripts into structured, auditable task
 
   ------------------------------------- ------------------------ ---------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
   Role                                  Agent                    Skill      Responsibility
-  Transcript Intake & Task Extraction   `transcript-analyst`     analysis   Selects current-day transcript(s) and extracts tasks (primary), plus risks/context (secondary), producing the structured task dataset with evidence traceability
-  QA Validator                          `io-qa-auditor`          review     Validates that the extracted task dataset is supported by transcript evidence (no hallucinations, no missing evidence, coverage aligns with transcript action items)
-  Jira Update                           `jira-tracker-analyst`   writing    Ingests the extracted task dataset, normalizes for Jira readiness (without inventing values), deduplicates, and creates/updates Jira issues for the tasks
-  QA Validator                          `io-qa-auditor`          review     Validates that the Jira update faithfully reflects the extracted task dataset (no drops without reason, no invented fields, correct identity/dedup behavior)
+  Transcript Intake & Task Extraction   `analyst`     analysis   Selects current-day transcript(s) and extracts tasks (primary), plus risks/context (secondary), producing the structured task dataset with evidence traceability
+  QA Validator                          `test-lead`          review     Validates that the extracted task dataset is supported by transcript evidence (no hallucinations, no missing evidence, coverage aligns with transcript action items)
+  Jira Update                           `analyst`   writing    Ingests the extracted task dataset, normalizes for Jira readiness (without inventing values), deduplicates, and creates/updates Jira issues for the tasks
+  QA Validator                          `test-lead`          review     Validates that the Jira update faithfully reflects the extracted task dataset (no drops without reason, no invented fields, correct identity/dedup behavior)
   ------------------------------------- ------------------------ ---------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## Key Constraints for Agents {#key-constraints-for-agents local-id="924cc699d5bb"}
