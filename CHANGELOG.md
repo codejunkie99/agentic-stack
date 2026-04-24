@@ -5,6 +5,77 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] — 2026-04-23
+
+### Added
+- **Harness manager: manifest-driven adapter system.** Each adapter now
+  ships an `adapters/<name>/adapter.json` declaring its files,
+  collision policy, optional skills directory mirror, and named
+  post-install actions. Adding a new adapter is now a JSON-only PR —
+  no Python code, no test wiring, no class registration. Lives in the
+  new `harness_manager/` Python package.
+- **`./install.sh add <adapter>`** — append an adapter to an existing
+  project without re-running the onboarding wizard.
+- **`./install.sh remove <adapter>`** — confirmation prompt lists every
+  file before deletion. Hard delete (no quarantine, no undo — git is
+  the safety net). Reverses post-install actions automatically (e.g.,
+  `openclaw agents remove`).
+- **`./install.sh doctor`** — read-only audit of installed adapters.
+  Verifies tracked files exist, post-install state is valid, `.agent/`
+  brain is intact. Exits 0 on green, 1 on red. First run on a
+  pre-v0.9.0 project asks before synthesizing `install.json` — never
+  silently mutates.
+- **`./install.sh status`** — one-screen view of installed adapters,
+  brain stats (skills/episodic/lessons), last-updated timestamp.
+- **`.agent/install.json`** — authoritative record of what's installed.
+  Schema-versioned. Atomic write via tempfile + rename, fcntl-locked
+  on POSIX.
+- **PowerShell parity from day one.** `install.ps1` is now a 70-line
+  thin dispatcher to the same Python backend `install.sh` uses. The
+  new `add`/`remove`/`doctor`/`status` verbs behave identically across
+  mac/Linux/Windows. Was 270+ lines of duplicated bash-shaped logic.
+- `docs/per-harness/standalone-python.md` — gap-fill for the only
+  harness that didn't have a per-harness doc.
+
+### Fixed
+- **#18** — Claude Code hook commands break when cwd is not the
+  project root. `adapters/claude-code/settings.json` template now uses
+  `{{BRAIN_ROOT}}` placeholder, which the manifest backend substitutes
+  with `$CLAUDE_PROJECT_DIR` at install time. Hook commands resolve
+  correctly regardless of which directory Claude Code's cwd points at.
+  Thanks to @palamp for the report and the proposal that shaped the
+  larger feature.
+
+### Changed
+- `install.sh` shrinks from 175 lines of bash case-statements to 35
+  lines of dispatcher. All install logic moved to `harness_manager/`.
+  Existing CLI surface preserved: `./install.sh <adapter> [target]
+  [--yes|--reconfigure|--force]` works identically.
+- `install.ps1` shrinks from 270+ lines to 70.
+
+### Migration
+Existing v0.8.x users: `brew upgrade agentic-stack`, then run
+`./install.sh doctor` in your project. Doctor detects existing
+adapters from filesystem signals and asks before writing `install.json`.
+Subsequent doctor runs are read-only.
+
+### Release checklist (post-merge, pre-`brew upgrade`)
+The Homebrew Formula (`Formula/agentic-stack.rb`) intentionally still
+points at the v0.8.0 tarball in this PR. The v0.9.0 release flow is:
+
+1. Merge this PR to master.
+2. Tag `v0.9.0` on master and create the GitHub release.
+3. Run `curl -L https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.9.0.tar.gz | shasum -a 256` to compute the new sha256.
+4. Open a follow-up PR that updates `url`, `sha256`, `version` together,
+   and adds `harness_manager` + `install.ps1` to the `pkgshare.install` line.
+   This is the same pattern as commit `abaa352` (the v0.8.0 sha256 bump).
+
+Reason for the split: a Formula change that adds `harness_manager/` to
+`pkgshare.install` while still pointing at the v0.8.0 tarball would fail
+brew install (file-not-found in the staged tarball). Bumping all four
+fields together as a follow-up after the tag exists keeps the formula
+always pointing at a real, installable artifact.
+
 ## [0.8.0] — 2026-04-21
 
 ### Added

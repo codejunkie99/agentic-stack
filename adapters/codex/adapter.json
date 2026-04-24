@@ -1,0 +1,16 @@
+{
+  "name": "codex",
+  "description": "OpenAI Codex CLI — AGENTS.md + .agents/skills mirror (Codex's documented skills directory per https://developers.openai.com/codex/skills).",
+  "files": [
+    {
+      "src": "AGENTS.md",
+      "dst": "AGENTS.md",
+      "merge_policy": "merge_or_alert"
+    }
+  ],
+  "skills_link": {
+    "target": ".agent/skills",
+    "dst": ".agents/skills",
+    "fallback": "rsync_with_delete"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "hermes",
+  "description": "Hermes Agent (Nous Research) — AGENTS.md workspace context. agentskills.io-compatible.",
+  "files": [
+    {
+      "src": "AGENTS.md",
+      "dst": "AGENTS.md",
+      "merge_policy": "merge_or_alert"
+    }
+  ]
+}

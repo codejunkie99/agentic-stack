@@ -1,0 +1,11 @@
+{
+  "name": "standalone-python",
+  "description": "Standalone Python — DIY conductor entrypoint (run.py). Does not overwrite existing run.py (user customizations preserved).",
+  "files": [
+    {
+      "src": "run.py",
+      "dst": "run.py",
+      "merge_policy": "skip_if_exists"
+    }
+  ]
+}

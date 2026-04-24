@@ -1,0 +1,11 @@
+{
+  "name": "windsurf",
+  "description": "Windsurf — .windsurfrules instruction text. No hooks today.",
+  "files": [
+    {
+      "src": ".windsurfrules",
+      "dst": ".windsurfrules",
+      "merge_policy": "overwrite"
+    }
+  ]
+}
