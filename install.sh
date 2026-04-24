@@ -52,6 +52,37 @@ case "$ADAPTER" in
       cp "$SRC/agents/"*.md "$TARGET/.claude/agents/"
       echo "  + .claude/agents/ ($(ls "$SRC/agents/" | wc -l | tr -d ' ') subagents)"
     fi
+    # BCG adapter: conditionally propagate consulting agents + slash commands
+    # into the target when source config.json has "bcg_adapter": "enabled".
+    # Context/protocols/templates/skills are loaded at session-start via the
+    # CLAUDE.md conditional and don't need install-time propagation — agents
+    # and commands are different because Claude Code discovers them by
+    # filesystem path at launch, not via runtime reads.
+    BCG_SRC="$HERE/adapters/bcg"
+    BCG_CFG="$HERE/.agent/config.json"
+    if [[ -f "$BCG_CFG" ]] && grep -q '"bcg_adapter"[[:space:]]*:[[:space:]]*"enabled"' "$BCG_CFG"; then
+      if [[ -d "$BCG_SRC/agents" ]]; then
+        mkdir -p "$TARGET/.claude/agents"
+        # glob may be empty if the adapter dir is scaffold-only; guard with nullglob
+        shopt -s nullglob
+        bcg_agents=("$BCG_SRC/agents/"*.md)
+        shopt -u nullglob
+        if (( ${#bcg_agents[@]} > 0 )); then
+          cp "${bcg_agents[@]}" "$TARGET/.claude/agents/"
+          echo "  + .claude/agents/ (${#bcg_agents[@]} BCG consulting agents)"
+        fi
+      fi
+      if [[ -d "$BCG_SRC/commands" ]]; then
+        mkdir -p "$TARGET/.claude/commands"
+        shopt -s nullglob
+        bcg_commands=("$BCG_SRC/commands/"*.md)
+        shopt -u nullglob
+        if (( ${#bcg_commands[@]} > 0 )); then
+          cp "${bcg_commands[@]}" "$TARGET/.claude/commands/"
+          echo "  + .claude/commands/ (${#bcg_commands[@]} BCG slash commands)"
+        fi
+      fi
+    fi
     ;;
   cursor)
     mkdir -p "$TARGET/.cursor/rules"
