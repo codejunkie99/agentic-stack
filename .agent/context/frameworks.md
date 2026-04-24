@@ -1,4 +1,13 @@
-# BCG Core Analytical Frameworks
+# Analytical Frameworks
+
+Generic consulting / analytical frameworks. All frameworks below are
+firm-generic (Minto, Porter, McKinsey-attributed, or industry-standard) and
+are useful across any analytical engagement — consulting work, personal
+projects, strategy reviews.
+
+BCG-attributed frameworks (Growth-Share Matrix and any other BCG-authored
+content) live in `adapters/bcg/context/frameworks/` and load on top of
+this generic base when the BCG adapter is enabled.
 
 ## Problem Structuring
 
@@ -24,13 +33,6 @@ A test for analytical completeness:
 
 ## Strategy Frameworks
 
-### Growth-Share Matrix (BCG Matrix)
-Four quadrants based on market share and growth rate:
-- **Stars** — High share, high growth → invest to grow
-- **Cash Cows** — High share, low growth → harvest for cash
-- **Question Marks** — Low share, high growth → selective investment
-- **Dogs** — Low share, low growth → divest or restructure
-
 ### 7-S Framework (McKinsey)
 Seven interdependent organizational elements:
 - **Hard:** Strategy, Structure, Systems
@@ -42,7 +44,9 @@ Three pricing approaches:
 - **Cost-plus** — Price = cost + margin target
 - **Competitive** — Price anchored to market (parity, premium, or discount)
 - **Value-based** — Price = value delivered to customer
-- BCG recommendation: always start from value-based, test against competitive
+
+(For BCG's practice-specific recommendation on pricing-approach sequencing,
+see `adapters/bcg/context/frameworks/bcg-matrix.md`.)
 
 ### Value Chain Analysis (Porter)
 Decompose a business into primary and support activities:
