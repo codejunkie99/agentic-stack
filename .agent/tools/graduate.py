@@ -6,7 +6,8 @@ against current LESSONS.md) runs automatically so last-minute issues get
 caught. The rationale is REQUIRED — rubber-stamped promotions are the
 whole failure mode this layer is designed to prevent.
 """
-import os, sys, json, argparse, hashlib, datetime
+import os, sys, json, argparse, hashlib, datetime, re
+from pathlib import Path
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(BASE, "memory"))
@@ -17,6 +18,59 @@ from render_lessons import append_lesson, render_lessons, load_lessons
 
 CANDIDATES = os.path.join(BASE, "memory/candidates")
 SEMANTIC = os.path.join(BASE, "memory/semantic")
+
+# Candidate IDs come from sys.argv (CLI-supplied, untrusted). Without
+# validation, a value like "../../etc/passwd" or "../some/path" gets joined
+# straight into a filesystem path, letting a caller read or move JSON files
+# outside the candidate directory. Use the same regex the sister
+# review_state._validate_candidate_id uses so the two layers stay in sync.
+_CANDIDATE_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,128}$")
+
+
+def _local_validate_candidate_id(cid):
+    """Reject anything that isn't a plain candidate id token.
+
+    Path separators, traversal segments, NULs, and the like are all
+    excluded by the alphanumeric/underscore/hyphen character class.
+    """
+    if not isinstance(cid, str) or not _CANDIDATE_ID_RE.match(cid):
+        raise ValueError(
+            f"invalid candidate_id: {cid!r} (must match "
+            f"{_CANDIDATE_ID_RE.pattern})"
+        )
+    return cid
+
+
+# Prefer the sister implementation if it's been landed in review_state, so
+# the two stay aligned (same regex, identical semantics). Fall back to the
+# local copy when the import doesn't resolve — the sister agent may still
+# be in flight, and we don't want graduate.py to break if review_state has
+# nothing exported yet. The import is a best-effort lookup, not a hard
+# dependency on a public name.
+try:
+    from review_state import _validate_candidate_id as _imported_validator
+    validate_candidate_id = _imported_validator
+except ImportError:
+    validate_candidate_id = _local_validate_candidate_id
+
+
+def _safe_candidate_path(candidates_dir, cid):
+    """Build the candidate JSON path and assert it stays inside the dir.
+
+    Even after the regex check, run a realpath containment check so any
+    surprise (symlink in candidates_dir, weird OS handling) still can't
+    let the resolved path escape the candidates root.
+    """
+    validate_candidate_id(cid)
+    root = Path(candidates_dir).resolve()
+    cand_path = (Path(candidates_dir) / f"{cid}.json").resolve()
+    try:
+        cand_path.relative_to(root)
+    except ValueError:
+        raise ValueError(
+            f"candidate path escapes candidates dir: {cand_path} not under {root}"
+        )
+    return str(cand_path)
 
 
 def _lesson_id(candidate):
@@ -48,7 +102,24 @@ def main():
                    help="ID of an existing lesson this replaces.")
     args = p.parse_args()
 
-    cand_path = os.path.join(CANDIDATES, f"{args.candidate_id}.json")
+    # Validate the CLI-supplied id at the boundary — before it's used in
+    # any path. A bad id (e.g. "../some/path") otherwise gets joined into
+    # CANDIDATES and lets the caller read or move JSON outside the
+    # candidate directory.
+    try:
+        validate_candidate_id(args.candidate_id)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(4)
+
+    # Build the candidate path with a realpath containment check on top of
+    # the regex, in case symlinks or unusual filesystems shift the resolved
+    # location outside CANDIDATES.
+    try:
+        cand_path = _safe_candidate_path(CANDIDATES, args.candidate_id)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(4)
     if not os.path.exists(cand_path):
         print(f"ERROR: candidate not found: {args.candidate_id}", file=sys.stderr)
         sys.exit(1)
@@ -126,6 +197,11 @@ def main():
                 file=sys.stderr,
             )
 
+        # Re-validate before lifecycle movement. Defense in depth — even
+        # though the entry-point check has already run, mark_graduated
+        # joins the id into a path inside review_state, and we don't want
+        # to depend on the sister module having its own check landed yet.
+        validate_candidate_id(args.candidate_id)
         mark_graduated(
             args.candidate_id, retry_reviewer, retry_rationale, CANDIDATES,
             provisional=retry_provisional,
@@ -175,7 +251,10 @@ def main():
     append_lesson(lesson, SEMANTIC)
     md_path = render_lessons(SEMANTIC)
 
-    # Semantic writes survived — now move the candidate file.
+    # Semantic writes survived — now move the candidate file. Re-validate
+    # the id at this second path-construction site so an inadvertent
+    # mutation between the entry check and here can't slip through.
+    validate_candidate_id(args.candidate_id)
     mark_graduated(
         args.candidate_id, args.reviewer, args.rationale, CANDIDATES,
         provisional=args.provisional,
