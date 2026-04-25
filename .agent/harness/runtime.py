@@ -641,5 +641,7 @@ def mark_worker_stopped(instance_id):
     entry["worker_pid"] = None
     entry["worker_heartbeat_at"] = _now()
     entry["stopped_at"] = entry["worker_heartbeat_at"]
+    if reg.get("active_instance") == instance_id:
+        reg["active_instance"] = None
     save_registry(reg)
     return entry
