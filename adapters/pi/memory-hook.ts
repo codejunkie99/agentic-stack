@@ -8,9 +8,11 @@
  *     AGENT_LEARNINGS.jsonl after bash / edit / write calls (same signals
  *     Claude Code's PostToolUse hook captures — read/find/ls are noise and
  *     are intentionally skipped).
- *   - Runs `auto_dream.py` on session shutdown (quit / new session / resume)
- *     so the dream cycle fires at the natural end of a work session, exactly
- *     as Claude Code's `Stop` hook does.
+ *   - Runs `auto_dream.py` once on `session_shutdown` (process exit) so the
+ *     dream cycle fires at the natural end of a work session, exactly like
+ *     Claude Code's `Stop` hook. Pi's SessionShutdownEvent has no `reason`
+ *     payload — earlier versions of this hook tried to filter on
+ *     event.reason and rejected every event; the dream cycle never ran.
  *
  * Place: .pi/extensions/memory-hook.ts  (project-local, auto-discovered)
  * Reload: /reload inside pi, or restart pi.
@@ -54,19 +56,58 @@ const PATTERNS_CFG = path.join(AGENT_ROOT, "protocols", "hook_patterns.json");
 const HIGH_RE = /\b(deploy(?:ment)?|release|rollback|migrat(?:e|ion)|schema|alter\s+table|drop\s+table|create\s+table|truncate|prod(?:uction)?|staging|force.?push|push\s+--force|secret|credential)\b/i;
 const MED_RE  = /\b(commit|push|merge|rebase|test|spec|build|bundle|compile|install|upgrade|uninstall|delete|remove|unlink|chmod|chown|cron|systemctl)\b/i;
 
+// Validate each fragment individually so one bad regex doesn't disable every
+// custom rule. Mirrors claude_code_post_tool.py's _filter_valid + incremental
+// merge so the two harnesses behave identically on malformed user patterns.
+function _validFragments(frags: unknown): string[] {
+  if (!Array.isArray(frags)) return [];
+  const out: string[] = [];
+  for (const raw of frags) {
+    if (typeof raw !== "string" || !raw) continue;
+    try {
+      new RegExp(raw);
+      out.push(raw);
+    } catch {
+      // Bad fragment — skip it, keep the rest.
+    }
+  }
+  return out;
+}
+
+function _mergePattern(frags: string[]): RegExp | null {
+  if (!frags.length) return null;
+  // Try the merged form first; fall back to first-wins if two fragments
+  // conflict only when combined (e.g., duplicate named groups).
+  try {
+    return new RegExp(`\\b(${frags.join("|")})\\b`, "i");
+  } catch {
+    const surviving: string[] = [];
+    for (const frag of frags) {
+      try {
+        new RegExp(`\\b(${[...surviving, frag].join("|")})\\b`, "i");
+        surviving.push(frag);
+      } catch {
+        // Drop this fragment; keep what we have.
+      }
+    }
+    return surviving.length
+      ? new RegExp(`\\b(${surviving.join("|")})\\b`, "i")
+      : null;
+  }
+}
+
 function _loadUserPatterns(): { high: RegExp | null; medium: RegExp | null } {
   if (!fs.existsSync(PATTERNS_CFG)) return { high: null, medium: null };
+  let cfg: { high_stakes?: unknown; medium_stakes?: unknown };
   try {
-    const cfg = JSON.parse(fs.readFileSync(PATTERNS_CFG, "utf8"));
-    const toRe = (frags: string[]) =>
-      frags.length ? new RegExp(`\\b(${frags.join("|")})\\b`, "i") : null;
-    return {
-      high:   toRe((cfg.high_stakes   ?? []).filter(Boolean)),
-      medium: toRe((cfg.medium_stakes ?? []).filter(Boolean)),
-    };
+    cfg = JSON.parse(fs.readFileSync(PATTERNS_CFG, "utf8"));
   } catch {
     return { high: null, medium: null };
   }
+  return {
+    high:   _mergePattern(_validFragments(cfg.high_stakes)),
+    medium: _mergePattern(_validFragments(cfg.medium_stakes)),
+  };
 }
 
 const { high: userHigh, medium: userMed } = _loadUserPatterns();
@@ -117,10 +158,13 @@ function _reflection(event: ToolResultEvent, success: boolean): string {
   if (isEditToolResult(event)) {
     const p = event.input.path;
     if (!success) return `Edit failed on ${p}`;
-    const first = event.input.edits?.[0];
-    if (first) {
-      const old = first.oldText.slice(0, 40).replace(/\n/g, "↵");
-      const neu = first.newText.slice(0, 40).replace(/\n/g, "↵");
+    // Pi's EditToolInput is flat: { path, oldText, newText }. There is no
+    // `edits` array — that's Claude Code's MultiEdit shape.
+    const oldText = (event.input as { oldText?: unknown }).oldText;
+    const newText = (event.input as { newText?: unknown }).newText;
+    if (typeof oldText === "string" && typeof newText === "string") {
+      const old = oldText.slice(0, 40).replace(/\n/g, "↵");
+      const neu = newText.slice(0, 40).replace(/\n/g, "↵");
       return `Edited ${p}: replaced '${old}' with '${neu}'`;
     }
     return `Edited ${p}`;
@@ -134,9 +178,20 @@ function _reflection(event: ToolResultEvent, success: boolean): string {
   return `Tool ${event.toolName} ${success ? "completed" : "failed"}`;
 }
 
-// ── Commit SHA (module-level cache) ──────────────────────────────────────────
+// ── Commit SHA (module-level cache, invalidated on HEAD-changing bash) ──────
+// Caching avoids forking git on every tool call; invalidating on commit-style
+// commands keeps the recorded SHA accurate across long pi sessions where the
+// user commits / merges / rebases mid-flight.
 
 let _cachedSha: string | undefined;
+
+// Match `git <subcommand>` where subcommand is one we know moves HEAD.
+// `[^|;&]*?` allows option flags or porcelain wrappers between `git` and
+// the subcommand (e.g. `git -c advice.detachedHead=false checkout main`,
+// `git -C path switch dev`). The lazy quantifier + the shell-separator
+// negative class keep us inside a single command — we don't want
+// `git status; git commit` to match if the subcommand never reaches us.
+const _SHA_INVALIDATING = /\bgit\b[^|;&]*?\b(commit|reset|checkout|switch|merge|rebase|cherry-pick|revert|pull|fetch|clone)\b/;
 
 function _commitSha(): string {
   if (_cachedSha !== undefined) return _cachedSha;
@@ -154,6 +209,14 @@ function _commitSha(): string {
   return _cachedSha;
 }
 
+function _maybeInvalidateSha(event: ToolResultEvent): void {
+  if (!isBashToolResult(event)) return;
+  const cmd = event.input.command;
+  if (typeof cmd === "string" && _SHA_INVALIDATING.test(cmd)) {
+    _cachedSha = undefined;
+  }
+}
+
 // ── Episodic write ───────────────────────────────────────────────────────────
 
 function _appendEntry(entry: Record<string, unknown>): void {
@@ -163,14 +226,23 @@ function _appendEntry(entry: Record<string, unknown>): void {
 
 // ── Auto-dream helpers ────────────────────────────────────────────────────────
 
-// Reasons that represent an actual end-of-session (mirrors Claude Code Stop hook).
-// "reload" = dev reloading extensions; "fork" = branch checkpoint mid-session.
-// Neither should flush the dream cycle.
-const DREAM_REASONS = new Set(["quit", "new", "resume"]);
+// session_shutdown is fired exactly once on process exit (see pi-coding-agent
+// agent-session.ts: `emit({ type: "session_shutdown" })`). The event has no
+// `reason` field — earlier versions of this hook filtered on event.reason and
+// rejected every event, so the dream cycle never ran. Keep this handler simple.
+let _dreamRunning = false;
 
 async function _runDream(pi: ExtensionAPI, hasUI: boolean): Promise<void> {
   if (!fs.existsSync(DREAM_SCRIPT)) return;
+  // Re-entrancy guard: if pi fires session_shutdown twice during teardown
+  // (or if the user opens two pi sessions that exit at the same instant in
+  // the same project), only run the dream cycle once. auto_dream.py rewrites
+  // AGENT_LEARNINGS.jsonl whole-file, so concurrent runs would clobber each
+  // other.
+  if (_dreamRunning) return;
+  _dreamRunning = true;
 
+  try {
   // Try python3 then python — mirrors the TypeScript hook's pythonCandidates()
   // from the old subprocess approach, kept here for Windows / pyenv compat.
   for (const py of ["python3", "python"]) {
@@ -181,7 +253,7 @@ async function _runDream(pi: ExtensionAPI, hasUI: boolean): Promise<void> {
       });
       if (code === 0) return;
       // Non-zero exit from python (not a spawn error): surface once and bail.
-      if (hasUI && code !== null) {
+      if (hasUI) {
         const firstLine = (stderr ?? "").split(/\r?\n/)[0] || `exit ${code}`;
         pi.sendMessage({
           customType: "agentic-stack",
@@ -195,6 +267,9 @@ async function _runDream(pi: ExtensionAPI, hasUI: boolean): Promise<void> {
     }
   }
   // Both candidates failed to spawn — python not on PATH, silently skip.
+  } finally {
+    _dreamRunning = false;
+  }
 }
 
 // ── Extension entry point ────────────────────────────────────────────────────
@@ -214,6 +289,10 @@ export default function (pi: ExtensionAPI) {
       !isEditToolResult(event) &&
       !isWriteToolResult(event)
     ) return;
+
+    // Invalidate the cached commit SHA when bash mutates HEAD so subsequent
+    // entries record the post-commit SHA, not the stale session-start one.
+    _maybeInvalidateSha(event);
 
     const success = !event.isError;
 
@@ -255,9 +334,13 @@ export default function (pi: ExtensionAPI) {
   });
 
   // ── session_shutdown: dream cycle ────────────────────────────────────────
+  // Pi's SessionShutdownEvent fires once on process exit and carries no
+  // payload (see pi-coding-agent agent-session.ts:emit({type:"session_shutdown"})).
+  // Earlier versions of this hook tried to filter on event.reason — that
+  // field doesn't exist, so the filter rejected every event and the dream
+  // cycle never ran. Just always run.
 
-  pi.on("session_shutdown", async (event, ctx) => {
-    if (!DREAM_REASONS.has(event.reason)) return;
+  pi.on("session_shutdown", async (_event, ctx) => {
     await _runDream(pi, ctx.hasUI);
   });
 }

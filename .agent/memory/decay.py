@@ -29,7 +29,9 @@ def decay_old_entries(entries, archive_dir):
 
     if archived:
         os.makedirs(archive_dir, exist_ok=True)
-        path = os.path.join(archive_dir, f"archive_{datetime.date.today()}.jsonl")
+        # UTC date so archive filenames align with the UTC cutoff above.
+        today_utc = datetime.datetime.now(datetime.timezone.utc).date()
+        path = os.path.join(archive_dir, f"archive_{today_utc}.jsonl")
         with open(path, "a") as f:
             for e in archived:
                 f.write(json.dumps(e) + "\n")

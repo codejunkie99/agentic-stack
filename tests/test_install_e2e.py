@@ -144,19 +144,19 @@ class TestEndToEndInstallFlow(unittest.TestCase):
             [".cursor/rules/agentic-stack.mdc"],
         )
 
-    # ---- pi skills_link + from_stack ---------------------------------
+    # ---- pi skills_link + extension ----------------------------------
 
-    def test_pi_install_creates_symlink_and_syncs_hook(self):
+    def test_pi_install_wires_extension_and_skills(self):
         self._install("pi")
         # AGENTS.md
         self.assertTrue((self.target / "AGENTS.md").is_file())
-        # memory-hook.ts (adapter-local file)
+        # memory-hook.ts is a self-contained TypeScript extension: all
+        # scoring + reflection logic inline, no Python subprocess per tool
+        # call. The old `from_stack` sync of pi_post_tool.py was removed
+        # when this hook was rewritten (the .py file still ships in the
+        # brain template at .agent/harness/hooks/ for standalone use, but
+        # the pi adapter no longer manages it).
         self.assertTrue((self.target / ".pi" / "extensions" / "memory-hook.ts").is_file())
-        # pi_post_tool.py (from_stack: true — synced from agentic-stack source)
-        self.assertTrue(
-            (self.target / ".agent" / "harness" / "hooks" / "pi_post_tool.py").is_file(),
-            "from_stack file pi_post_tool.py was not synced",
-        )
         # skills symlink
         skills_dst = self.target / ".pi" / "skills"
         self.assertTrue(skills_dst.is_symlink() or skills_dst.is_dir())
