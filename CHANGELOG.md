@@ -83,6 +83,18 @@ the next `./install.sh pi`. Existing `.agent/memory/episodic/AGENT_LEARNINGS.jso
 files with naive-local timestamps continue to work — readers normalise
 them at compare time and writers emit UTC going forward.
 
+### Release
+- Tag `v0.9.1` cut from master at `d7b70b2`.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.9.1>
+- `Formula/agentic-stack.rb` bumped to v0.9.1 in a follow-up commit
+  (same flow as v0.8.0 → v0.9.0): tag first, compute sha256, then bump
+  `url` + `sha256` + `version` together so brew always points at a real
+  installable artifact.
+- Tarball sha256:
+  `09cc3b8c9ec159cf8b85cf672fc15a29e6bfa9377cc9c59dd270acd441ced568`
+  (verify locally with
+  `curl -sL https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.9.1.tar.gz | shasum -a 256`)
+
 ### Credits
 PR #24 by @aliirz; Codex CLI used for an independent second-opinion review
 that surfaced the auto_dream window race + the SHA-regex narrowness.
