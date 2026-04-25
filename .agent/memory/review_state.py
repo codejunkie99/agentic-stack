@@ -9,7 +9,37 @@ into this module to transition state. Rejection and re-stage preserve full
 history so a candidate that keeps reappearing is visibly churning rather
 than looking novel each time.
 """
-import os, json, datetime, hashlib
+import os, json, datetime, hashlib, re
+
+
+_CANDIDATE_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,128}$")
+
+
+def _validate_candidate_id(candidate_id):
+    """Reject ids that could escape the candidates directory.
+
+    Strict allowlist: alphanumeric, underscore, hyphen; 1-128 chars.
+    Refuses path separators, '..', spaces, and anything else by construction.
+    """
+    if not isinstance(candidate_id, str) or not _CANDIDATE_ID_RE.match(candidate_id):
+        raise ValueError(f"invalid candidate_id: {candidate_id!r}")
+    return candidate_id
+
+
+def _ensure_within(path, base_dir):
+    """Defense-in-depth: after symlink resolution the path must stay under base_dir.
+
+    Catches the case where a valid-looking id maps to a candidate file that has
+    been replaced with a symlink pointing outside the candidates tree.
+    """
+    real_path = os.path.realpath(path)
+    real_base = os.path.realpath(base_dir)
+    # Compare with a trailing sep so '/foo/barbaz' isn't treated as inside '/foo/bar'.
+    if real_path != real_base and not real_path.startswith(real_base + os.sep):
+        raise ValueError(
+            f"candidate path escapes base dir: {real_path!r} not under {real_base!r}"
+        )
+    return real_path
 
 
 def _now():
@@ -104,9 +134,11 @@ def mark_graduated(candidate_id, reviewer, rationale, candidates_dir,
     the structured lesson entry to semantic/lessons.jsonl and re-rendering
     LESSONS.md — this function only handles the candidate side.
     """
+    candidate_id = _validate_candidate_id(candidate_id)
     src = os.path.join(candidates_dir, f"{candidate_id}.json")
     if not os.path.exists(src):
         raise FileNotFoundError(f"candidate not found: {candidate_id}")
+    _ensure_within(src, candidates_dir)
     cand = load_candidate(src)
     cand["status"] = "provisional" if provisional else "accepted"
     cand["accepted_at"] = _now()
@@ -119,6 +151,7 @@ def mark_graduated(candidate_id, reviewer, rationale, candidates_dir,
     graduated_dir = os.path.join(candidates_dir, "graduated")
     os.makedirs(graduated_dir, exist_ok=True)
     dst = os.path.join(graduated_dir, f"{candidate_id}.json")
+    _ensure_within(dst, graduated_dir)
     save_candidate(cand, dst)
     os.remove(src)
     _refresh_queue(candidates_dir)
@@ -137,9 +170,11 @@ def mark_rejected(candidate_id, reviewer, reason, candidates_dir, **extra_stamp)
     specific lessons are still present before re-staging, so unrelated LESSONS
     edits don't cause the candidate to churn.
     """
+    candidate_id = _validate_candidate_id(candidate_id)
     src = os.path.join(candidates_dir, f"{candidate_id}.json")
     if not os.path.exists(src):
         raise FileNotFoundError(f"candidate not found: {candidate_id}")
+    _ensure_within(src, candidates_dir)
     cand = load_candidate(src)
     cand["status"] = "rejected"
     cand["rejection_count"] = cand.get("rejection_count", 0) + 1
@@ -149,6 +184,7 @@ def mark_rejected(candidate_id, reviewer, reason, candidates_dir, **extra_stamp)
     rejected_dir = os.path.join(candidates_dir, "rejected")
     os.makedirs(rejected_dir, exist_ok=True)
     dst = os.path.join(rejected_dir, f"{candidate_id}.json")
+    _ensure_within(dst, rejected_dir)
     save_candidate(cand, dst)
     os.remove(src)
     _refresh_queue(candidates_dir)
@@ -157,14 +193,18 @@ def mark_rejected(candidate_id, reviewer, reason, candidates_dir, **extra_stamp)
 
 def mark_reopened(candidate_id, reviewer, candidates_dir):
     """Move a rejected candidate back to the staged pool with history intact."""
-    src = os.path.join(candidates_dir, "rejected", f"{candidate_id}.json")
+    candidate_id = _validate_candidate_id(candidate_id)
+    rejected_dir = os.path.join(candidates_dir, "rejected")
+    src = os.path.join(rejected_dir, f"{candidate_id}.json")
     if not os.path.exists(src):
         raise FileNotFoundError(f"rejected candidate not found: {candidate_id}")
+    _ensure_within(src, rejected_dir)
     cand = load_candidate(src)
     cand["status"] = "staged"
     _touch(cand, "reopened", reviewer)
 
     dst = os.path.join(candidates_dir, f"{candidate_id}.json")
+    _ensure_within(dst, candidates_dir)
     save_candidate(cand, dst)
     os.remove(src)
     _refresh_queue(candidates_dir)
