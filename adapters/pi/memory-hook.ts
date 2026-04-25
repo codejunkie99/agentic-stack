@@ -1,183 +1,346 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { existsSync } from "node:fs";
-import { spawn } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+/**
+ * memory-hook.ts — agentic-stack episodic logger for Pi Coding Agent
+ *
+ * Pi has no settings.json hook file like Claude Code, but it has a full
+ * TypeScript extension system. This extension:
+ *
+ *   - Listens to `tool_result` and writes episodic entries to
+ *     AGENT_LEARNINGS.jsonl after bash / edit / write calls (same signals
+ *     Claude Code's PostToolUse hook captures — read/find/ls are noise and
+ *     are intentionally skipped).
+ *   - Runs `auto_dream.py` once on `session_shutdown` (process exit) so the
+ *     dream cycle fires at the natural end of a work session, exactly like
+ *     Claude Code's `Stop` hook. Pi's SessionShutdownEvent has no `reason`
+ *     payload — earlier versions of this hook tried to filter on
+ *     event.reason and rejected every event; the dream cycle never ran.
+ *
+ * Place: .pi/extensions/memory-hook.ts  (project-local, auto-discovered)
+ * Reload: /reload inside pi, or restart pi.
+ *
+ * Design decisions
+ * ─────────────────
+ * • process.cwd() for all paths — avoids import.meta.url which jiti can
+ *   leave undefined in CJS-transform mode.
+ * • All scoring / reflection logic is inline TypeScript — no Python
+ *   subprocess per tool call, no spawn overhead, no timeout complexity.
+ * • Direct fs.appendFileSync — single atomic write per entry; POSIX
+ *   O_APPEND is atomic for payloads < PIPE_BUF (typically 4 KB). Entries
+ *   are well under that limit.
+ */
 
-const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(EXTENSION_DIR, "..", "..");
-const HOOK_SCRIPT = path.join(
-  PROJECT_ROOT,
-  ".agent",
-  "harness",
-  "hooks",
-  "pi_post_tool.py",
-);
+import type {
+  ExtensionAPI,
+  ToolResultEvent,
+} from "@mariozechner/pi-coding-agent";
+import {
+  isBashToolResult,
+  isEditToolResult,
+  isWriteToolResult,
+} from "@mariozechner/pi-coding-agent";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { execSync } from "node:child_process";
 
-// Timeout for the Python child. If the hook hangs (bad import, stuck I/O),
-// Pi's tool_result handler stays blocked because the extension awaits
-// runHook(). Override via $AGENT_HOOK_TIMEOUT_MS for slow machines.
-const HOOK_TIMEOUT_MS = (() => {
-  const raw = process.env.AGENT_HOOK_TIMEOUT_MS?.trim();
-  const n = raw ? Number.parseInt(raw, 10) : NaN;
-  return Number.isFinite(n) && n > 0 ? n : 3000;
-})();
+// ── Paths ────────────────────────────────────────────────────────────────────
 
-let warnedMissingHook = false;
-let warnedMissingPython = false;
-let warnedHookFailure = false;
-let warnedHookTimeout = false;
+const CWD        = process.cwd();
+const AGENT_ROOT = path.join(CWD, ".agent");
+const EPISODIC   = path.join(AGENT_ROOT, "memory", "episodic", "AGENT_LEARNINGS.jsonl");
+const DREAM_SCRIPT = path.join(AGENT_ROOT, "memory", "auto_dream.py");
+const PATTERNS_CFG = path.join(AGENT_ROOT, "protocols", "hook_patterns.json");
 
-type PythonCandidate = {
-  command: string;
-  args: string[];
-};
+// ── Importance patterns ───────────────────────────────────────────────────────
+// Mirrors claude_code_post_tool.py's _UNIVERSAL_HIGH / _UNIVERSAL_MEDIUM so
+// both harnesses score identically.
 
-type HookResult =
-  | { kind: "ok" }
-  | { kind: "spawn-error" }
-  | { kind: "hook-failure"; stderr: string; exitCode: number | null }
-  | { kind: "timeout" };
+const HIGH_RE = /\b(deploy(?:ment)?|release|rollback|migrat(?:e|ion)|schema|alter\s+table|drop\s+table|create\s+table|truncate|prod(?:uction)?|staging|force.?push|push\s+--force|secret|credential)\b/i;
+const MED_RE  = /\b(commit|push|merge|rebase|test|spec|build|bundle|compile|install|upgrade|uninstall|delete|remove|unlink|chmod|chown|cron|systemctl)\b/i;
 
-function pythonCandidates(): PythonCandidate[] {
-  const envPy = process.env.AGENT_PYTHON?.trim();
-  const out: PythonCandidate[] = [];
-  if (envPy) out.push({ command: envPy, args: [] });
-  out.push({ command: "python3", args: [] });
-  out.push({ command: "python", args: [] });
-  out.push({ command: "py", args: ["-3"] });
+// Validate each fragment individually so one bad regex doesn't disable every
+// custom rule. Mirrors claude_code_post_tool.py's _filter_valid + incremental
+// merge so the two harnesses behave identically on malformed user patterns.
+function _validFragments(frags: unknown): string[] {
+  if (!Array.isArray(frags)) return [];
+  const out: string[] = [];
+  for (const raw of frags) {
+    if (typeof raw !== "string" || !raw) continue;
+    try {
+      new RegExp(raw);
+      out.push(raw);
+    } catch {
+      // Bad fragment — skip it, keep the rest.
+    }
+  }
   return out;
 }
 
-function tryRun(
-  candidate: PythonCandidate,
-  payload: Record<string, unknown>,
-): Promise<HookResult> {
-  return new Promise((resolve) => {
-    let settled = false;
-    const settle = (r: HookResult) => {
-      if (settled) return;
-      settled = true;
-      resolve(r);
-    };
-
-    let stderrBuf = "";
-    const child = spawn(
-      candidate.command,
-      [...candidate.args, HOOK_SCRIPT],
-      {
-        cwd: PROJECT_ROOT,
-        // Capture stderr so a "hook-failure" notification can include
-        // the actual error instead of being undiagnosable.
-        stdio: ["pipe", "ignore", "pipe"],
-      },
-    );
-
-    const timer = setTimeout(() => {
-      try { child.kill("SIGKILL"); } catch { /* already dead */ }
-      settle({ kind: "timeout" });
-    }, HOOK_TIMEOUT_MS);
-
-    child.on("error", () => {
-      clearTimeout(timer);
-      settle({ kind: "spawn-error" });
-    });
-    child.on("spawn", () => {
+function _mergePattern(frags: string[]): RegExp | null {
+  if (!frags.length) return null;
+  // Try the merged form first; fall back to first-wins if two fragments
+  // conflict only when combined (e.g., duplicate named groups).
+  try {
+    return new RegExp(`\\b(${frags.join("|")})\\b`, "i");
+  } catch {
+    const surviving: string[] = [];
+    for (const frag of frags) {
       try {
-        child.stdin.end(JSON.stringify(payload));
+        new RegExp(`\\b(${[...surviving, frag].join("|")})\\b`, "i");
+        surviving.push(frag);
       } catch {
-        // stdin closed before we could write — handled by close/error
+        // Drop this fragment; keep what we have.
       }
-    });
-    if (child.stderr) {
-      child.stderr.setEncoding("utf8");
-      child.stderr.on("data", (chunk: string) => {
-        // bound stderr buffer to avoid memory blowup on a wedged hook
-        if (stderrBuf.length < 4096) stderrBuf += chunk;
-      });
     }
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      if (code === 0) {
-        settle({ kind: "ok" });
-      } else {
-        settle({ kind: "hook-failure", stderr: stderrBuf.trim(), exitCode: code });
-      }
-    });
-  });
+    return surviving.length
+      ? new RegExp(`\\b(${surviving.join("|")})\\b`, "i")
+      : null;
+  }
 }
 
-async function runHook(
-  payload: Record<string, unknown>,
-): Promise<
-  | "ok"
-  | "missing-hook"
-  | "missing-python"
-  | "timeout"
-  | { kind: "hook-failure"; stderr: string; exitCode: number | null }
-> {
-  if (!existsSync(HOOK_SCRIPT)) return "missing-hook";
-  for (const candidate of pythonCandidates()) {
-    const result = await tryRun(candidate, payload);
-    if (result.kind === "ok") return "ok";
-    if (result.kind === "timeout") return "timeout";
-    if (result.kind === "hook-failure") return result;
-    // spawn-error → try the next python candidate
+function _loadUserPatterns(): { high: RegExp | null; medium: RegExp | null } {
+  if (!fs.existsSync(PATTERNS_CFG)) return { high: null, medium: null };
+  let cfg: { high_stakes?: unknown; medium_stakes?: unknown };
+  try {
+    cfg = JSON.parse(fs.readFileSync(PATTERNS_CFG, "utf8"));
+  } catch {
+    return { high: null, medium: null };
   }
-  return "missing-python";
+  return {
+    high:   _mergePattern(_validFragments(cfg.high_stakes)),
+    medium: _mergePattern(_validFragments(cfg.medium_stakes)),
+  };
 }
+
+const { high: userHigh, medium: userMed } = _loadUserPatterns();
+
+function _importance(toolName: string, subject: string): number {
+  if (HIGH_RE.test(subject) || userHigh?.test(subject)) return 9;
+  if (toolName === "edit" || toolName === "write") {
+    return MED_RE.test(subject) || userMed?.test(subject) ? 6 : 5;
+  }
+  if (MED_RE.test(subject) || userMed?.test(subject)) return 6;
+  return 3;
+}
+
+function _painScore(importance: number, success: boolean): number {
+  if (!success) return importance >= 9 ? 10 : 8;
+  if (importance >= 8) return 5;
+  if (importance >= 6) return 3;
+  return 2;
+}
+
+// ── Action label ─────────────────────────────────────────────────────────────
+
+function _actionLabel(event: ToolResultEvent): string {
+  if (isBashToolResult(event)) {
+    const cmd = event.input.command.replace(/\s+/g, " ").slice(0, 80);
+    return `bash: ${cmd}`;
+  }
+  if (isEditToolResult(event)) return `edit: ${event.input.path}`;
+  if (isWriteToolResult(event)) return `write: ${event.input.path}`;
+  return `tool:${event.toolName}`;
+}
+
+// ── Reflection (what the dream cycle clusters on) ────────────────────────────
+
+function _reflection(event: ToolResultEvent, success: boolean): string {
+  if (isBashToolResult(event)) {
+    const cmd = event.input.command.replace(/\s+/g, " ").slice(0, 100);
+    const m = HIGH_RE.exec(cmd) ?? userHigh?.exec(cmd);
+    if (m) {
+      const domain = m[0].toLowerCase().replace(/\s+/g, "-");
+      return success
+        ? `High-stakes bash completed (${domain}): ${cmd}`
+        : `High-stakes bash FAILED (${domain}): ${cmd}`;
+    }
+    return success ? `Ran: ${cmd}` : `Command failed: ${cmd}`;
+  }
+
+  if (isEditToolResult(event)) {
+    const p = event.input.path;
+    if (!success) return `Edit failed on ${p}`;
+    // Pi's EditToolInput is flat: { path, oldText, newText }. There is no
+    // `edits` array — that's Claude Code's MultiEdit shape.
+    const oldText = (event.input as { oldText?: unknown }).oldText;
+    const newText = (event.input as { newText?: unknown }).newText;
+    if (typeof oldText === "string" && typeof newText === "string") {
+      const old = oldText.slice(0, 40).replace(/\n/g, "↵");
+      const neu = newText.slice(0, 40).replace(/\n/g, "↵");
+      return `Edited ${p}: replaced '${old}' with '${neu}'`;
+    }
+    return `Edited ${p}`;
+  }
+
+  if (isWriteToolResult(event)) {
+    const p = event.input.path;
+    return success ? `Wrote ${p}` : `Write failed on ${p}`;
+  }
+
+  return `Tool ${event.toolName} ${success ? "completed" : "failed"}`;
+}
+
+// ── Commit SHA (module-level cache, invalidated on HEAD-changing bash) ──────
+// Caching avoids forking git on every tool call; invalidating on commit-style
+// commands keeps the recorded SHA accurate across long pi sessions where the
+// user commits / merges / rebases mid-flight.
+
+let _cachedSha: string | undefined;
+
+// Match `git <subcommand>` where subcommand is one we know moves HEAD.
+// `[^|;&]*?` allows option flags or porcelain wrappers between `git` and
+// the subcommand (e.g. `git -c advice.detachedHead=false checkout main`,
+// `git -C path switch dev`). The lazy quantifier + the shell-separator
+// negative class keep us inside a single command — we don't want
+// `git status; git commit` to match if the subcommand never reaches us.
+const _SHA_INVALIDATING = /\bgit\b[^|;&]*?\b(commit|reset|checkout|switch|merge|rebase|cherry-pick|revert|pull|fetch|clone)\b/;
+
+function _commitSha(): string {
+  if (_cachedSha !== undefined) return _cachedSha;
+  try {
+    _cachedSha = execSync("git rev-parse HEAD", {
+      cwd: CWD,
+      timeout: 2000,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+  } catch {
+    _cachedSha = "";
+  }
+  return _cachedSha;
+}
+
+function _maybeInvalidateSha(event: ToolResultEvent): void {
+  if (!isBashToolResult(event)) return;
+  const cmd = event.input.command;
+  if (typeof cmd === "string" && _SHA_INVALIDATING.test(cmd)) {
+    _cachedSha = undefined;
+  }
+}
+
+// ── Episodic write ───────────────────────────────────────────────────────────
+
+function _appendEntry(entry: Record<string, unknown>): void {
+  fs.mkdirSync(path.dirname(EPISODIC), { recursive: true });
+  fs.appendFileSync(EPISODIC, JSON.stringify(entry) + "\n", "utf8");
+}
+
+// ── Auto-dream helpers ────────────────────────────────────────────────────────
+
+// session_shutdown is fired exactly once on process exit (see pi-coding-agent
+// agent-session.ts: `emit({ type: "session_shutdown" })`). The event has no
+// `reason` field — earlier versions of this hook filtered on event.reason and
+// rejected every event, so the dream cycle never ran. Keep this handler simple.
+let _dreamRunning = false;
+
+async function _runDream(pi: ExtensionAPI, hasUI: boolean): Promise<void> {
+  if (!fs.existsSync(DREAM_SCRIPT)) return;
+  // Re-entrancy guard: if pi fires session_shutdown twice during teardown
+  // (or if the user opens two pi sessions that exit at the same instant in
+  // the same project), only run the dream cycle once. auto_dream.py rewrites
+  // AGENT_LEARNINGS.jsonl whole-file, so concurrent runs would clobber each
+  // other.
+  if (_dreamRunning) return;
+  _dreamRunning = true;
+
+  try {
+  // Try python3 then python — mirrors the TypeScript hook's pythonCandidates()
+  // from the old subprocess approach, kept here for Windows / pyenv compat.
+  for (const py of ["python3", "python"]) {
+    try {
+      const { code, stderr } = await pi.exec(py, [DREAM_SCRIPT], {
+        cwd: CWD,
+        timeout: 30_000,
+      });
+      if (code === 0) return;
+      // Non-zero exit from python (not a spawn error): surface once and bail.
+      if (hasUI) {
+        const firstLine = (stderr ?? "").split(/\r?\n/)[0] || `exit ${code}`;
+        pi.sendMessage({
+          customType: "agentic-stack",
+          content: `dream cycle failed: ${firstLine}`,
+          display: true,
+        });
+      }
+      return;
+    } catch {
+      // spawn error for this candidate → try next
+    }
+  }
+  // Both candidates failed to spawn — python not on PATH, silently skip.
+  } finally {
+    _dreamRunning = false;
+  }
+}
+
+// ── Extension entry point ────────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
-  pi.on("tool_result", async (event, ctx) => {
-    const payload = {
-      tool_name: event.toolName,
-      tool_input: event.input ?? {},
-      content: event.content ?? [],
-      details: event.details ?? {},
-      isError: event.isError ?? false,
+
+  // ── tool_result: episodic logging ────────────────────────────────────────
+
+  pi.on("tool_result", (_event, _ctx) => {
+    const event = _event;
+
+    // Only log the three tool types that carry meaningful signal.
+    // read / find / ls / grep are noise — same filter as Claude Code's
+    // "^(Bash|Edit|Write)$" PostToolUse matcher.
+    if (
+      !isBashToolResult(event) &&
+      !isEditToolResult(event) &&
+      !isWriteToolResult(event)
+    ) return;
+
+    // Invalidate the cached commit SHA when bash mutates HEAD so subsequent
+    // entries record the post-commit SHA, not the stale session-start one.
+    _maybeInvalidateSha(event);
+
+    const success = !event.isError;
+
+    // Subject string for pattern matching.
+    const subject = isBashToolResult(event)
+      ? event.input.command
+      : (event as { input: { path: string } }).input.path;
+
+    const imp = _importance(event.toolName, subject);
+
+    // Skip routine low-importance bash successes (grep, ls, cat, echo, etc.)
+    // to keep the episodic log signal-rich. Failures always get logged so
+    // the failure-threshold rewrite flag fires correctly.
+    if (event.toolName === "bash" && imp <= 3 && success) return;
+
+    const entry: Record<string, unknown> = {
+      timestamp:   new Date().toISOString(),
+      skill:       "pi",
+      action:      _actionLabel(event).slice(0, 200),
+      result:      success ? "success" : "failure",
+      detail:      subject.slice(0, 500),
+      pain_score:  _painScore(imp, success),
+      importance:  imp,
+      reflection:  _reflection(event, success),
+      confidence:  0.7,
+      source: {
+        skill:      "pi",
+        run_id:     `pi-${process.pid}`,
+        commit_sha: _commitSha(),
+      },
+      evidence_ids: [],
     };
 
     try {
-      const result = await runHook(payload);
-      if (result === "missing-hook" && !warnedMissingHook) {
-        warnedMissingHook = true;
-        ctx.ui.notify(
-          "agentic-stack pi memory hook missing; automatic episodic logging disabled.",
-          "warning",
-        );
-      } else if (result === "missing-python" && !warnedMissingPython) {
-        warnedMissingPython = true;
-        ctx.ui.notify(
-          "agentic-stack pi memory hook: python3/python not found; automatic episodic logging disabled.",
-          "warning",
-        );
-      } else if (result === "timeout" && !warnedHookTimeout) {
-        warnedHookTimeout = true;
-        ctx.ui.notify(
-          `agentic-stack pi memory hook timed out (>${HOOK_TIMEOUT_MS}ms); subsequent calls may be skipped. Override with $AGENT_HOOK_TIMEOUT_MS.`,
-          "warning",
-        );
-      } else if (
-        typeof result === "object" &&
-        result.kind === "hook-failure" &&
-        !warnedHookFailure
-      ) {
-        warnedHookFailure = true;
-        // Surface the first line of stderr so the failure is diagnosable.
-        const firstLine = result.stderr.split(/\r?\n/, 1)[0] || `(exit ${result.exitCode})`;
-        ctx.ui.notify(
-          `agentic-stack pi memory hook failed: ${firstLine}`,
-          "warning",
-        );
-      }
+      _appendEntry(entry);
     } catch {
-      if (!warnedHookFailure) {
-        warnedHookFailure = true;
-        ctx.ui.notify(
-          "agentic-stack pi memory hook errored unexpectedly; continuing without automatic episodic logging.",
-          "warning",
-        );
-      }
+      // Never let a memory write crash pi.
     }
+  });
+
+  // ── session_shutdown: dream cycle ────────────────────────────────────────
+  // Pi's SessionShutdownEvent fires once on process exit and carries no
+  // payload (see pi-coding-agent agent-session.ts:emit({type:"session_shutdown"})).
+  // Earlier versions of this hook tried to filter on event.reason — that
+  // field doesn't exist, so the filter rejected every event and the dream
+  // cycle never ran. Just always run.
+
+  pi.on("session_shutdown", async (_event, ctx) => {
+    await _runDream(pi, ctx.hasUI);
   });
 }
