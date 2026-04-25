@@ -10,6 +10,10 @@ __pycache__/
 venv/
 .pytest_cache/
 
+# tests live outside the repo — keep in your local working tree but don't
+# ship them in releases or the brew bottle.
+tests/
+
 # editor
 .DS_Store
 .idea/
