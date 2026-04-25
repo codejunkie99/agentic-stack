@@ -23,10 +23,24 @@ class AgenticStack < Formula
   test do
     output = shell_output("#{bin}/agentic-stack 2>&1", 2)
     assert_match "usage", output
-    # Wizard --yes must write PREFERENCES.md AND .features.json into a temp project dir
-    (testpath/".agent/memory/personal").mkpath
+
+    # Explicit-target form: wizard --yes must copy the full .agent/ tree and
+    # write both PREFERENCES.md and .features.json into the target dir.
     system "#{bin}/agentic-stack", "claude-code", testpath.to_s, "--yes"
     assert_predicate testpath/".agent/memory/personal/PREFERENCES.md", :exist?
     assert_predicate testpath/".agent/memory/.features.json", :exist?
+    assert_predicate testpath/".agent/harness/runtime.py", :exist?
+
+    # Documented no-path form: `agentic-stack claude-code --yes` run from inside
+    # the project dir must install into cwd (not interpret "--yes" as a path)
+    # and copy the full .agent/ tree.
+    nopath = testpath/"nopath"
+    nopath.mkpath
+    Dir.chdir(nopath) do
+      system "#{bin}/agentic-stack", "claude-code", "--yes"
+    end
+    refute_predicate nopath/"--yes", :exist?
+    assert_predicate nopath/".agent/harness/runtime.py", :exist?
+    assert_predicate nopath/".agent/memory/personal/PREFERENCES.md", :exist?
   end
 end
