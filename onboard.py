@@ -17,10 +17,24 @@ def _is_ci():
     return any(os.environ.get(v) for v in _CI_VARS)
 
 
-def _parse_args():
-    args  = sys.argv[1:]
-    flags = {a for a in args if a.startswith("-")}
-    pos   = [a for a in args if not a.startswith("-")]
+_KNOWN_FLAGS = {"--yes", "-y", "--force", "--reconfigure"}
+
+
+def _parse_args(argv=None):
+    # Whitelist known flags + honor `--` separator so paths beginning with `-`
+    # (e.g. a target accidentally set to `--yes` by install.sh) are not consumed.
+    args = sys.argv[1:] if argv is None else list(argv)
+    flags, pos, sep_seen = set(), [], False
+    for a in args:
+        if not sep_seen and a == "--":
+            sep_seen = True
+            continue
+        if not sep_seen and a in _KNOWN_FLAGS:
+            flags.add(a)
+        else:
+            if not sep_seen and a.startswith("-"):
+                print(f"[onboard] warning: unknown flag {a!r} treated as path", file=sys.stderr)
+            pos.append(a)
     return (
         pos[0] if pos else os.getcwd(),
         "--yes" in flags or "-y" in flags,
