@@ -1,2 +1,7 @@
 anthropic>=0.34.0
 openai>=1.40.0
+
+# Optional — required only when the [BETA] yantrikdb_memory feature is
+# enabled (opt-in via onboarding). Uncomment or install separately:
+#   pip install 'yantrikdb-client[embed]>=0.2.1'
+# yantrikdb-client>=0.2.1

@@ -68,6 +68,11 @@ def _wizard(target, force):
         f"Enable FTS memory search  {ORANGE}[BETA]{R}?",
         default=False,
     )
+    a["feature_yantrikdb"] = ask_confirm(
+        f"Enable YantrikDB memory backend  {ORANGE}[BETA]{R}?  "
+        f"(multi-signal recall, contradiction detection, reflect())",
+        default=False,
+    )
     return a
 
 
@@ -85,6 +90,10 @@ def main():
         # --yes defaults all optional beta features to off
         features_file = write_features(target, {
             "memory_search_fts": {"enabled": False, "beta": True},
+            "yantrikdb_memory": {
+                "enabled": False, "beta": True,
+                "url": "", "token": "", "namespace": "",
+            },
         })
         print(f"{GREEN}◆{R}  {WHITE}{B}PREFERENCES.md{R} written with defaults")
         print(f"{MUTED}   {path}{R}")
@@ -100,6 +109,15 @@ def main():
             "memory_search_fts": {
                 "enabled": bool(answers.get("feature_memory_search")),
                 "beta": True,
+            },
+            "yantrikdb_memory": {
+                "enabled": bool(answers.get("feature_yantrikdb")),
+                "beta": True,
+                # Empty values fall back to env vars (YDB_URL, YDB_TOKEN) at
+                # read time; leave blank to keep secrets out of the repo.
+                "url": "",
+                "token": "",
+                "namespace": "",
             },
         }
         features_file = write_features(target, features)
