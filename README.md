@@ -12,7 +12,28 @@ A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.9.0 — harness manager
+### New in v0.9.1 — pi adapter fixes + tz correctness
+
+Patch release. Closes the gap between v0.9.0 and a working pi adapter,
+plus a timezone sweep across every Python writer/reader so the dream
+cycle stops drifting against the UTC decay window.
+
+- Brew users on v0.9.0 hit `ModuleNotFoundError: harness_manager` on
+  first run. Formula now installs `harness_manager/` correctly.
+- Pi's dream cycle never fired (`session_shutdown` filter rejected every
+  event because `SessionShutdownEvent` has no `reason` field). Now runs.
+- Pi's edit reflections were missing the diff (hook expected MultiEdit
+  shape; Pi's edit input is flat). Now captures `oldText` / `newText`.
+- Naive-local Python timestamps reinterpreted at decay time as UTC
+  caused silent drift. Every writer now emits aware UTC; every reader
+  normalises naive entries before comparing.
+- `auto_dream` held no lock across its read-modify-write window —
+  concurrent appenders could be silently truncated. Now holds a single
+  `flock(LOCK_EX)` on the episodic log for the full cycle.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.9.0 — harness manager
 
 <p align="center">
   <img src="docs/harness-manager.svg" alt="harness manager v0.9.0" width="880"/>
@@ -23,8 +44,7 @@ Manifest-driven adapter system: every harness is now declared by an
 verb subcommands or an interactive TUI. Cross-platform (POSIX +
 Windows) with concurrent-write protection, pre-v0.9 migration via
 `./install.sh doctor`, and shared-file ownership tracking so removing
-one adapter never orphans another. See [CHANGELOG.md](CHANGELOG.md)
-for the full list.
+one adapter never orphans another.
 
 [![GitHub release](https://img.shields.io/github/v/release/codejunkie99/agentic-stack)](https://github.com/codejunkie99/agentic-stack/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)

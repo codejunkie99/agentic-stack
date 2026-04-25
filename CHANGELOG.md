@@ -5,6 +5,88 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] — 2026-04-26
+
+Patch release that closes the gap between v0.9.0 and a working pi adapter.
+Every brew user on v0.9.0 hit the first bug; the rest are quieter but make
+the dream cycle and the cross-harness episodic log actually correct.
+
+### Fixed
+- **`agentic-stack pi` crashed for every brew user with `ModuleNotFoundError:
+  No module named 'harness_manager'`.** The v0.9.0 Formula didn't include
+  `harness_manager/` in `pkgshare.install`, so `install.sh` couldn't dispatch.
+  Adds it back.
+- **Pi dream cycle never fired.** The `session_shutdown` handler filtered
+  on `event.reason`, but Pi's `SessionShutdownEvent` carries no `reason`
+  field — verified against `pi-coding-agent` types.d.ts and the emit site
+  at `agent-session.js:1638`. The filter rejected every event, so
+  `auto_dream.py` never ran. Filter dropped; re-entrancy guard added.
+- **Pi edit reflections lost the diff.** Hook accessed `event.input.edits[0]`
+  but Pi's `EditToolInput` is flat `{ path, oldText, newText }` (no `edits`
+  array — that's MultiEdit on Claude Code). Reflections silently degraded
+  to `Edited <path>` with no old/new content. Read the flat fields.
+- **`decay.py` crashed comparing aware-UTC entries to naive cutoff.** The
+  new `session_shutdown` hook surfaced this on every clean pi exit. Cutoff
+  is now `datetime.now(timezone.utc)`; entry timestamps are normalised to
+  UTC before comparison.
+- **Naive-local Python timestamps drifted against the UTC decay window.**
+  Decay's "naive == UTC" assumption was correct only if writers emitted UTC.
+  They didn't: `post_execution`, `on_failure`, `learn`, `graduate`,
+  `promote`, `review_state`, `render_lessons` all wrote naive-local. Every
+  writer now emits aware UTC; every reader (`salience`, `show._human_age`
+  / `_daily_counts` / `failing_skills` / `last_dream_cycle`,
+  `on_failure._count_recent_failures`, `review_state._age_factor`,
+  `archive`) normalises naive timestamps to UTC before comparison.
+- **One bad regex in `hook_patterns.json` disabled every user pattern in
+  the Pi hook.** Pre-fix used a single combined RegExp per list, caught
+  any error, returned null for both. Now per-fragment validation with
+  incremental merge — same posture as `claude_code_post_tool.py`'s
+  `_filter_valid` / `_build_with_fallback`.
+- **`auto_dream` lost entries that landed mid-cycle.** Original `_write_entries`
+  had a truncate-before-lock window — `open(path, "w")` truncates BEFORE
+  a lock can be taken. The deeper bug: even after fixing the inner race,
+  any `append_jsonl()` between `_load_entries()` and `_write_entries(kept)`
+  would be truncated away by the rewrite. The cycle now holds a single
+  exclusive flock on `AGENT_LEARNINGS.jsonl` across the entire
+  read-modify-write window via `_episodic_locked()`. Mutually exclusive
+  with `_episodic_io.append_jsonl` (same flock target). POSIX only;
+  Windows falls back to historical best-effort behaviour.
+- **`_cachedSha` went stale after `git commit` inside a pi session.** TS
+  hook cached the SHA per-process for performance, so every entry logged
+  after a mid-session commit recorded the pre-commit SHA. Cache, but
+  invalidate on bash commands matching `git <subcmd>` for HEAD-moving
+  subcommands. Allows option flags between `git` and the subcommand
+  (`git -c key=val checkout main`, `git -C path switch dev`).
+- **`salience` over-scored future-skewed legacy rows.** Legacy naive-local
+  timestamps re-interpreted as UTC could read as a few hours in the future
+  during the migration window. `timedelta.days` then went negative and
+  recency exceeded the intended cap. Floor age at 0; clamp recency to ≤ 10.
+- **`decay` archive filename used local date while cutoff was UTC.**
+  `archive_{date}.jsonl` now uses UTC date so a tz-jumping user gets a
+  deterministic path.
+
+### Changed
+- `adapters/pi/adapter.json` no longer manages
+  `.agent/harness/hooks/pi_post_tool.py` via `from_stack`. The TS hook is
+  self-contained — all scoring + reflection inline, no Python subprocess
+  per tool call. The .py still ships in the brain template under
+  `.agent/harness/hooks/` for standalone use.
+- `tests/` is now untracked and listed in `.gitignore`. CI never ran
+  these (`.github/workflows/ci.yml` runs `test_claude_code_hook.py` +
+  `verify_*.py` at repo root). Pull from an older tag if you want the
+  unittest suite locally.
+
+### Migration
+`brew upgrade agentic-stack` is enough — there are no on-disk schema
+changes. Existing pi installs with the v0.9.0 hook get the new logic on
+the next `./install.sh pi`. Existing `.agent/memory/episodic/AGENT_LEARNINGS.jsonl`
+files with naive-local timestamps continue to work — readers normalise
+them at compare time and writers emit UTC going forward.
+
+### Credits
+PR #24 by @aliirz; Codex CLI used for an independent second-opinion review
+that surfaced the auto_dream window race + the SHA-regex narrowness.
+
 ## [0.9.0] — 2026-04-23
 
 ### Added
