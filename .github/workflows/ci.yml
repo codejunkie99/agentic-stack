@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  verifiers:
+    name: Verifier scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        if: hashFiles('requirements.txt') != ''
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run test_claude_code_hook.py
+        if: hashFiles('test_claude_code_hook.py') != ''
+        run: python test_claude_code_hook.py
+
+      - name: Run verify_codex_fixes.py
+        if: hashFiles('verify_codex_fixes.py') != ''
+        run: python verify_codex_fixes.py
+
+      - name: Run verify_instances.py
+        if: hashFiles('verify_instances.py') != ''
+        run: python verify_instances.py
+
+  installer-smoke:
+    name: Installer smoke (bash)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install with explicit target dir
+        run: |
+          bash install.sh claude-code "$RUNNER_TEMP/agt-test" --yes
+          test -f "$RUNNER_TEMP/agt-test/.agent/harness/runtime.py"
+
+      - name: Install with --yes from inside target dir (guards --yes parsing)
+        run: |
+          mkdir -p "$RUNNER_TEMP/agt-test2"
+          cd "$RUNNER_TEMP/agt-test2"
+          bash "$GITHUB_WORKSPACE/install.sh" claude-code --yes
+          if [ -d "$RUNNER_TEMP/agt-test2/--yes" ]; then
+            echo "ERROR: install.sh treated --yes as a target dir" >&2
+            exit 1
+          fi
+
+  installer-windows-pwsh:
+    name: Installer smoke (Windows pwsh)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install via install.ps1
+        shell: pwsh
+        run: |
+          pwsh -File install.ps1 claude-code "$env:RUNNER_TEMP\agt-test" -Yes
+          if (-not (Test-Path "$env:RUNNER_TEMP\agt-test\.agent\harness\runtime.py")) {
+            Write-Error "install.ps1 did not produce .agent/harness/runtime.py"
+            exit 1
+          }
