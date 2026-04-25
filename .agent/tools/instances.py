@@ -21,6 +21,11 @@ import os
 import subprocess
 import sys
 
+# fcntl is POSIX-only. The agentic-stack harness assumes a POSIX environment
+# (macOS / Linux); Windows is not a supported runtime for instance workers,
+# so we intentionally do not provide an msvcrt fallback here.
+import fcntl
+
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO_ROOT = os.path.abspath(os.path.join(BASE, ".."))
 sys.path.insert(0, os.path.join(BASE, "harness"))
@@ -45,6 +50,7 @@ from runtime import (  # noqa: E402
     create_instance,
     current_instance,
     get_instance,
+    instance_root,
     instance_status,
     list_instances,
     load_registry,
@@ -192,31 +198,94 @@ def _print_instance(entry, active_id=None):
     )
 
 
+def _spawn_lock_path(instance_id):
+    """Path to the per-instance spawn lock sentinel file."""
+    return os.path.join(instance_root(instance_id), "spawn.lock")
+
+
+def _open_spawn_lock(instance_id):
+    """Create (if needed) and open the per-instance spawn lock with 0o600 perms.
+
+    Ensures the parent runtime dir exists, then opens (or creates) the sentinel
+    file with restrictive permissions. Returns an open file descriptor that the
+    caller is responsible for closing.
+    """
+    lock_path = _spawn_lock_path(instance_id)
+    parent = os.path.dirname(lock_path)
+    os.makedirs(parent, exist_ok=True)
+    # O_CREAT with mode 0o600 establishes restrictive perms on first creation.
+    # If the file already exists, os.open won't widen perms — but enforce
+    # 0o600 after open in case a prior process created it with different mode.
+    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        os.fchmod(fd, 0o600)
+    except OSError:
+        # Best-effort: chmod can fail on exotic filesystems; the lock still works.
+        pass
+    return fd
+
+
 def _spawn_worker(instance_id):
     entry = get_instance(instance_id)
     if not entry:
         raise UnknownInstanceError(f"unknown instance: {instance_id}")
+    # Fast path: already running. We re-check this inside the lock below to
+    # close the TOCTOU window, but doing it here avoids the lock cost for the
+    # common already-up case.
     if entry.get("worker_pid") and pid_is_alive(entry.get("worker_pid")):
         return entry, False
 
-    ensure_instance_control_dirs(instance_id)
-    stdout = open(worker_stdout_log(instance_id), "a")
-    stderr = open(worker_stderr_log(instance_id), "a")
+    # Serialize the spawn check + spawn + mark-started sequence with a per-
+    # instance file lock. Two concurrent `start` calls would otherwise both
+    # observe no live worker and both spawn a daemon for the same queue.
+    lock_fd = _open_spawn_lock(instance_id)
     try:
-        proc = subprocess.Popen(
-            [sys.executable, _worker_script(), instance_id],
-            cwd=REPO_ROOT,
-            stdout=stdout,
-            stderr=stderr,
-            start_new_session=True,
-            close_fds=True,
-        )
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            # Another spawn is in flight for this instance. Bail out fast and
+            # return whatever the registry currently shows; the in-flight
+            # spawn will publish the live worker_pid shortly.
+            print(
+                f"another spawn in flight for {instance_id}; skipping",
+                file=sys.stderr,
+            )
+            current = get_instance(instance_id) or entry
+            return current, False
+
+        # Re-check liveness now that we hold the lock. Use os.kill(pid, 0)
+        # semantics via pid_is_alive: a stale-but-non-None pid (worker died
+        # without mark_worker_stopped) must be treated as not-running so we
+        # respawn rather than silently keeping the dead pid.
+        current = get_instance(instance_id) or entry
+        pid = current.get("worker_pid")
+        if pid and pid_is_alive(pid):
+            return current, False
+
+        ensure_instance_control_dirs(instance_id)
+        stdout = open(worker_stdout_log(instance_id), "a")
+        stderr = open(worker_stderr_log(instance_id), "a")
+        try:
+            proc = subprocess.Popen(
+                [sys.executable, _worker_script(), instance_id],
+                cwd=REPO_ROOT,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=True,
+                close_fds=True,
+            )
+        finally:
+            stdout.close()
+            stderr.close()
+        entry = mark_worker_started(instance_id, proc.pid)
+        refresh_active_instance_doc()
+        return entry, True
     finally:
-        stdout.close()
-        stderr.close()
-    entry = mark_worker_started(instance_id, proc.pid)
-    refresh_active_instance_doc()
-    return entry, True
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        os.close(lock_fd)
 
 
 def _ensure_target_instance(instance_id=None):
