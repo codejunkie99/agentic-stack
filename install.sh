@@ -7,25 +7,46 @@
 #   --reconfigure  re-run the wizard even if PREFERENCES.md is already filled
 set -euo pipefail
 
-ADAPTER="${1:-}"
-TARGET="${2:-$PWD}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-if [[ -z "$ADAPTER" ]]; then
-  echo "usage: $0 <adapter-name> [target-dir]" >&2
-  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi standalone-python antigravity" >&2
-  exit 2
-fi
-
-# Collect wizard flags from any position in $@
+# Separate flags from positional args so a flag in $2 doesn't become $TARGET.
+ADAPTER=""
+TARGET=""
 WIZARD_FLAGS=""
 for arg in "$@"; do
   case "$arg" in
     --yes|-y)        WIZARD_FLAGS="$WIZARD_FLAGS --yes" ;;
     --reconfigure)   WIZARD_FLAGS="$WIZARD_FLAGS --reconfigure" ;;
     --force)         WIZARD_FLAGS="$WIZARD_FLAGS --force" ;;
+    --help|-h)
+      echo "usage: $0 <adapter-name> [target-dir] [--yes] [--reconfigure] [--force]" >&2
+      echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi standalone-python antigravity" >&2
+      exit 0
+      ;;
+    --*|-*)
+      echo "error: unknown flag '$arg'" >&2
+      exit 2
+      ;;
+    *)
+      if [[ -z "$ADAPTER" ]]; then
+        ADAPTER="$arg"
+      elif [[ -z "$TARGET" ]]; then
+        TARGET="$arg"
+      else
+        echo "error: unexpected positional argument '$arg'" >&2
+        exit 2
+      fi
+      ;;
   esac
 done
+
+TARGET="${TARGET:-$PWD}"
+
+if [[ -z "$ADAPTER" ]]; then
+  echo "usage: $0 <adapter-name> [target-dir]" >&2
+  echo "adapters: claude-code cursor windsurf opencode openclaw hermes pi standalone-python antigravity" >&2
+  exit 2
+fi
 
 SRC="$HERE/adapters/$ADAPTER"
 if [[ ! -d "$SRC" ]]; then
