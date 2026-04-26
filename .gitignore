@@ -23,6 +23,10 @@ tests/
 .agent/memory/dream.log
 *.log
 
+# local agent activity/data-layer exports (private, regenerated)
+.agent/data-layer/
+.agent/data-layer/**
+
 # do NOT ignore memory files — they are the point
 !.agent/memory/
 !.agent/memory/**

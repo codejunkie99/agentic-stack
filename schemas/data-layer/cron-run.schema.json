@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/data-layer/cron-run.schema.json",
+  "title": "CronRun",
+  "description": "Scheduled or cron-triggered agent run with start/finish timestamps for Gantt charts.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "started_at", "harness", "workflow", "status", "privacy_level", "pii_level"],
+  "properties": {
+    "id": {"type": "string"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": ["string", "null"], "format": "date-time"},
+    "project": {"type": "string"},
+    "harness": {"type": "string"},
+    "schedule": {"type": ["string", "null"]},
+    "name": {"type": "string"},
+    "workflow": {"type": "string"},
+    "phase": {"type": "string"},
+    "run_type": {"type": "string", "examples": ["cron"]},
+    "category": {"type": "string"},
+    "status": {"type": "string", "examples": ["success", "error", "aborted", "unknown"]},
+    "duration_ms": {"type": ["integer", "null"], "minimum": 0},
+    "tokens_in_estimate": {"type": ["number", "null"], "minimum": 0},
+    "tokens_out_estimate": {"type": ["number", "null"], "minimum": 0},
+    "tokens_total_estimate": {"type": ["number", "null"], "minimum": 0},
+    "cost_estimate_usd": {"type": ["number", "null"], "minimum": 0},
+    "agent_id_hash": {"type": ["string", "null"]},
+    "privacy_level": {"type": "string"},
+    "pii_level": {"type": "string"}
+  }
+}
