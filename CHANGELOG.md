@@ -5,6 +5,54 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] — 2026-04-26
+
+Minor release. Adds two local-first data capabilities: a cross-harness
+monitoring/data layer and an approved-run data flywheel. Both stay private by
+default, write regenerated runtime artifacts under ignored `.agent/`
+subdirectories, and avoid remote telemetry or model training.
+
+### Added
+- **`data-layer` seed skill — local cross-harness monitoring.** Adds
+  `.agent/skills/data-layer/SKILL.md` and
+  `.agent/tools/data_layer_export.py` to export dashboard-ready local data
+  across Claude Code, Hermes, OpenClaw, Codex, Cursor, OpenCode, and custom
+  loops sharing the same `.agent/` brain. Outputs include agent events, cron
+  timelines, KPI summaries, token/cost estimates, category breakdowns,
+  `dashboard.html`, and `daily-report.md`. Runtime exports live under
+  `.agent/data-layer/`, which is gitignored. Thanks to @danielfoch for PR #25.
+- **`data-flywheel` seed skill — approved runs to reusable artifacts.** Adds
+  `.agent/skills/data-flywheel/SKILL.md` and
+  `.agent/tools/data_flywheel_export.py` to turn human-approved, redacted runs
+  into trace records, context cards, eval cases, training-ready JSONL, and
+  flywheel metrics. Runtime exports live under `.agent/flywheel/`, which is
+  gitignored. The tool is local-only, model-agnostic, and does not train
+  models or call external APIs. Thanks to @danielfoch for PR #26.
+- Schemas, sanitized examples, tests, README sections, and architecture docs
+  for both local data features.
+
+### Changed
+- Seed skill count is now eight: `skillforge`, `memory-manager`, `git-proxy`,
+  `debug-investigator`, `deploy-checklist`, `design-md`, `data-layer`, and
+  `data-flywheel`.
+- `docs/architecture.md` now describes five local modules: memory, skills,
+  protocols, data layer, and data flywheel.
+
+### Migration
+`brew upgrade agentic-stack` is enough. There are no on-disk schema changes.
+The new runtime directories, `.agent/data-layer/` and `.agent/flywheel/`, are
+private and regenerated; both are gitignored.
+
+### Release
+- Tag `v0.11.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.0>
+- `Formula/agentic-stack.rb` bumped to v0.11.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+
+### Credits
+- PR #25 and PR #26 by @danielfoch.
+- Merge conflict resolution, verification, and release prep by Codex.
+
 ## [0.10.0] — 2026-04-26
 
 Minor release. Adds the `design-md` seed skill (sixth seed skill in the

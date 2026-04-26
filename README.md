@@ -9,6 +9,10 @@ agents from one place: harness activity, cron runs, active agents, token/cost
 estimates, KPI summaries, user-defined resource categories, and
 screenshot-ready daily dashboards.
 
+And it can turn approved, redacted runs into local flywheel artifacts:
+trace records, context cards, eval cases, training-ready JSONL, and readiness
+metrics without training a model or sending telemetry.
+
 <p align="center">
   <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
 </p>
@@ -17,24 +21,27 @@ screenshot-ready daily dashboards.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.10.0 — design-md skill + Python 3.9 fix
+### New in v0.11.0 — data layer + data flywheel
 
-Minor release. Adds a sixth seed skill and unbreaks `brew install` for
-every macOS user on the system Python.
+Minor release. Adds two local-first data capabilities for teams running
+multiple agent harnesses against the same `.agent/` brain.
 
-- **`design-md` seed skill.** Drop a Google Stitch-style `DESIGN.md` in
-  your project root and the skill points coding agents at it as the
-  visual-system source of truth — colors, typography, spacing, components,
-  rationale. Loads only when `DESIGN.md` exists; default behavior is
-  read-only on the contract file.
-- **Python 3.9 crash on first run is fixed (#27).** Every brew user on
-  macOS-default Python 3.9 hit `TypeError: unsupported operand type(s) for
-  |: 'type' and 'type'` immediately after install. Root cause: PEP 604
-  union annotations (`Path | str`) that require Python 3.10+. Fixed by
-  adding `from __future__ import annotations` to the eight affected
-  `harness_manager/` files; works on Python 3.7+.
+- **`data-layer` seed skill.** Generate local dashboard exports across Claude
+  Code, Hermes, OpenClaw, Codex, Cursor, OpenCode, and custom loops:
+  harness events, cron timelines, KPI summaries, token/cost estimates,
+  categories, `dashboard.html`, and `daily-report.md`.
+- **`data-flywheel` seed skill.** Export approved, redacted runs into trace
+  records, context cards, eval cases, training-ready JSONL, and flywheel
+  metrics. It is local-only and model-agnostic; it prepares artifacts but
+  does not train models or call external APIs.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.10.0 — design-md skill + Python 3.9 fix
+
+Added the `design-md` seed skill for root `DESIGN.md` / Google Stitch
+workflows, and fixed the Python 3.9 crash that hit macOS-default brew users
+on first run.
 
 ### v0.9.1 — pi adapter fixes + tz correctness
 
