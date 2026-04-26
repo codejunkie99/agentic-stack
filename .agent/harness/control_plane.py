@@ -168,11 +168,35 @@ def claim_next_job(instance_id):
         try:
             with open(dst) as f:
                 job = json.load(f)
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as exc:
+            failed_dir = failed_jobs_dir(instance_id)
+            os.makedirs(failed_dir, exist_ok=True)
+            quarantined = os.path.join(failed_dir, name)
             try:
-                os.remove(dst)
-            except OSError:
-                pass
+                os.replace(dst, quarantined)
+            except OSError as move_exc:
+                sys.stderr.write(
+                    f"[control_plane] WARNING: failed to quarantine corrupt job "
+                    f"{dst!r}: {move_exc}\n"
+                )
+                continue
+            sidecar_path = os.path.join(failed_dir, f"{name}.error.json")
+            sidecar = {
+                "error": str(exc),
+                "quarantined_at": datetime.datetime.utcnow().isoformat() + "Z",
+                "original_path": src,
+            }
+            try:
+                _atomic_write_json(sidecar_path, sidecar)
+            except OSError as side_exc:
+                sys.stderr.write(
+                    f"[control_plane] WARNING: failed to write quarantine sidecar "
+                    f"{sidecar_path!r}: {side_exc}\n"
+                )
+            sys.stderr.write(
+                f"[control_plane] WARNING: quarantined corrupt queued job "
+                f"{name!r} for instance {instance_id!r}: {exc}\n"
+            )
             continue
         job["status"] = "running"
         job["started_at"] = _now()
