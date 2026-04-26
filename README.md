@@ -204,6 +204,9 @@ harnesses.
   Every skill ships with a self-rewrite hook.
 - **Protocols** — typed tool schemas, a `permissions.md` that the
   pre-tool-call hook enforces, and a delegation contract for sub-agents.
+- **Data flywheel** — approved, redacted runs can become trace records,
+  context cards, eval cases, training-ready JSONL, and readiness metrics
+  without training a model or sending telemetry.
 
 ## Releases & changelog
 
@@ -251,6 +254,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── learn.py                # one-shot lesson teaching (stage + graduate)
     ├── recall.py               # surface lessons relevant to an intent
     ├── show.py                 # colorful brain-state dashboard
+    ├── data_flywheel_export.py # approved runs -> traces/cards/evals/JSONL
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py
@@ -279,6 +283,8 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 └── cli.py                      # argparse dispatcher for install.sh / install.ps1
 
 docs/                           # architecture, getting-started, per-harness
+schemas/flywheel/               # data-flywheel artifact schemas
+examples/flywheel/              # sanitized approved-run examples
 install.sh                      # mac / linux / git-bash installer (thin Python dispatcher)
 install.ps1                     # Windows PowerShell installer (thin Python dispatcher)
 Formula/agentic-stack.rb        # Homebrew formula
@@ -315,6 +321,8 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 - **git-proxy** — all git ops, with safety constraints
 - **debug-investigator** — reproduce → isolate → hypothesize → verify
 - **deploy-checklist** — the fence between staging and production
+- **data-flywheel** — approved runs into context cards, evals, redacted traces,
+  training-ready JSONL, and flywheel metrics
 
 ## How it compounds
 
@@ -325,6 +333,35 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 5. Future sessions load query-relevant accepted lessons automatically.
 6. `on_failure` flags skills that fail 3+ times in 14 days for rewrite.
 7. `git log .agent/memory/` becomes the agent's autobiography.
+8. Approved, redacted runs can be exported into `.agent/flywheel/` artifacts
+   for retrieval, evals, prompt shrinking, and optional future adapters.
+
+## Export approved runs into a data flywheel
+
+Put sanitized human-approved runs in:
+
+```text
+.agent/flywheel/approved-runs.jsonl
+```
+
+Then run:
+
+```bash
+python3 .agent/tools/data_flywheel_export.py
+```
+
+Outputs land in `.agent/flywheel/exports/<date>/`:
+
+- `trace-records.jsonl`
+- `training-examples.jsonl`
+- `eval-cases.jsonl`
+- `context-cards/<domain>/<workflow>.md`
+- `flywheel-metrics.json`
+
+This is local-only and model-agnostic. It creates training-ready artifacts; it
+does not train a model.
+
+See [docs/data-flywheel.md](docs/data-flywheel.md).
 
 ## Run the staging cycle nightly
 

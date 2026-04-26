@@ -55,6 +55,9 @@ Daily driver, highest-leverage first:
   in one shot (stage + graduate + render). For rules you already know.
 - `show.py` — one-screen dashboard of brain state: episodes, candidates,
   lessons, failing skills, activity graph.
+- `data_flywheel_export.py` — local export of approved, redacted runs into
+  trace records, context cards, eval cases, training-ready JSONL, and
+  flywheel metrics. It does not train models or call APIs.
 - `list_candidates.py` / `graduate.py` / `reject.py` / `reopen.py` — review
   protocol for patterns the dream cycle has staged.
 - `memory_reflect.py <skill> <action> <outcome>` — log a significant event.

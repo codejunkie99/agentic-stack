@@ -26,3 +26,11 @@ Pre-deployment verification against a structured checklist.
 Triggers: "deploy", "ship", "release", "go live"
 Constraints: all tests passing, no unresolved TODOs in diff,
 requires human approval for production.
+
+## data-flywheel
+Turns approved, redacted runs into reusable local artifacts: trace records,
+context cards, eval cases, training-ready JSONL, and flywheel metrics.
+Triggers: "data flywheel", "trace to train", "training traces",
+"context cards", "eval cases", "approved runs", "vertical intelligence"
+Constraints: local-only by default; human-approved runs only; redaction required
+before trainable; does not train models.
