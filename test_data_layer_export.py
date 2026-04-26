@@ -117,6 +117,8 @@ class DataLayerExportTest(unittest.TestCase):
             dashboard_tui = (out / "dashboard.tui.txt").read_text()
             self.assertIn("Terminal Dashboard", dashboard_tui)
             self.assertIn("Top Harnesses", dashboard_tui)
+            self.assertIn("◇", dashboard_tui)
+            self.assertNotIn("\x1b[", dashboard_tui)
 
     def test_succeeds_with_empty_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -156,11 +158,83 @@ class DataLayerExportTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("agentic-stack Data Layer", result.stdout)
             self.assertIn("Terminal Dashboard", result.stdout)
+            self.assertIn("◇", result.stdout)
+            self.assertIn("◆", result.stdout)
             self.assertIn("Agent events", result.stdout)
             self.assertIn("codex", result.stdout)
             self.assertIn("release", result.stdout)
             self.assertIn("dashboard_html=", result.stdout)
             self.assertNotIn("raw-run-id", result.stdout)
+
+    def test_natural_language_request_sets_window_and_bucket(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            (work / ".agent").mkdir()
+
+            result = self.run_export(
+                work,
+                "--date",
+                "2026-04-25",
+                "show",
+                "me",
+                "the",
+                "last",
+                "7",
+                "days",
+                "by",
+                "hour",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            summary = json.loads(
+                (work / ".agent" / "data-layer" / "exports" / "2026-04-25" / "dashboard-summary.json").read_text()
+            )
+            self.assertEqual(summary["request"], "show me the last 7 days by hour")
+            self.assertEqual(summary["window"], "7d")
+            self.assertEqual(summary["bucket"], "hour")
+            self.assertIn("Request", result.stdout)
+            self.assertIn("show me the last 7 days by hour", result.stdout)
+
+    def test_explicit_flags_override_natural_language_request(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            (work / ".agent").mkdir()
+
+            result = self.run_export(
+                work,
+                "--date",
+                "2026-04-25",
+                "--window",
+                "all",
+                "--bucket",
+                "month",
+                "show",
+                "me",
+                "the",
+                "last",
+                "7",
+                "days",
+                "by",
+                "hour",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            summary = json.loads(
+                (work / ".agent" / "data-layer" / "exports" / "2026-04-25" / "dashboard-summary.json").read_text()
+            )
+            self.assertEqual(summary["request"], "show me the last 7 days by hour")
+            self.assertEqual(summary["window"], "all")
+            self.assertEqual(summary["bucket"], "month")
+
+    def test_data_layer_skill_is_injected_dashboard_surface(self):
+        skill = (ROOT / ".agent" / "skills" / "data-layer" / "SKILL.md").read_text()
+        index = (ROOT / ".agent" / "skills" / "_index.md").read_text()
+        manifest = (ROOT / ".agent" / "skills" / "_manifest.jsonl").read_text()
+
+        self.assertIn("what did my agents do", skill)
+        self.assertIn("python3 .agent/tools/data_layer_export.py show me last 7 days by hour", skill)
+        self.assertIn("what did my agents do", index)
+        self.assertIn('"show me the dashboard"', manifest)
 
 
 if __name__ == "__main__":

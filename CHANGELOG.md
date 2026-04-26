@@ -5,6 +5,34 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.2] — 2026-04-26
+
+Patch release. Makes the data-layer dashboard easier to access from coding
+tools by turning the injected `data-layer` skill into the natural-language
+dashboard surface.
+
+### Added
+- **Injected dashboard behavior.** The `data-layer` skill now triggers on plain
+  phrases such as "show me the dashboard", "what did my agents do",
+  "agent status", and "usage report". When the model decides the user wants
+  local agent activity, the skill tells it to render the terminal dashboard
+  directly instead of making the user remember flags.
+- **Natural-language exporter requests.** The existing exporter now accepts
+  requests such as
+  `python3 .agent/tools/data_layer_export.py show me last 7 days by hour`.
+  It maps common phrases to `--window` and `--bucket`; explicit flags still
+  override the natural-language text for scripts and automation.
+
+### Changed
+- The terminal dashboard now uses the same rail/marker visual language as the
+  onboarding flow while keeping `dashboard.tui.txt` plain text with no ANSI
+  escape codes.
+- `dashboard-summary.json` records the natural-language request that produced
+  the export when one was provided.
+
+### Migration
+No migration required. Existing flag-based commands still work.
+
 ## [0.11.1] — 2026-04-26
 
 Patch release. Makes the data-layer dashboard visible directly in coding-tool

@@ -28,9 +28,12 @@ Constraints: all tests passing, no unresolved TODOs in diff,
 requires human approval for production.
 
 ## data-layer
-Cross-harness activity monitoring and dashboard exports.
-Triggers: "data layer", "dashboard", "agent analytics", "resource usage",
-"cron monitoring", "daily report", "tokens", "terminal dashboard"
+Cross-harness activity monitoring and dashboard exports. Use it as the
+injected dashboard surface when users ask naturally.
+Triggers: "data layer", "dashboard", "show me the dashboard",
+"what did my agents do", "agent analytics", "agent status", "resource usage",
+"usage report", "cron monitoring", "daily report", "tokens",
+"terminal dashboard", "TUI"
 Constraints: local-only by default; no screenshot delivery without explicit user
 approval; do not commit private `.agent/data-layer/` exports.
 

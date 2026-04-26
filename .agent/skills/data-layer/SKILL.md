@@ -1,7 +1,7 @@
 ---
 name: data-layer
-version: 2026-04-25
-triggers: ["data layer", "dashboard", "agent analytics", "resource usage", "cron monitoring", "daily report", "tokens"]
+version: 2026-04-26
+triggers: ["data layer", "dashboard", "show me the dashboard", "what did my agents do", "agent analytics", "agent status", "resource usage", "usage report", "cron monitoring", "daily report", "tokens", "terminal dashboard", "TUI"]
 tools: [bash, git]
 preconditions: [".agent exists"]
 constraints: ["local-only by default", "do not send screenshots without explicit user approval", "do not commit private .agent/data-layer exports"]
@@ -51,6 +51,22 @@ Default inputs:
 
 `AGENT_LEARNINGS.jsonl` is the shared activity log. Optional files let users add
 events from harnesses that do not automatically write rich events yet.
+
+## Agent behavior
+
+When this skill is injected, decide whether the user is asking to see local
+agent activity. Natural prompts such as "what did my agents do", "show me the
+dashboard", "how many tokens did we use", or "show last week by hour" should
+render the terminal dashboard directly. Do not make users remember flags.
+
+Prefer passing the user's words to the exporter:
+
+```bash
+python3 .agent/tools/data_layer_export.py show me last 7 days by hour
+```
+
+If the user gives no range or bucket, run the default export. Explicit flags
+still work for scripts and should override the natural-language words.
 
 ## Export
 

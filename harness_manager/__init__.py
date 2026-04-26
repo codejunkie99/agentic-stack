@@ -5,4 +5,4 @@ The user-facing surface is plain verbs: install, add, remove, doctor, status.
 The "harness_manager" name is internal only and never appears in CLI help, docs,
 or error messages users see.
 """
-__version__ = "0.11.1"
+__version__ = "0.11.2"

@@ -25,23 +25,23 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.11.1 — terminal data dashboard
+### New in v0.11.2 — natural dashboard access
 
-Patch release. The data layer now shows a terminal dashboard by default, so
-people can inspect agent activity inside the coding tool they are already
-using, without opening a browser or learning another command.
+Patch release. The data-layer skill is now the injected dashboard surface: a
+model can decide to show the dashboard when a user asks naturally, without
+making people remember exporter flags.
 
-- **Terminal dashboard by default.** The existing
-  `python3 .agent/tools/data_layer_export.py --window 30d --bucket day`
-  command now prints a compact TUI-style report with resource numbers, latest
-  bucket activity, top harnesses, top workflows, top categories, and links to
-  the generated artifacts.
-- **Saved text dashboard.** The same terminal view is written to
-  `dashboard.tui.txt` beside `dashboard.html`, CSV, JSON, and
+- **Injected dashboard skill.** The `data-layer` skill now triggers on plain
+  phrases like "show me the dashboard" and "what did my agents do", then shows
+  the terminal dashboard directly in the coding tool.
+- **Natural-language exporter.** Users and agents can run
+  `python3 .agent/tools/data_layer_export.py show me last 7 days by hour`;
+  the exporter maps that to the right window and bucket while keeping explicit
+  flags available for scripts.
+- **Onboarding-style terminal view.** The dashboard now borrows the same
+  rail, marker, and summary style as the onboarding flow, and still saves a
+  plain `dashboard.tui.txt` beside `dashboard.html`, CSV, JSON, and
   `daily-report.md`.
-- **Data-layer SVG.** README and data-layer docs now include a visual of the
-  local flow: input streams -> exporter -> browser dashboard, terminal
-  dashboard, CSV/JSON, and approved handoff.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
@@ -53,7 +53,8 @@ harnesses against the same `.agent/` brain.
 - **`data-layer` seed skill.** Generate local dashboard exports across Claude
   Code, Hermes, OpenClaw, Codex, Cursor, OpenCode, and custom loops:
   harness events, cron timelines, KPI summaries, token/cost estimates,
-  categories, `dashboard.html`, and `daily-report.md`.
+  categories, `dashboard.html`, and `daily-report.md`. The skill also acts as
+  the injected natural-language surface for showing the terminal dashboard.
 - **`data-flywheel` seed skill.** Export approved, redacted runs into trace
   records, context cards, eval cases, training-ready JSONL, and flywheel
   metrics. It is local-only and model-agnostic; it prepares artifacts but
@@ -435,10 +436,16 @@ brain:
 python3 .agent/tools/data_layer_export.py --window 30d --bucket day
 ```
 
+Or let the injected `data-layer` skill pass the user's words through:
+
+```bash
+python3 .agent/tools/data_layer_export.py show me last 7 days by hour
+```
+
 Outputs land in `.agent/data-layer/exports/<date>/`, including
 `dashboard.html`, `dashboard.tui.txt`, and `daily-report.md`. The command also
-prints the compact terminal dashboard directly inside your coding tool. Optional
-local inputs let you add scheduled runs and categories:
+prints the onboarding-style terminal dashboard directly inside your coding tool.
+Optional local inputs let you add scheduled runs and categories:
 
 ```text
 .agent/data-layer/cron-runs.jsonl

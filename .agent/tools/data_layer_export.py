@@ -16,11 +16,46 @@ import hashlib
 import html
 import json
 import os
+import re
+import sys
 from pathlib import Path
 from typing import Any
 
 VALID_WINDOWS = {"7d", "30d", "90d", "all"}
 VALID_BUCKETS = {"hour", "day", "week", "month"}
+
+
+def _e(*codes: int) -> str:
+    return f"\x1b[{';'.join(map(str, codes))}m"
+
+
+def _hex(value: str) -> str:
+    value = value.lstrip("#")
+    r, g, b = int(value[:2], 16), int(value[2:4], 16), int(value[4:6], 16)
+    return f"\x1b[38;2;{r};{g};{b}m"
+
+
+RESET = _e(0)
+BOLD = _e(1)
+DIM = _e(2)
+PURPLE = _hex("#BF5AF2")
+BLUE = _hex("#0A84FF")
+GREEN = _hex("#30D158")
+ORANGE = _hex("#FF9F0A")
+MUTED = _hex("#636366")
+WHITE = _hex("#F5F5F7")
+
+
+def paint(text: Any, color: str, enabled: bool) -> str:
+    return f"{color}{text}{RESET}" if enabled else str(text)
+
+
+def colored_stdout_enabled() -> bool:
+    return not os.environ.get("NO_COLOR")
+
+
+def rail(color: bool = False) -> str:
+    return paint("│", MUTED, color)
 
 
 def sha256(value: Any) -> str:
@@ -118,6 +153,82 @@ def cutoff_for(window: str) -> dt.datetime | None:
         return None
     days = int(window[:-1])
     return dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
+
+
+def nearest_window(days: int) -> str:
+    if days <= 7:
+        return "7d"
+    if days <= 30:
+        return "30d"
+    if days <= 90:
+        return "90d"
+    return "all"
+
+
+def parse_natural_language_request(text: str) -> dict[str, str]:
+    request = " ".join(text.split())
+    if not request:
+        return {}
+
+    key = request.lower()
+    parsed: dict[str, str] = {}
+
+    bucket_patterns = [
+        ("hour", (r"\bby hour\b", r"\bper hour\b", r"\bhourly\b", r"\beach hour\b")),
+        ("day", (r"\bby day\b", r"\bper day\b", r"\bdaily\b", r"\beach day\b")),
+        ("week", (r"\bby week\b", r"\bper week\b", r"\bweekly\b", r"\beach week\b")),
+        ("month", (r"\bby month\b", r"\bper month\b", r"\bmonthly\b", r"\beach month\b")),
+    ]
+    for bucket, patterns in bucket_patterns:
+        if any(re.search(pattern, key) for pattern in patterns):
+            parsed["bucket"] = bucket
+            break
+
+    if re.search(r"\b(all time|everything|all history|entire history)\b", key):
+        parsed["window"] = "all"
+    elif re.search(r"\b(today|last 24 hours|past 24 hours)\b", key):
+        parsed.setdefault("bucket", "hour")
+        parsed["window"] = "7d"
+    elif re.search(r"\b(this week|past week|last week|weekly view)\b", key):
+        parsed["window"] = "7d"
+    elif re.search(r"\b(this month|past month|last month|monthly view)\b", key):
+        parsed["window"] = "30d"
+    elif re.search(r"\b(this quarter|past quarter|last quarter|quarterly view)\b", key):
+        parsed["window"] = "90d"
+
+    match = re.search(
+        r"\b(?:last|past|previous|prior|over|for)?\s*(\d+)\s*(hours?|hrs?|h|days?|d|weeks?|w|months?|mos?|mo)\b",
+        key,
+    )
+    if match:
+        amount = int(match.group(1))
+        unit = match.group(2)
+        if unit.startswith(("hour", "hr", "h")):
+            days = max(1, (amount + 23) // 24)
+            parsed.setdefault("bucket", "hour")
+        elif unit.startswith(("week", "w")):
+            days = amount * 7
+        elif unit.startswith(("month", "mo")):
+            days = amount * 30
+        else:
+            days = amount
+        parsed["window"] = nearest_window(days)
+
+    return parsed
+
+
+def flag_was_provided(argv: list[str], flag: str) -> bool:
+    return any(token == flag or token.startswith(f"{flag}=") for token in argv)
+
+
+def apply_natural_language_request(args: argparse.Namespace, argv: list[str]) -> None:
+    request_text = " ".join(args.request).strip()
+    args.request_text = " ".join(request_text.split())
+    parsed = parse_natural_language_request(args.request_text)
+    if parsed.get("window") and not flag_was_provided(argv, "--window"):
+        args.window = parsed["window"]
+    if parsed.get("bucket") and not flag_was_provided(argv, "--bucket"):
+        args.bucket = parsed["bucket"]
 
 
 def inside_window(record: dict[str, Any], cutoff: dt.datetime | None) -> bool:
@@ -716,6 +827,7 @@ def build_summary(args: argparse.Namespace, quality: dict[str, Any], agent_event
         "project": args.project,
         "window": args.window,
         "bucket": args.bucket,
+        "request": getattr(args, "request_text", "") or None,
         "privacy_model": "local_only",
         "counts": {
             "agent_events": len(agent_events),
@@ -836,9 +948,9 @@ def plain_bar(value: Any, max_value: float, width: int = 18) -> str:
     return "#" * filled + "-" * (width - filled)
 
 
-def top_table(rows: list[dict[str, Any]], label_field: str, value_field: str, secondary_value_field: str = "", limit: int = 5) -> list[str]:
+def top_table(rows: list[dict[str, Any]], label_field: str, value_field: str, secondary_value_field: str = "", limit: int = 5, color: bool = False) -> list[str]:
     if not rows:
-        return ["  no data yet"]
+        return [f"{rail(color)}  {paint('no data yet', MUTED, color)}"]
     top = rows[:limit]
     values = [
         (safe_num(row.get(value_field)) or 0) + (safe_num(row.get(secondary_value_field)) or 0)
@@ -848,11 +960,26 @@ def top_table(rows: list[dict[str, Any]], label_field: str, value_field: str, se
     lines = []
     for row, value in zip(top, values):
         label = str(row.get(label_field) or "unknown")[:22].ljust(22)
-        lines.append(f"  {label} [{plain_bar(value, max_value)}] {compact_value(value)}")
+        bar = plain_bar(value, max_value)
+        lines.append(
+            f"{rail(color)}  {paint(label, WHITE, color)} "
+            f"[{paint(bar, BLUE, color)}] {paint(compact_value(value), f'{BOLD}{WHITE}', color)}"
+        )
     return lines
 
 
-def render_terminal_dashboard(out_dir: Path) -> str:
+def metric_line(label: str, value: str, color: bool = False) -> str:
+    return (
+        f"{paint('◆', PURPLE, color)}  {paint(label.ljust(14), DIM, color)} "
+        f"{paint('...', MUTED, color)} {paint(value, f'{BOLD}{WHITE}', color)}"
+    )
+
+
+def section_line(title: str, color: bool = False) -> str:
+    return f"{rail(color)}  {paint(title, f'{BOLD}{ORANGE}', color)}"
+
+
+def render_terminal_dashboard(out_dir: Path, color: bool = False) -> str:
     summary = json.loads((out_dir / "dashboard-summary.json").read_text(encoding="utf-8"))
     activity = json.loads((out_dir / "activity-series.json").read_text(encoding="utf-8"))
     categories = json.loads((out_dir / "category-summary.json").read_text(encoding="utf-8"))
@@ -863,33 +990,42 @@ def render_terminal_dashboard(out_dir: Path) -> str:
     counts = summary["counts"]
     latest_activity = activity[-1] if activity else {}
     lines = [
-        "agentic-stack Data Layer - Terminal Dashboard",
-        f"project={summary['project']} window={summary['window']} bucket={summary['bucket']} generated={summary['generated_at']}",
-        "",
-        "Resource Overview",
-        f"  Agent events : {compact_value(counts['agent_events'])}",
-        f"  Cron runs    : {compact_value(counts['cron_runs'])}",
-        f"  Harnesses    : {compact_value(counts['harnesses'])}",
-        f"  Active agents: {compact_value(counts['active_agents'])}",
-        f"  Tokens est.  : {compact_value(resources['tokens_total_estimate'])}",
-        f"  Cost est.    : {compact_value(resources['cost_estimate_usd'], prefix='$')}",
-        "",
-        "Latest Bucket",
-        f"  {latest_activity.get('bucket_start', 'no activity')}  events={compact_value(latest_activity.get('agent_events'))} cron={compact_value(latest_activity.get('cron_runs'))} tokens={compact_value(latest_activity.get('tokens_total_estimate'))}",
-        "",
-        "Top Harnesses",
-        *top_table(harnesses, "harness", "agent_events", "cron_runs"),
-        "",
-        "Top Workflows",
-        *top_table(workflows, "workflow", "agent_events", "cron_runs"),
-        "",
-        "Top Categories",
-        *top_table(categories, "category", "agent_events", "cron_runs"),
-        "",
-        f"Open in browser: {out_dir / 'dashboard.html'}",
-        f"Terminal copy : {out_dir / 'dashboard.tui.txt'}",
-        "Privacy       : local-only; screenshots require explicit user approval",
+        f"{paint('◇', PURPLE, color)}  {paint('agentic-stack Data Layer', f'{BOLD}{WHITE}', color)}  {paint('Terminal Dashboard', MUTED, color)}",
+        rail(color),
+        f"{rail(color)}  project={summary['project']} window={summary['window']} bucket={summary['bucket']}",
+        f"{rail(color)}  generated={summary['generated_at']}",
     ]
+    if summary.get("request"):
+        lines.append(f"{rail(color)}  Request ... {paint(summary['request'], f'{BOLD}{WHITE}', color)}")
+    lines.extend([
+        rail(color),
+        section_line("Resource Overview", color),
+        metric_line("Agent events", compact_value(counts["agent_events"]), color),
+        metric_line("Cron runs", compact_value(counts["cron_runs"]), color),
+        metric_line("Harnesses", compact_value(counts["harnesses"]), color),
+        metric_line("Active agents", compact_value(counts["active_agents"]), color),
+        metric_line("Tokens est.", compact_value(resources["tokens_total_estimate"]), color),
+        metric_line("Cost est.", compact_value(resources["cost_estimate_usd"], prefix="$"), color),
+        rail(color),
+        section_line("Latest Bucket", color),
+        f"{rail(color)}  {latest_activity.get('bucket_start', 'no activity')}  "
+        f"events={compact_value(latest_activity.get('agent_events'))} "
+        f"cron={compact_value(latest_activity.get('cron_runs'))} "
+        f"tokens={compact_value(latest_activity.get('tokens_total_estimate'))}",
+        rail(color),
+        section_line("Top Harnesses", color),
+        *top_table(harnesses, "harness", "agent_events", "cron_runs", color=color),
+        rail(color),
+        section_line("Top Workflows", color),
+        *top_table(workflows, "workflow", "agent_events", "cron_runs", color=color),
+        rail(color),
+        section_line("Top Categories", color),
+        *top_table(categories, "category", "agent_events", "cron_runs", color=color),
+        rail(color),
+        f"{paint('└', MUTED, color)}  Open in browser: {out_dir / 'dashboard.html'}",
+        f"{rail(color)}  Terminal copy : {out_dir / 'dashboard.tui.txt'}",
+        f"{rail(color)}  Privacy       : local-only; screenshots require explicit user approval",
+    ])
     return "\n".join(lines) + "\n"
 
 
@@ -973,7 +1109,7 @@ def export(args: argparse.Namespace) -> Path:
     write_json(out_dir / "dashboard-report.json", dashboard_report)
     write_dashboard(out_dir / "dashboard.html", summary, activity, categories, harnesses, workflows, cron_runs, cron_timeline, kpis)
     write_daily_report(out_dir / "daily-report.md", summary)
-    (out_dir / "dashboard.tui.txt").write_text(render_terminal_dashboard(out_dir), encoding="utf-8")
+    (out_dir / "dashboard.tui.txt").write_text(render_terminal_dashboard(out_dir, color=False), encoding="utf-8")
     return out_dir
 
 
@@ -990,12 +1126,14 @@ def main() -> int:
     parser.add_argument("--timezone", default=os.environ.get("TZ", "UTC"))
     parser.add_argument("--window", choices=sorted(VALID_WINDOWS), default="30d")
     parser.add_argument("--bucket", choices=sorted(VALID_BUCKETS), default="day")
+    parser.add_argument("request", nargs="*", help="Optional natural language request, for example: show me last 7 days by hour")
     args = parser.parse_args()
+    apply_natural_language_request(args, sys.argv[1:])
     out_dir = export(args)
     print(f"agentic-stack data layer export: {out_dir}")
     print(f"dashboard_html={out_dir / 'dashboard.html'}")
     print()
-    print(render_terminal_dashboard(out_dir), end="")
+    print(render_terminal_dashboard(out_dir, color=colored_stdout_enabled()), end="")
     return 0
 
 

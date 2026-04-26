@@ -63,6 +63,18 @@ episodic memory. Use `cron-runs.jsonl` for scheduled agents or external crons.
 python3 .agent/tools/data_layer_export.py --window 30d --bucket day
 ```
 
+The same exporter accepts simple natural-language requests:
+
+```bash
+python3 .agent/tools/data_layer_export.py show me last 7 days by hour
+```
+
+The `data-layer` skill is designed to be injected into supported harnesses, so
+the model can decide to run the dashboard when users ask things like "show me
+the dashboard" or "what did my agents do" instead of asking them to remember
+flags. Explicit `--window` and `--bucket` flags still override natural-language
+words for scripts.
+
 Time buckets:
 
 - `hour`
@@ -101,7 +113,7 @@ Outputs:
 overview, activity, token usage, cron frequency, task categories, harness mix,
 workflow outcomes, a Gantt-style cron panel, and cron timeline tables.
 
-The same command prints a compact terminal dashboard after export:
+The same command prints an onboarding-style terminal dashboard after export:
 
 ```bash
 python3 .agent/tools/data_layer_export.py --window 30d --bucket day
