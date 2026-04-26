@@ -98,7 +98,34 @@ def append_lesson(lesson, semantic_dir):
     return path
 
 
-def load_lessons(semantic_dir):
+def load_lessons(semantic_dir, *, fp=None):
+    """Load lessons from semantic/lessons.jsonl.
+
+    If `fp` is provided, read from that already-open file pointer instead of
+    opening a fresh fd. The caller is responsible for any locking on `fp`;
+    this lets render_lessons() read THROUGH the same locked descriptor it
+    obtained via _locked_jsonl(), so the read is covered by the flock.
+
+    The fp must be seekable: we seek(0) before reading and seek(0, SEEK_END)
+    after, so subsequent appends via _append_lesson_unlocked() land at EOF
+    and other readers using the same fp see a consistent position.
+    """
+    if fp is not None:
+        fp.seek(0)
+        out = []
+        for line in fp:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+        # Reset to EOF so a subsequent _append_lesson_unlocked on the same
+        # fd writes past existing rows rather than at the read cursor.
+        fp.seek(0, os.SEEK_END)
+        return out
+
     path = os.path.join(semantic_dir, LESSONS_JSONL)
     if not os.path.exists(path):
         return []
@@ -271,8 +298,11 @@ def render_lessons(semantic_dir):
 
     os.makedirs(semantic_dir, exist_ok=True)
 
-    with _locked_jsonl(jsonl_path):
-        lessons = _dedupe_by_id(load_lessons(semantic_dir))
+    with _locked_jsonl(jsonl_path) as locked_fp:
+        # Read THROUGH the locked fd so concurrent appenders (which would
+        # block on the flock) can't slip a partial line in between our read
+        # and our write. Opening the path again here would defeat the lock.
+        lessons = _dedupe_by_id(load_lessons(semantic_dir, fp=locked_fp))
         auto_section = _build_auto_section(lessons)
 
         if os.path.exists(md_path):
