@@ -1,0 +1,2 @@
+{"timestamp":"2026-04-25T10:00:00Z","harness":"claude-code","skill":"debug-investigator","action":"reproduce failing test","result":"success","workflow":"debug","tokens_in_estimate":900,"tokens_out_estimate":300,"cost_estimate_usd":0.04,"privacy_level":"local_only","pii_level":"none"}
+{"timestamp":"2026-04-25T11:30:00Z","harness":"hermes","skill":"memory-manager","action":"summarize status","result":"success","workflow":"status_update","tokens_in_estimate":600,"tokens_out_estimate":250,"cost_estimate_usd":0.03,"privacy_level":"local_only","pii_level":"none"}

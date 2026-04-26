@@ -4,6 +4,11 @@
 
 A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
 
+It also includes a local data layer so you can monitor the whole suite of
+agents from one place: harness activity, cron runs, active agents, token/cost
+estimates, KPI summaries, user-defined resource categories, and
+screenshot-ready daily dashboards.
+
 <p align="center">
   <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
 </p>
@@ -204,6 +209,10 @@ harnesses.
   Every skill ships with a self-rewrite hook.
 - **Protocols** — typed tool schemas, a `permissions.md` that the
   pre-tool-call hook enforces, and a delegation contract for sub-agents.
+- **Data layer** — local-only dashboard exports across every harness sharing
+  `.agent/`: agent events, cron timelines, KPI summaries, tokens/cost
+  estimates, task categories, harness mix, `dashboard.html`, and daily report
+  handoff.
 
 ## Releases & changelog
 
@@ -251,10 +260,14 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── learn.py                # one-shot lesson teaching (stage + graduate)
     ├── recall.py               # surface lessons relevant to an intent
     ├── show.py                 # colorful brain-state dashboard
+    ├── data_layer_export.py    # local cross-harness dashboard/data export
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py
     └── reopen.py
+
+schemas/data-layer/             # local dashboard/event schemas
+examples/data-layer/            # sanitized data-layer shapes
 
 adapters/                       # one small shim per harness, each with adapter.json manifest
 ├── claude-code/   (CLAUDE.md + settings.json hooks — $CLAUDE_PROJECT_DIR wired, closes #18)
@@ -336,6 +349,34 @@ crontab -e
 `auto_dream.py` resolves its paths absolutely and performs only mechanical
 file operations (cluster, stage, prefilter, decay). No git commits, no
 network, no reasoning — safe to run unattended.
+
+## Monitor your agent suite
+
+Generate a local dashboard for all harnesses writing to the same `.agent/`
+brain:
+
+```bash
+python3 .agent/tools/data_layer_export.py --window 30d --bucket day
+```
+
+Outputs land in `.agent/data-layer/exports/<date>/`, including
+`dashboard.html` and `daily-report.md`. Optional local inputs let you add
+scheduled runs and categories:
+
+```text
+.agent/data-layer/cron-runs.jsonl
+.agent/data-layer/category-rules.json
+.agent/data-layer/harness-events.jsonl
+```
+
+Use this to track crons by day, active agents, token/cost estimates by
+hour/day/week/month, harness mix across Claude/Hermes/OpenClaw/Codex/etc.,
+success/error rates, run cadence, workflow breadth, and user-defined categories
+like personal, admin, work, financial, and coding. The data layer is local-only;
+screenshot delivery requires explicit user approval and a user-configured
+channel.
+
+See [docs/data-layer.md](docs/data-layer.md).
 
 ## License
 

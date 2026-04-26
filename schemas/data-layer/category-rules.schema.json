@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/data-layer/category-rules.schema.json",
+  "title": "CategoryRules",
+  "description": "User-owned rules for grouping agent usage into resource categories.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "default_category": {"type": "string", "default": "uncategorized"},
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category"],
+        "properties": {
+          "category": {"type": "string"},
+          "skills": {"type": "array", "items": {"type": "string"}},
+          "actions": {"type": "array", "items": {"type": "string"}},
+          "workflows": {"type": "array", "items": {"type": "string"}},
+          "phases": {"type": "array", "items": {"type": "string"}},
+          "harnesses": {"type": "array", "items": {"type": "string"}},
+          "profiles": {"type": "array", "items": {"type": "string"}},
+          "run_types": {"type": "array", "items": {"type": "string"}},
+          "results": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}
