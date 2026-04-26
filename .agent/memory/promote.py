@@ -14,6 +14,29 @@ from review_state import _lessons_sha
 from validate import extract_lesson_lines, check_exact_duplicate
 
 
+def _atomic_write_json(path, payload, indent=2, sort_keys=False):
+    """Write JSON atomically: write to temp file in the same directory, fsync,
+    then os.replace into place. os.replace is atomic on POSIX (Linux/macOS) and
+    on Windows for same-filesystem renames. Cleans up the temp file on failure
+    so partially-written sidecars never linger.
+    """
+    tmp_path = path + ".tmp"
+    try:
+        with open(tmp_path, "w") as f:
+            json.dump(payload, f, indent=indent, sort_keys=sort_keys)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path)
+    except BaseException:
+        # Best-effort cleanup; swallow errors from cleanup itself so we don't
+        # mask the original exception.
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
+
+
 def cluster_and_extract(entries, threshold=0.3):
     """Cluster entries by content similarity, extract a pattern per cluster."""
     clusters = content_cluster(entries, threshold=threshold)
@@ -162,8 +185,7 @@ def write_candidates(patterns, candidates_dir):
         }
 
         staged_path = os.path.join(candidates_dir, f"{slug}.json")
-        with open(staged_path, "w") as f:
-            json.dump(candidate, f, indent=2)
+        _atomic_write_json(staged_path, candidate, indent=2)
 
         # The slug must live in exactly one lifecycle location. Remove any
         # prior copy in rejected/ or graduated/ (the latter only for
