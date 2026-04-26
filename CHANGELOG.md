@@ -37,6 +37,8 @@ the terminal dashboard in addition to the previous status lines.
 - GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.1>
 - `Formula/agentic-stack.rb` bumped to v0.11.1 in a follow-up commit after
   the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `c0f09417c6caf34ba712d03271177ea2779af50e86a19bf76c10ba5d50bcff3e`.
 
 ## [0.11.0] — 2026-04-26
 
