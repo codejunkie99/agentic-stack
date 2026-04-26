@@ -5,6 +5,55 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] — 2026-04-26
+
+Minor release. Adds the `design-md` seed skill (sixth seed skill in the
+brain), and fixes a hard crash on macOS-default Python 3.9 that hit every
+brew user on first run.
+
+### Added
+- **`design-md` seed skill — DESIGN.md / Google Stitch support.** A new
+  portable skill that points coding agents at a root `DESIGN.md` (Google
+  Stitch format) as the visual-system source of truth. Loads only when
+  `DESIGN.md` exists at the project root; default behavior is read-only on
+  the contract file, and validation prefers
+  `npx @google/design.md lint DESIGN.md` over hand-checks. Brings the seed
+  skill count from five to six. Thanks to @danielfoch for the contribution
+  (PR #21). Decision recorded in `.agent/memory/semantic/DECISIONS.md`.
+
+### Fixed
+- **Python 3.9 crash on first run (#27).** Every brew user on macOS-default
+  Python 3.9 hit `TypeError: unsupported operand type(s) for |: 'type' and
+  'type'` immediately after `brew install agentic-stack` because
+  `harness_manager/` used PEP 604 union syntax (`Path | str`) that requires
+  Python 3.10+ at runtime. Added `from __future__ import annotations`
+  (PEP 563) to the eight affected files so all annotations are stored as
+  strings and never evaluated at import time. Works on Python 3.7+, which
+  covers every macOS-shipped Python in the wild. Zero-cost vs. the
+  reporter's suggested `python@3.10` brew dep (~150 MB pull). Thanks to
+  @WhoLsJohnGalt for the precise repro and the suggested workaround.
+
+### Migration
+`brew upgrade agentic-stack` is enough — no on-disk schema changes. Users
+on Python 3.9 who hit #27 on v0.9.x can upgrade and the crash goes away.
+Users with existing `.pi/extensions/memory-hook.ts` from v0.9.0 already
+got the fixes via `./install.sh pi` after the v0.9.1 upgrade; this release
+adds the `design-md` skill on top.
+
+### Release
+- Tag `v0.10.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.10.0>
+- `Formula/agentic-stack.rb` bumped to v0.10.0 in a follow-up commit
+  (same flow as v0.8.0 → v0.9.0 → v0.9.1): tag first, compute sha256,
+  then bump `url` + `sha256` + `version` together so brew always points
+  at a real installable artifact.
+
+### Credits
+- PR #21 by @danielfoch (design-md skill), with cross-model review fixes
+  applied as a follow-up commit.
+- Issue #27 by @WhoLsJohnGalt — clean repro of the macOS Python 3.9 crash
+  including a working sed-based workaround.
+
 ## [0.9.1] — 2026-04-26
 
 Patch release that closes the gap between v0.9.0 and a working pi adapter.

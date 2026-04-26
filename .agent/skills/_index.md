@@ -33,3 +33,15 @@ Triggers: "data layer", "dashboard", "agent analytics", "resource usage",
 "cron monitoring", "daily report", "tokens"
 Constraints: local-only by default; no screenshot delivery without explicit user
 approval; do not commit private `.agent/data-layer/` exports.
+
+## design-md
+Uses a root `DESIGN.md` as the portable visual system contract for
+Google Stitch workflows. Loads only when `DESIGN.md` exists at the
+project root.
+Triggers: "DESIGN.md", "design.md", "Google Stitch", "design tokens",
+"design system", "visual design"
+Preconditions: DESIGN.md exists at project root.
+Constraints: prefer DESIGN.md tokens over invented values, do not modify
+DESIGN.md unless the user explicitly asks, preserve unknown sections when
+an edit IS authorised, validate with `npx @google/design.md lint DESIGN.md`
+when available.

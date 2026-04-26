@@ -8,6 +8,8 @@ This is deliberately not a plugin DSL or arbitrary command runner. The
 codex review of the v1.0 vision plan flagged generalized run_command as
 DSL creep; named built-ins are the constrained alternative.
 """
+from __future__ import annotations
+
 import hashlib
 import os
 import platform
