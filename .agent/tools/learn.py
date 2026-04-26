@@ -55,30 +55,113 @@ def _lesson_already_appended(cid):
     return False
 
 
+def _find_prior(cid):
+    """Look up any prior record for this id across lifecycle subdirs.
+
+    Returns (prev_dict, location) where location is one of
+    'staged' | 'rejected' | 'graduated' | None. Mirrors promote._find_prior
+    so the manual path preserves history the same way auto_dream does.
+    """
+    staged_path = os.path.join(CANDIDATES, f"{cid}.json")
+    if os.path.isfile(staged_path):
+        try:
+            with open(staged_path) as f:
+                return json.load(f), "staged"
+        except (OSError, json.JSONDecodeError):
+            pass
+    for sub in ("rejected", "graduated"):
+        path = os.path.join(CANDIDATES, sub, f"{cid}.json")
+        if os.path.isfile(path):
+            try:
+                with open(path) as f:
+                    return json.load(f), sub
+            except (OSError, json.JSONDecodeError):
+                pass
+    return {}, None
+
+
 def stage(claim, conditions, source="learn", importance=7):
     os.makedirs(CANDIDATES, exist_ok=True)
     cid = pattern_id(claim, conditions)
     now = datetime.datetime.now().isoformat()
-    candidate = {
-        "id": cid,
-        "key": f"manual_{cid[:6]}",
-        "name": f"manual_{cid[:6]}",
-        "claim": claim,
-        "conditions": sorted(conditions),
-        "evidence_ids": [now],
-        "cluster_size": 1,
-        # Manual lessons skip the promotion threshold — they're author-attested,
-        # not pattern-extracted. Set salience high enough that retrieval ranks
-        # them alongside auto-promoted entries.
-        "canonical_salience": 8.0,
-        "staged_at": now,
-        "status": "staged",
-        "decisions": [{"ts": now, "action": "staged", "reviewer": source}],
-        "rejection_count": 0,
-    }
+
+    # Look for a prior record so we don't erase rejection_count or decision
+    # history on re-teach. Same id (claim + conditions) must map to the same
+    # lifecycle record regardless of which dir it currently lives in.
+    prev, prev_loc = _find_prior(cid)
+
+    # Already-graduated lessons are terminal from the manual path's POV —
+    # the lesson is already in lessons.jsonl. Re-staging would only create
+    # work the heuristic prefilter would reject on duplicate grounds, AND
+    # would silently overwrite the accepted record's decision history.
+    # Refuse loudly so the user knows to use a different tool to dispute.
+    if prev_loc == "graduated" and prev.get("status") != "provisional":
+        print(
+            f"ERROR: candidate {cid} already graduated; use a different "
+            f"command to dispute (claim already accepted as a lesson).",
+            file=sys.stderr)
+        sys.exit(3)
+
+    # Re-stage path: preserve decision history + rejection_count. New
+    # decision entry distinguishes the re-stage from the original.
+    if prev_loc in ("staged", "rejected"):
+        decisions = list(prev.get("decisions", []))
+        action = "re-staged" if prev_loc == "rejected" else "staged"
+        decisions.append({
+            "ts": now,
+            "action": action,
+            "reviewer": source,
+            "notes": f"re-staged at {now}",
+        })
+        candidate = {
+            "id": cid,
+            "key": prev.get("key", f"manual_{cid[:6]}"),
+            "name": prev.get("name", f"manual_{cid[:6]}"),
+            "claim": claim,
+            "conditions": sorted(conditions),
+            # Append a fresh evidence id so re-teach is visible in the log.
+            "evidence_ids": list(prev.get("evidence_ids", [])) + [now],
+            "cluster_size": prev.get("cluster_size", 1),
+            "canonical_salience": prev.get("canonical_salience", 8.0),
+            # Preserve original staged_at so priority + backlog age signals
+            # stay meaningful across re-teaches.
+            "staged_at": prev.get("staged_at", now),
+            "status": "staged",
+            "decisions": decisions,
+            "rejection_count": prev.get("rejection_count", 0),
+        }
+    else:
+        candidate = {
+            "id": cid,
+            "key": f"manual_{cid[:6]}",
+            "name": f"manual_{cid[:6]}",
+            "claim": claim,
+            "conditions": sorted(conditions),
+            "evidence_ids": [now],
+            "cluster_size": 1,
+            # Manual lessons skip the promotion threshold — they're author-attested,
+            # not pattern-extracted. Set salience high enough that retrieval ranks
+            # them alongside auto-promoted entries.
+            "canonical_salience": 8.0,
+            "staged_at": now,
+            "status": "staged",
+            "decisions": [{"ts": now, "action": "staged", "reviewer": source}],
+            "rejection_count": 0,
+        }
+
     path = os.path.join(CANDIDATES, f"{cid}.json")
     with open(path, "w") as f:
         json.dump(candidate, f, indent=2)
+
+    # The id must live in exactly one lifecycle location. If we just pulled
+    # the prior from rejected/ (or provisional graduated/), remove the old
+    # copy now that the staged file exists.
+    if prev_loc in ("rejected", "graduated"):
+        try:
+            os.remove(os.path.join(CANDIDATES, prev_loc, f"{cid}.json"))
+        except OSError:
+            pass
+
     return cid, path
 
 
