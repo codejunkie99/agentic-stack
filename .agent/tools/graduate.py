@@ -11,10 +11,12 @@ from pathlib import Path
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(BASE, "memory"))
+sys.path.insert(0, os.path.join(BASE, "harness"))
 
 from review_state import mark_graduated
 from validate import heuristic_check
 from render_lessons import append_lesson, render_lessons, load_lessons
+from lesson_store import render_dedup_text
 
 CANDIDATES = os.path.join(BASE, "memory/candidates")
 SEMANTIC = os.path.join(BASE, "memory/semantic")
@@ -211,7 +213,7 @@ def main():
         return
 
     lessons_md = os.path.join(SEMANTIC, "LESSONS.md")
-    existing = open(lessons_md).read() if os.path.exists(lessons_md) else ""
+    existing = render_dedup_text()
     # When superseding, exclude the target lesson from the duplicate check —
     # replacing a lesson with structurally-better content but same wording
     # is exactly what supersession is for.

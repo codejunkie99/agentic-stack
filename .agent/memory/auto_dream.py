@@ -13,12 +13,17 @@ Never:
   - promotion to LESSONS.md (graduate.py does that)
   - git commit (unattended repo writes are dangerous on a host hook)
 """
-import json, os
+import json, os, sys
 from promote import cluster_and_extract, write_candidates
 from validate import heuristic_check
 from review_state import mark_rejected, write_review_queue_summary
 from decay import decay_old_entries
 from archive import archive_stale_workspace
+
+_HARNESS = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "harness"))
+if _HARNESS not in sys.path:
+    sys.path.insert(0, _HARNESS)
+from lesson_store import render_dedup_text
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 EPISODIC = os.path.join(ROOT, "episodic/AGENT_LEARNINGS.jsonl")
@@ -59,7 +64,7 @@ def _heuristic_prefilter(candidates_dir, semantic_dir):
     if not os.path.isdir(candidates_dir):
         return 0
     lessons_path = os.path.join(semantic_dir, "LESSONS.md")
-    existing = open(lessons_path).read() if os.path.exists(lessons_path) else ""
+    existing = render_dedup_text()
     rejected = 0
     for fname in sorted(os.listdir(candidates_dir)):
         if not fname.endswith(".json"):
