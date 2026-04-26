@@ -33,6 +33,14 @@ dashboard surface.
 ### Migration
 No migration required. Existing flag-based commands still work.
 
+### Release
+- Tag `v0.11.2` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.2>
+- `Formula/agentic-stack.rb` bumped to v0.11.2 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `b9eb098466376c13e087dc91a0655d97481dfd13a6f640989384881990eb1e58`.
+
 ## [0.11.1] — 2026-04-26
 
 Patch release. Makes the data-layer dashboard visible directly in coding-tool
