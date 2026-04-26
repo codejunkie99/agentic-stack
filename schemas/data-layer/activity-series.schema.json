@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/data-layer/activity-series.schema.json",
+  "title": "ActivitySeries",
+  "description": "Time-bucketed agent activity, cron activity, token estimates, cost estimates, and active-agent counts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bucket_start", "agent_events", "cron_runs", "tokens_total_estimate", "active_agents"],
+  "properties": {
+    "bucket_start": {"type": "string", "format": "date-time"},
+    "agent_events": {"type": "integer", "minimum": 0},
+    "cron_runs": {"type": "integer", "minimum": 0},
+    "tokens_in_estimate": {"type": "number", "minimum": 0},
+    "tokens_out_estimate": {"type": "number", "minimum": 0},
+    "tokens_total_estimate": {"type": "number", "minimum": 0},
+    "cost_estimate_usd": {"type": "number", "minimum": 0},
+    "active_agents": {"type": "integer", "minimum": 0}
+  }
+}
