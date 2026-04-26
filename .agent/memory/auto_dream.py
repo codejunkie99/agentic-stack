@@ -34,25 +34,90 @@ PROMOTION_THRESHOLD = 7.0
 CLUSTER_SIMILARITY = 0.3
 
 
-def _load_entries():
+def _load_entries(report_malformed=False):
+    """Load episodic entries from the JSONL log.
+
+    Skips malformed lines so a single bad append (interrupted writer, manual
+    edit, partial flush) can't break the whole pipeline. When
+    ``report_malformed`` is True, returns ``(entries, malformed)`` where
+    ``malformed`` is a list of ``(line_number, raw_line)`` tuples — this lets
+    the caller log a stderr warning so we don't lose visibility into
+    corruption.
+    """
     if not os.path.exists(EPISODIC):
-        return []
+        return ([], []) if report_malformed else []
     entries = []
-    for line in open(EPISODIC):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            entries.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
+    malformed = []
+    with open(EPISODIC) as fh:
+        for lineno, raw in enumerate(fh, start=1):
+            line = raw.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                malformed.append((lineno, raw.rstrip("\n")))
+                continue
+    if report_malformed:
+        return entries, malformed
     return entries
 
 
-def _write_entries(entries):
-    with open(EPISODIC, "w") as f:
-        for e in entries:
-            f.write(json.dumps(e) + "\n")
+def _write_entries(entries, path=None):
+    """Atomically rewrite the episodic log.
+
+    The episodic log can be appended to by host hooks at any moment, so a
+    direct truncate-and-write is dangerous: a crash, disk-full, or concurrent
+    append mid-rewrite can leave us with a half-written file (or empty file)
+    and zero record of the prior state.
+
+    Strategy:
+      1. Snapshot the current file to ``<path>.bak`` so we have one
+         revision of recovery if both the new write AND the rename
+         somehow corrupt the live file.
+      2. Write the new contents to ``<path>.tmp``, fsync, then
+         ``os.replace`` it onto the live path. ``os.replace`` is atomic
+         on POSIX and Windows — readers either see the old file or the
+         new file, never a half-written one.
+      3. If anything raises mid-write, clean up the temp file. The
+         original is untouched (we never opened it for writing) and the
+         ``.bak`` from step 1 is also intact.
+    """
+    target = path if path is not None else EPISODIC
+    tmp = target + ".tmp"
+    bak = target + ".bak"
+
+    # Step 1: snapshot prior state to .bak (best-effort; if there's no live
+    # file yet, there's nothing to back up).
+    if os.path.exists(target):
+        try:
+            with open(target, "rb") as src, open(bak, "wb") as dst:
+                dst.write(src.read())
+                dst.flush()
+                os.fsync(dst.fileno())
+        except OSError as e:
+            # If we can't make a backup, surface the failure rather than
+            # silently rewriting without one.
+            raise OSError(f"could not snapshot {target} to {bak}: {e}") from e
+
+    # Step 2: write new contents to a temp file, then atomically replace.
+    try:
+        with open(tmp, "w") as f:
+            for e in entries:
+                f.write(json.dumps(e) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, target)
+    except BaseException:
+        # Step 3: cleanup. Original file is intact (we never touched it for
+        # writing) and .bak still mirrors prior state. Re-raise so the caller
+        # sees the failure.
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _heuristic_prefilter(candidates_dir, semantic_dir):
@@ -91,7 +156,17 @@ def _heuristic_prefilter(candidates_dir, semantic_dir):
 
 
 def run_dream_cycle():
-    entries = _load_entries()
+    entries, malformed = _load_entries(report_malformed=True)
+    if malformed:
+        # Don't crash on bad lines, but don't lose visibility either: the
+        # next hook run will reload from the live file, so the host needs
+        # to know corruption is sitting there.
+        sample = "; ".join(f"L{n}: {ln[:80]}" for n, ln in malformed[:3])
+        print(
+            f"dream cycle: WARNING {len(malformed)} malformed JSONL line(s) "
+            f"in {EPISODIC} (skipped). Sample: {sample}",
+            file=sys.stderr,
+        )
     if not entries:
         # Still refresh the review queue — candidates may have been staged in
         # a previous cycle and the host agent loads REVIEW_QUEUE.md into every
