@@ -12,26 +12,30 @@ A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.9.1 — pi adapter fixes + tz correctness
+### New in v0.10.0 — design-md skill + Python 3.9 fix
 
-Patch release. Closes the gap between v0.9.0 and a working pi adapter,
-plus a timezone sweep across every Python writer/reader so the dream
-cycle stops drifting against the UTC decay window.
+Minor release. Adds a sixth seed skill and unbreaks `brew install` for
+every macOS user on the system Python.
 
-- Brew users on v0.9.0 hit `ModuleNotFoundError: harness_manager` on
-  first run. Formula now installs `harness_manager/` correctly.
-- Pi's dream cycle never fired (`session_shutdown` filter rejected every
-  event because `SessionShutdownEvent` has no `reason` field). Now runs.
-- Pi's edit reflections were missing the diff (hook expected MultiEdit
-  shape; Pi's edit input is flat). Now captures `oldText` / `newText`.
-- Naive-local Python timestamps reinterpreted at decay time as UTC
-  caused silent drift. Every writer now emits aware UTC; every reader
-  normalises naive entries before comparing.
-- `auto_dream` held no lock across its read-modify-write window —
-  concurrent appenders could be silently truncated. Now holds a single
-  `flock(LOCK_EX)` on the episodic log for the full cycle.
+- **`design-md` seed skill.** Drop a Google Stitch-style `DESIGN.md` in
+  your project root and the skill points coding agents at it as the
+  visual-system source of truth — colors, typography, spacing, components,
+  rationale. Loads only when `DESIGN.md` exists; default behavior is
+  read-only on the contract file.
+- **Python 3.9 crash on first run is fixed (#27).** Every brew user on
+  macOS-default Python 3.9 hit `TypeError: unsupported operand type(s) for
+  |: 'type' and 'type'` immediately after install. Root cause: PEP 604
+  union annotations (`Path | str`) that require Python 3.10+. Fixed by
+  adding `from __future__ import annotations` to the eight affected
+  `harness_manager/` files; works on Python 3.7+.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.9.1 — pi adapter fixes + tz correctness
+
+Closed the gap between v0.9.0 and a working pi adapter, plus a timezone
+sweep across every Python writer/reader so the dream cycle stops drifting
+against the UTC decay window.
 
 ### v0.9.0 — harness manager
 
