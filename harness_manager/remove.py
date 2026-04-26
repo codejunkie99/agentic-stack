@@ -4,6 +4,8 @@ Confirm prompt lists every file before deleting. Hard delete (no
 quarantine — codex UX framing: don't over-help, no undo machinery
 to learn or trust). User runs `git reset` if they want recovery.
 """
+from __future__ import annotations
+
 import shutil
 import sys
 from pathlib import Path

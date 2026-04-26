@@ -5,6 +5,8 @@ Zero deps by design — the repo's other Python touchpoints (onboard.py,
 python3 with no pip step. A 50-line recursive checker is cheaper than
 adding a `jsonschema` dependency.
 """
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Any

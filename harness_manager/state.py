@@ -6,6 +6,8 @@ which is append-only). Codex review of PR #19 specifically called out that
 the _episodic_io flock pattern is the wrong abstraction for install.json
 because of read-modify-write — this module uses the right one.
 """
+from __future__ import annotations
+
 import json
 import os
 import tempfile

@@ -9,6 +9,8 @@ Reuses onboard_widgets.ask_select / ask_multiselect / ask_confirm
 for consistency with the existing wizard. No new UI primitives
 beyond the multi-select widget added at the same time.
 """
+from __future__ import annotations
+
 import os
 import shutil
 import signal

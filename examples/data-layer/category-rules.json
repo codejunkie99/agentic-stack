@@ -1,0 +1,27 @@
+{
+  "default_category": "uncategorized",
+  "rules": [
+    {
+      "category": "coding",
+      "skills": ["debug-investigator", "git-proxy", "deploy-checklist"],
+      "phases": ["debug", "qa", "ship"]
+    },
+    {
+      "category": "admin",
+      "run_types": ["cron", "scheduled"],
+      "workflows": ["daily_report", "inbox_triage", "status_update"]
+    },
+    {
+      "category": "financial",
+      "workflows": ["invoice_collection", "expense_review", "budget_review"]
+    },
+    {
+      "category": "personal",
+      "workflows": ["calendar_coordination", "personal_planning"]
+    },
+    {
+      "category": "work",
+      "harnesses": ["claude-code", "codex", "openclaw", "hermes"]
+    }
+  ]
+}

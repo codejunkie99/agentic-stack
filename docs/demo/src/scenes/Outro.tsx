@@ -3,7 +3,7 @@ import { COLORS, FONT } from "../tokens";
 
 const STATS = [
   { value: "7", label: "harnesses" },
-  { value: "5", label: "seed skills" },
+  { value: "6", label: "seed skills" },
   { value: "4", label: "memory layers" },
 ];
 

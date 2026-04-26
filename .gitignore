@@ -23,6 +23,10 @@ tests/
 .agent/memory/dream.log
 *.log
 
+# local agent activity/data-layer exports (private, regenerated)
+.agent/data-layer/
+.agent/data-layer/**
+
 # local approved-run flywheel exports (private, regenerated)
 .agent/flywheel/
 .agent/flywheel/**

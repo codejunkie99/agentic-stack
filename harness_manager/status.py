@@ -3,6 +3,8 @@
 Same content as the manage menu's header pane in the v1.0 vision —
 shipped here as a discrete subcommand instead of a TUI element.
 """
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Callable
 

@@ -4,6 +4,11 @@
 
 A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
 
+It also includes a local data layer so you can monitor the whole suite of
+agents from one place: harness activity, cron runs, active agents, token/cost
+estimates, KPI summaries, user-defined resource categories, and
+screenshot-ready daily dashboards.
+
 <p align="center">
   <img src="docs/demo.gif" alt="agentic-stack demo" width="880"/>
 </p>
@@ -12,26 +17,30 @@ A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.9.1 — pi adapter fixes + tz correctness
+### New in v0.10.0 — design-md skill + Python 3.9 fix
 
-Patch release. Closes the gap between v0.9.0 and a working pi adapter,
-plus a timezone sweep across every Python writer/reader so the dream
-cycle stops drifting against the UTC decay window.
+Minor release. Adds a sixth seed skill and unbreaks `brew install` for
+every macOS user on the system Python.
 
-- Brew users on v0.9.0 hit `ModuleNotFoundError: harness_manager` on
-  first run. Formula now installs `harness_manager/` correctly.
-- Pi's dream cycle never fired (`session_shutdown` filter rejected every
-  event because `SessionShutdownEvent` has no `reason` field). Now runs.
-- Pi's edit reflections were missing the diff (hook expected MultiEdit
-  shape; Pi's edit input is flat). Now captures `oldText` / `newText`.
-- Naive-local Python timestamps reinterpreted at decay time as UTC
-  caused silent drift. Every writer now emits aware UTC; every reader
-  normalises naive entries before comparing.
-- `auto_dream` held no lock across its read-modify-write window —
-  concurrent appenders could be silently truncated. Now holds a single
-  `flock(LOCK_EX)` on the episodic log for the full cycle.
+- **`design-md` seed skill.** Drop a Google Stitch-style `DESIGN.md` in
+  your project root and the skill points coding agents at it as the
+  visual-system source of truth — colors, typography, spacing, components,
+  rationale. Loads only when `DESIGN.md` exists; default behavior is
+  read-only on the contract file.
+- **Python 3.9 crash on first run is fixed (#27).** Every brew user on
+  macOS-default Python 3.9 hit `TypeError: unsupported operand type(s) for
+  |: 'type' and 'type'` immediately after install. Root cause: PEP 604
+  union annotations (`Path | str`) that require Python 3.10+. Fixed by
+  adding `from __future__ import annotations` to the eight affected
+  `harness_manager/` files; works on Python 3.7+.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.9.1 — pi adapter fixes + tz correctness
+
+Closed the gap between v0.9.0 and a working pi adapter, plus a timezone
+sweep across every Python writer/reader so the dream cycle stops drifting
+against the UTC decay window.
 
 ### v0.9.0 — harness manager
 
@@ -188,7 +197,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
 
 Every guide shows the folder structure. This repo gives you the folder
 structure **plus the files that actually go inside**: a working portable
-brain with five seed skills, four memory layers, enforced permissions, a
+brain with eight seed skills, four memory layers, enforced permissions, a
 nightly staging cycle, host-agent review tools, and adapters for multiple
 harnesses.
 
@@ -201,9 +210,15 @@ harnesses.
   a required rationale. No unattended reasoning, no provider coupling.
 - **Skills** — progressive disclosure. A lightweight manifest always
   loads; full `SKILL.md` files only load when triggers match the task.
-  Every skill ships with a self-rewrite hook.
+  Every skill ships with a self-rewrite hook. The bundled `design-md`
+  skill teaches agents to use a root `DESIGN.md` as the visual source of
+  truth for UI and Google Stitch workflows.
 - **Protocols** — typed tool schemas, a `permissions.md` that the
   pre-tool-call hook enforces, and a delegation contract for sub-agents.
+- **Data layer** — local-only dashboard exports across every harness sharing
+  `.agent/`: agent events, cron timelines, KPI summaries, tokens/cost
+  estimates, task categories, harness mix, `dashboard.html`, and daily report
+  handoff.
 - **Data flywheel** — approved, redacted runs can become trace records,
   context cards, eval cases, training-ready JSONL, and readiness metrics
   without training a model or sending telemetry.
@@ -254,6 +269,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── learn.py                # one-shot lesson teaching (stage + graduate)
     ├── recall.py               # surface lessons relevant to an intent
     ├── show.py                 # colorful brain-state dashboard
+    ├── data_layer_export.py    # local cross-harness dashboard/data export
     ├── data_flywheel_export.py # approved runs -> traces/cards/evals/JSONL
     ├── list_candidates.py
     ├── graduate.py
@@ -283,6 +299,8 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 └── cli.py                      # argparse dispatcher for install.sh / install.ps1
 
 docs/                           # architecture, getting-started, per-harness
+schemas/data-layer/             # local dashboard/event schemas
+examples/data-layer/            # sanitized data-layer shapes
 schemas/flywheel/               # data-flywheel artifact schemas
 examples/flywheel/              # sanitized approved-run examples
 install.sh                      # mac / linux / git-bash installer (thin Python dispatcher)
@@ -321,6 +339,10 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 - **git-proxy** — all git ops, with safety constraints
 - **debug-investigator** — reproduce → isolate → hypothesize → verify
 - **deploy-checklist** — the fence between staging and production
+- **design-md** — uses Google Stitch-style `DESIGN.md` files as portable
+  design-system context for UI, frontend, and component work
+- **data-layer** — exports local dashboard data, cron timelines, KPIs, and
+  daily reports across harnesses
 - **data-flywheel** — approved runs into context cards, evals, redacted traces,
   training-ready JSONL, and flywheel metrics
 
@@ -333,7 +355,8 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 5. Future sessions load query-relevant accepted lessons automatically.
 6. `on_failure` flags skills that fail 3+ times in 14 days for rewrite.
 7. `git log .agent/memory/` becomes the agent's autobiography.
-8. Approved, redacted runs can be exported into `.agent/flywheel/` artifacts
+8. Data-layer exports turn local activity into dashboard-ready monitoring.
+9. Approved, redacted runs can be exported into `.agent/flywheel/` artifacts
    for retrieval, evals, prompt shrinking, and optional future adapters.
 
 ## Export approved runs into a data flywheel
@@ -373,6 +396,34 @@ crontab -e
 `auto_dream.py` resolves its paths absolutely and performs only mechanical
 file operations (cluster, stage, prefilter, decay). No git commits, no
 network, no reasoning — safe to run unattended.
+
+## Monitor your agent suite
+
+Generate a local dashboard for all harnesses writing to the same `.agent/`
+brain:
+
+```bash
+python3 .agent/tools/data_layer_export.py --window 30d --bucket day
+```
+
+Outputs land in `.agent/data-layer/exports/<date>/`, including
+`dashboard.html` and `daily-report.md`. Optional local inputs let you add
+scheduled runs and categories:
+
+```text
+.agent/data-layer/cron-runs.jsonl
+.agent/data-layer/category-rules.json
+.agent/data-layer/harness-events.jsonl
+```
+
+Use this to track crons by day, active agents, token/cost estimates by
+hour/day/week/month, harness mix across Claude/Hermes/OpenClaw/Codex/etc.,
+success/error rates, run cadence, workflow breadth, and user-defined categories
+like personal, admin, work, financial, and coding. The data layer is local-only;
+screenshot delivery requires explicit user approval and a user-configured
+channel.
+
+See [docs/data-layer.md](docs/data-layer.md).
 
 ## License
 

@@ -1,6 +1,7 @@
 # Architecture
 
-Four modules, one principle: the harness is dumb, the knowledge is in files.
+Five modules, one principle: the harness is dumb, and the knowledge,
+telemetry, and reusable artifacts are in local files.
 
 ## Modules
 
@@ -20,6 +21,16 @@ Four modules, one principle: the harness is dumb, the knowledge is in files.
 - `tool_schemas/` — typed interfaces for every external tool.
 - `delegation.md` — rules for sub-agent handoff.
 
+### Data layer — local visibility across harnesses
+- `.agent/tools/data_layer_export.py` normalizes shared episodic memory,
+  optional harness events, and optional cron runs.
+- `.agent/data-layer/` is private runtime state and exports.
+- Exports include JSONL, CSV, KPI summaries, `dashboard.html`, and
+  `daily-report.md`.
+- The dashboard helps users see harness mix, cron schedules, active agents,
+  token/cost estimates, categories, and workflow outcomes across Claude Code,
+  Hermes, OpenClaw, Codex, Cursor, OpenCode, and other adapters.
+
 ### Data flywheel — approved work becomes reusable artifacts
 - `.agent/tools/data_flywheel_export.py` reads sanitized approved runs.
 - `.agent/flywheel/` is private runtime state and exports.
@@ -37,7 +48,9 @@ Four modules, one principle: the harness is dumb, the knowledge is in files.
    hits in 14 days.
 5. Constraint violations inside a skill escalate from local `KNOWLEDGE.md`
    to global `LESSONS.md`.
-6. Human-approved runs can be exported into flywheel artifacts when the user
+6. Data-layer exports turn local activity into screenshot-ready monitoring
+   without adding remote telemetry.
+7. Human-approved runs can be exported into flywheel artifacts when the user
    wants a private corpus for recurring workflows.
 
 ## Why the separation matters
@@ -45,6 +58,7 @@ Four modules, one principle: the harness is dumb, the knowledge is in files.
 You can swap the harness for any of the adapters (Claude Code, Cursor,
 Windsurf, OpenCode, OpenClaw, Hermes, Pi, Codex, standalone Python,
 Antigravity) and lose nothing. The brain is portable; only the glue
-changes.
+changes. The dashboard and flywheel work for the same reason: every harness can
+write to the same local `.agent/` event stream.
 
 See `diagram.svg` for a visual.
