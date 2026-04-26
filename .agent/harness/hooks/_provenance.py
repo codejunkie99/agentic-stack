@@ -1,7 +1,8 @@
 """Shared provenance helpers for episodic entries. Cached per-process."""
-import os, subprocess
+import fcntl, json, os, subprocess
 
 AGENT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+EPISODIC_PATH = os.path.join(AGENT_ROOT, "memory/episodic/AGENT_LEARNINGS.jsonl")
 
 _CACHED_COMMIT = None
 _CACHED_RUN_ID = None
@@ -72,3 +73,31 @@ def build_source(skill):
         "run_id": run_id(),
         "commit_sha": commit_sha(),
     }
+
+
+def append_episodic_entry(entry, path=None):
+    """Atomically append a single JSON line to the episodic log.
+
+    Acquires an advisory exclusive lock (``fcntl.flock``) on the open file
+    descriptor for the duration of the write so concurrent hook invocations
+    serialise. Creates the parent directory if missing.
+
+    Locking model caveat: ``auto_dream.py`` rewrites the same file via
+    temp-file + ``os.replace``, which does NOT honour ``flock`` (different
+    inode after rename). Append-side locks against itself; the rewrite path
+    is atomic by rename. Worst case: a "lost update" of a single entry
+    written between the dream-cycle's snapshot read and its rename --
+    acceptable for a best-effort log.
+    """
+    target = path or EPISODIC_PATH
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    line = json.dumps(entry) + "\n"
+    with open(target, "a") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        try:
+            f.write(line)
+            f.flush()
+            os.fsync(f.fileno())
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    return entry
