@@ -5,6 +5,39 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1] — 2026-04-26
+
+Patch release. Makes the data-layer dashboard visible directly in coding-tool
+terminals and adds a visual SVG explainer for the data-layer flow.
+
+### Added
+- **Terminal dashboard by default.** The existing
+  `python3 .agent/tools/data_layer_export.py --window 30d --bucket day`
+  command now prints a compact TUI-style dashboard after writing exports. It
+  shows resource numbers, latest bucket activity, top harnesses, top workflows,
+  top categories, and artifact paths without requiring a browser.
+- **`dashboard.tui.txt`.** The same terminal dashboard is saved next to
+  `dashboard.html`, CSV/JSON exports, and `daily-report.md` for agents and
+  users who want to inspect or attach a plain-text report.
+- **`docs/data-layer.svg`.** README and `docs/data-layer.md` now include a
+  visual of the local data-layer flow: input streams, exporter, browser
+  dashboard, terminal dashboard, CSV/JSON, and approved handoff.
+
+### Changed
+- `dashboard-report.json` now advertises the terminal dashboard artifact.
+- Data-layer docs no longer require a separate command to see the terminal
+  view; the normal export command prints it.
+
+### Migration
+No migration required. Existing data-layer commands still work; they now print
+the terminal dashboard in addition to the previous status lines.
+
+### Release
+- Tag `v0.11.1` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.1>
+- `Formula/agentic-stack.rb` bumped to v0.11.1 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+
 ## [0.11.0] — 2026-04-26
 
 Minor release. Adds two local-first data capabilities: a cross-harness
@@ -46,8 +79,7 @@ private and regenerated; both are gitignored.
 ### Release
 - Tag `v0.11.0` cut from master.
 - GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.0>
-- `Formula/agentic-stack.rb` bumped to v0.11.0 in a follow-up commit after
-  the tag tarball existed and its sha256 could be computed.
+- Superseded by v0.11.1 before the Homebrew formula bump.
 
 ### Credits
 - PR #25 and PR #26 by @danielfoch.

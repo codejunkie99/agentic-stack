@@ -30,7 +30,7 @@ requires human approval for production.
 ## data-layer
 Cross-harness activity monitoring and dashboard exports.
 Triggers: "data layer", "dashboard", "agent analytics", "resource usage",
-"cron monitoring", "daily report", "tokens"
+"cron monitoring", "daily report", "tokens", "terminal dashboard"
 Constraints: local-only by default; no screenshot delivery without explicit user
 approval; do not commit private `.agent/data-layer/` exports.
 

@@ -86,6 +86,7 @@ class DataLayerExportTest(unittest.TestCase):
 
             out = work / ".agent" / "data-layer" / "exports" / "2026-04-25"
             self.assertTrue((out / "dashboard.html").exists())
+            self.assertTrue((out / "dashboard.tui.txt").exists())
             self.assertTrue((out / "daily-report.md").exists())
             self.assertTrue((out / "dashboard-report.json").exists())
             self.assertTrue((out / "cron-timeline.csv").exists())
@@ -113,6 +114,9 @@ class DataLayerExportTest(unittest.TestCase):
             dashboard_html = (out / "dashboard.html").read_text()
             self.assertIn("Cron Gantt", dashboard_html)
             self.assertIn("KPI Summary", dashboard_html)
+            dashboard_tui = (out / "dashboard.tui.txt").read_text()
+            self.assertIn("Terminal Dashboard", dashboard_tui)
+            self.assertIn("Top Harnesses", dashboard_tui)
 
     def test_succeeds_with_empty_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -125,6 +129,38 @@ class DataLayerExportTest(unittest.TestCase):
             )
             self.assertEqual(summary["privacy_model"], "local_only")
             self.assertTrue(summary["data_quality"]["episodic"]["missing"])
+
+    def test_default_command_prints_terminal_dashboard(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            episodic = work / ".agent" / "memory" / "episodic"
+            episodic.mkdir(parents=True)
+            (episodic / "AGENT_LEARNINGS.jsonl").write_text(
+                json.dumps(
+                    {
+                        "timestamp": "2026-04-25T10:00:00Z",
+                        "skill": "codex",
+                        "action": "ship dashboard",
+                        "result": "success",
+                        "workflow": "release",
+                        "tokens_in_estimate": 1200,
+                        "tokens_out_estimate": 400,
+                        "cost_estimate_usd": 0.08,
+                        "source": {"skill": "codex", "run_id": "raw-run-id"},
+                    }
+                )
+                + "\n"
+            )
+
+            result = self.run_export(work, "--window", "all", "--date", "2026-04-25")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("agentic-stack Data Layer", result.stdout)
+            self.assertIn("Terminal Dashboard", result.stdout)
+            self.assertIn("Agent events", result.stdout)
+            self.assertIn("codex", result.stdout)
+            self.assertIn("release", result.stdout)
+            self.assertIn("dashboard_html=", result.stdout)
+            self.assertNotIn("raw-run-id", result.stdout)
 
 
 if __name__ == "__main__":

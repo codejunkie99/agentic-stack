@@ -9,6 +9,10 @@ agents from one place: harness activity, cron runs, active agents, token/cost
 estimates, KPI summaries, user-defined resource categories, and
 screenshot-ready daily dashboards.
 
+<p align="center">
+  <img src="docs/data-layer.svg" alt="agentic-stack data layer dashboard flow" width="880"/>
+</p>
+
 And it can turn approved, redacted runs into local flywheel artifacts:
 trace records, context cards, eval cases, training-ready JSONL, and readiness
 metrics without training a model or sending telemetry.
@@ -21,10 +25,30 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.11.0 — data layer + data flywheel
+### New in v0.11.1 — terminal data dashboard
 
-Minor release. Adds two local-first data capabilities for teams running
-multiple agent harnesses against the same `.agent/` brain.
+Patch release. The data layer now shows a terminal dashboard by default, so
+people can inspect agent activity inside the coding tool they are already
+using, without opening a browser or learning another command.
+
+- **Terminal dashboard by default.** The existing
+  `python3 .agent/tools/data_layer_export.py --window 30d --bucket day`
+  command now prints a compact TUI-style report with resource numbers, latest
+  bucket activity, top harnesses, top workflows, top categories, and links to
+  the generated artifacts.
+- **Saved text dashboard.** The same terminal view is written to
+  `dashboard.tui.txt` beside `dashboard.html`, CSV, JSON, and
+  `daily-report.md`.
+- **Data-layer SVG.** README and data-layer docs now include a visual of the
+  local flow: input streams -> exporter -> browser dashboard, terminal
+  dashboard, CSV/JSON, and approved handoff.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.11.0 — data layer + data flywheel
+
+Added two local-first data capabilities for teams running multiple agent
+harnesses against the same `.agent/` brain.
 
 - **`data-layer` seed skill.** Generate local dashboard exports across Claude
   Code, Hermes, OpenClaw, Codex, Cursor, OpenCode, and custom loops:
@@ -34,8 +58,6 @@ multiple agent harnesses against the same `.agent/` brain.
   records, context cards, eval cases, training-ready JSONL, and flywheel
   metrics. It is local-only and model-agnostic; it prepares artifacts but
   does not train models or call external APIs.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ### v0.10.0 — design-md skill + Python 3.9 fix
 
@@ -414,8 +436,9 @@ python3 .agent/tools/data_layer_export.py --window 30d --bucket day
 ```
 
 Outputs land in `.agent/data-layer/exports/<date>/`, including
-`dashboard.html` and `daily-report.md`. Optional local inputs let you add
-scheduled runs and categories:
+`dashboard.html`, `dashboard.tui.txt`, and `daily-report.md`. The command also
+prints the compact terminal dashboard directly inside your coding tool. Optional
+local inputs let you add scheduled runs and categories:
 
 ```text
 .agent/data-layer/cron-runs.jsonl

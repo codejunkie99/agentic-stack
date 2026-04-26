@@ -10,6 +10,11 @@
     "id": {"type": "string", "examples": ["daily_agent_resource_report"]},
     "cadence": {"type": "string", "examples": ["daily", "weekly", "0 8 * * *"]},
     "timezone": {"type": "string", "examples": ["America/Toronto"]},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "dashboard_html": {"type": "string", "examples": ["dashboard.html"]},
+    "terminal_dashboard": {"type": "string", "examples": ["dashboard.tui.txt"]},
+    "daily_report_md": {"type": "string", "examples": ["daily-report.md"]},
+    "screenshot_target": {"type": "string", "examples": ["dashboard.html"]},
     "charts": {
       "type": "array",
       "items": {"type": "string"},

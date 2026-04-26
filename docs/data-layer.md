@@ -4,6 +4,10 @@ The data layer gives the portable `.agent/` brain a local dashboard for the
 entire suite of agents: Claude Code, Hermes, OpenClaw, Codex, Cursor, OpenCode,
 Windsurf, Pi, Antigravity, and custom loops.
 
+<p align="center">
+  <img src="data-layer.svg" alt="agentic-stack data layer dashboard flow" width="880"/>
+</p>
+
 It is a companion to the GStack Data Layer idea, adapted for agentic-stack's
 core promise: one shared memory-and-skills layer across many harnesses.
 
@@ -89,12 +93,22 @@ Outputs:
   dashboard-summary.json
   dashboard-report.json
   dashboard.html
+  dashboard.tui.txt
   daily-report.md
 ```
 
 `dashboard.html` is dependency-free and screenshot-ready. It renders resource
 overview, activity, token usage, cron frequency, task categories, harness mix,
 workflow outcomes, a Gantt-style cron panel, and cron timeline tables.
+
+The same command prints a compact terminal dashboard after export:
+
+```bash
+python3 .agent/tools/data_layer_export.py --window 30d --bucket day
+```
+
+This is useful inside coding tools where the agent and user share a terminal.
+The same text view is also saved as `dashboard.tui.txt`.
 
 ## KPI Coverage
 

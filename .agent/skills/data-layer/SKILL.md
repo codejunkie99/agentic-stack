@@ -25,6 +25,7 @@ The goal is local business intelligence for the whole agent suite:
 - workflow success/error rates
 - KPI summary rows for cron cadence, run volume, reliability, active agents,
   workflow breadth, token usage, and estimated cost
+- terminal dashboard visible directly in the user's coding tool
 - screenshot-ready daily resource reports
 
 ## Hard Rules
@@ -59,6 +60,9 @@ Run:
 python3 .agent/tools/data_layer_export.py --window 30d --bucket day
 ```
 
+The command prints a compact terminal dashboard by default, then writes the
+full browser dashboard and data files.
+
 Use `--bucket hour`, `--bucket day`, `--bucket week`, or `--bucket month` for
 different chart grains.
 
@@ -81,6 +85,7 @@ Key outputs:
 - `dashboard-summary.json`
 - `dashboard-report.json`
 - `dashboard.html`
+- `dashboard.tui.txt`
 - `daily-report.md`
 
 ## Categories

@@ -2,7 +2,8 @@
 """Local data layer export for the portable agentic-stack brain.
 
 Reads shared `.agent/` memory plus optional local data-layer inputs and writes
-dashboard-ready JSONL, JSON, CSV, and a dependency-free HTML dashboard.
+dashboard-ready JSONL, JSON, CSV, a dependency-free HTML dashboard, and a
+terminal dashboard.
 
 No network calls, no external dependencies, no telemetry.
 """
@@ -760,6 +761,7 @@ def build_dashboard_report(args: argparse.Namespace, summary: dict[str, Any]) ->
         "timezone": args.timezone,
         "generated_at": summary["generated_at"],
         "dashboard_html": "dashboard.html",
+        "terminal_dashboard": "dashboard.tui.txt",
         "daily_report_md": "daily-report.md",
         "screenshot_target": "dashboard.html",
         "charts": [
@@ -810,6 +812,85 @@ only through an explicitly user-approved channel.
 """,
         encoding="utf-8",
     )
+
+
+def compact_value(value: Any, prefix: str = "", suffix: str = "") -> str:
+    n = safe_num(value)
+    if n is None:
+        return "n/a"
+    if abs(n) >= 1000000:
+        text = f"{n / 1000000:.1f}M"
+    elif abs(n) >= 1000:
+        text = f"{n / 1000:.1f}k"
+    elif n == int(n):
+        text = str(int(n))
+    else:
+        text = f"{n:.2f}".rstrip("0").rstrip(".")
+    return f"{prefix}{text}{suffix}"
+
+
+def plain_bar(value: Any, max_value: float, width: int = 18) -> str:
+    n = safe_num(value) or 0
+    filled = 0 if max_value <= 0 else int(round(n / max_value * width))
+    filled = max(0, min(width, filled))
+    return "#" * filled + "-" * (width - filled)
+
+
+def top_table(rows: list[dict[str, Any]], label_field: str, value_field: str, secondary_value_field: str = "", limit: int = 5) -> list[str]:
+    if not rows:
+        return ["  no data yet"]
+    top = rows[:limit]
+    values = [
+        (safe_num(row.get(value_field)) or 0) + (safe_num(row.get(secondary_value_field)) or 0)
+        for row in top
+    ]
+    max_value = max(values + [1])
+    lines = []
+    for row, value in zip(top, values):
+        label = str(row.get(label_field) or "unknown")[:22].ljust(22)
+        lines.append(f"  {label} [{plain_bar(value, max_value)}] {compact_value(value)}")
+    return lines
+
+
+def render_terminal_dashboard(out_dir: Path) -> str:
+    summary = json.loads((out_dir / "dashboard-summary.json").read_text(encoding="utf-8"))
+    activity = json.loads((out_dir / "activity-series.json").read_text(encoding="utf-8"))
+    categories = json.loads((out_dir / "category-summary.json").read_text(encoding="utf-8"))
+    harnesses = json.loads((out_dir / "harness-summary.json").read_text(encoding="utf-8"))
+    workflows = json.loads((out_dir / "workflow-summary.json").read_text(encoding="utf-8"))
+
+    resources = summary["resources"]
+    counts = summary["counts"]
+    latest_activity = activity[-1] if activity else {}
+    lines = [
+        "agentic-stack Data Layer - Terminal Dashboard",
+        f"project={summary['project']} window={summary['window']} bucket={summary['bucket']} generated={summary['generated_at']}",
+        "",
+        "Resource Overview",
+        f"  Agent events : {compact_value(counts['agent_events'])}",
+        f"  Cron runs    : {compact_value(counts['cron_runs'])}",
+        f"  Harnesses    : {compact_value(counts['harnesses'])}",
+        f"  Active agents: {compact_value(counts['active_agents'])}",
+        f"  Tokens est.  : {compact_value(resources['tokens_total_estimate'])}",
+        f"  Cost est.    : {compact_value(resources['cost_estimate_usd'], prefix='$')}",
+        "",
+        "Latest Bucket",
+        f"  {latest_activity.get('bucket_start', 'no activity')}  events={compact_value(latest_activity.get('agent_events'))} cron={compact_value(latest_activity.get('cron_runs'))} tokens={compact_value(latest_activity.get('tokens_total_estimate'))}",
+        "",
+        "Top Harnesses",
+        *top_table(harnesses, "harness", "agent_events", "cron_runs"),
+        "",
+        "Top Workflows",
+        *top_table(workflows, "workflow", "agent_events", "cron_runs"),
+        "",
+        "Top Categories",
+        *top_table(categories, "category", "agent_events", "cron_runs"),
+        "",
+        f"Open in browser: {out_dir / 'dashboard.html'}",
+        f"Terminal copy : {out_dir / 'dashboard.tui.txt'}",
+        "Privacy       : local-only; screenshots require explicit user approval",
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def export(args: argparse.Namespace) -> Path:
@@ -892,6 +973,7 @@ def export(args: argparse.Namespace) -> Path:
     write_json(out_dir / "dashboard-report.json", dashboard_report)
     write_dashboard(out_dir / "dashboard.html", summary, activity, categories, harnesses, workflows, cron_runs, cron_timeline, kpis)
     write_daily_report(out_dir / "daily-report.md", summary)
+    (out_dir / "dashboard.tui.txt").write_text(render_terminal_dashboard(out_dir), encoding="utf-8")
     return out_dir
 
 
@@ -912,6 +994,8 @@ def main() -> int:
     out_dir = export(args)
     print(f"agentic-stack data layer export: {out_dir}")
     print(f"dashboard_html={out_dir / 'dashboard.html'}")
+    print()
+    print(render_terminal_dashboard(out_dir), end="")
     return 0
 
 
