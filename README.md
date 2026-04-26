@@ -197,7 +197,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
 
 Every guide shows the folder structure. This repo gives you the folder
 structure **plus the files that actually go inside**: a working portable
-brain with six seed skills, four memory layers, enforced permissions, a
+brain with seven seed skills, four memory layers, enforced permissions, a
 nightly staging cycle, host-agent review tools, and adapters for multiple
 harnesses.
 
@@ -336,6 +336,8 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 - **deploy-checklist** — the fence between staging and production
 - **design-md** — uses Google Stitch-style `DESIGN.md` files as portable
   design-system context for UI, frontend, and component work
+- **data-layer** — exports local dashboard data, cron timelines, KPIs, and
+  daily reports across harnesses
 
 ## How it compounds
 
@@ -346,6 +348,7 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 5. Future sessions load query-relevant accepted lessons automatically.
 6. `on_failure` flags skills that fail 3+ times in 14 days for rewrite.
 7. `git log .agent/memory/` becomes the agent's autobiography.
+8. Data-layer exports turn local activity into dashboard-ready monitoring.
 
 ## Run the staging cycle nightly
 
