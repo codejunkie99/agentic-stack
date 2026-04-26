@@ -8,6 +8,8 @@ First run on a pre-v0.9.0 project (no install.json) detects adapters
 from filesystem signals and ASKS before synthesizing — never silently
 writes. Codex's UX framing: doctor must not mutate without consent.
 """
+from __future__ import annotations
+
 import os
 import shutil
 import sys

@@ -4,6 +4,8 @@ Reads adapters/<name>/adapter.json, applies its files + skills_link +
 post_install actions to a target project, records what was done in
 .agent/install.json. install.sh and install.ps1 dispatch into here.
 """
+from __future__ import annotations
+
 import shutil
 import sys
 from pathlib import Path
