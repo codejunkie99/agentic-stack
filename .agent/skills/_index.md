@@ -34,6 +34,14 @@ Triggers: "data layer", "dashboard", "agent analytics", "resource usage",
 Constraints: local-only by default; no screenshot delivery without explicit user
 approval; do not commit private `.agent/data-layer/` exports.
 
+## data-flywheel
+Turns approved, redacted runs into reusable local artifacts: trace records,
+context cards, eval cases, training-ready JSONL, and flywheel metrics.
+Triggers: "data flywheel", "trace to train", "training traces",
+"context cards", "eval cases", "approved runs", "vertical intelligence"
+Constraints: local-only by default; human-approved runs only; redaction required
+before trainable; does not train models.
+
 ## design-md
 Uses a root `DESIGN.md` as the portable visual system contract for
 Google Stitch workflows. Loads only when `DESIGN.md` exists at the

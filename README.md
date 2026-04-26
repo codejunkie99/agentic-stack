@@ -197,7 +197,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
 
 Every guide shows the folder structure. This repo gives you the folder
 structure **plus the files that actually go inside**: a working portable
-brain with seven seed skills, four memory layers, enforced permissions, a
+brain with eight seed skills, four memory layers, enforced permissions, a
 nightly staging cycle, host-agent review tools, and adapters for multiple
 harnesses.
 
@@ -219,6 +219,9 @@ harnesses.
   `.agent/`: agent events, cron timelines, KPI summaries, tokens/cost
   estimates, task categories, harness mix, `dashboard.html`, and daily report
   handoff.
+- **Data flywheel** — approved, redacted runs can become trace records,
+  context cards, eval cases, training-ready JSONL, and readiness metrics
+  without training a model or sending telemetry.
 
 ## Releases & changelog
 
@@ -267,13 +270,11 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── recall.py               # surface lessons relevant to an intent
     ├── show.py                 # colorful brain-state dashboard
     ├── data_layer_export.py    # local cross-harness dashboard/data export
+    ├── data_flywheel_export.py # approved runs -> traces/cards/evals/JSONL
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py
     └── reopen.py
-
-schemas/data-layer/             # local dashboard/event schemas
-examples/data-layer/            # sanitized data-layer shapes
 
 adapters/                       # one small shim per harness, each with adapter.json manifest
 ├── claude-code/   (CLAUDE.md + settings.json hooks — $CLAUDE_PROJECT_DIR wired, closes #18)
@@ -298,6 +299,10 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 └── cli.py                      # argparse dispatcher for install.sh / install.ps1
 
 docs/                           # architecture, getting-started, per-harness
+schemas/data-layer/             # local dashboard/event schemas
+examples/data-layer/            # sanitized data-layer shapes
+schemas/flywheel/               # data-flywheel artifact schemas
+examples/flywheel/              # sanitized approved-run examples
 install.sh                      # mac / linux / git-bash installer (thin Python dispatcher)
 install.ps1                     # Windows PowerShell installer (thin Python dispatcher)
 Formula/agentic-stack.rb        # Homebrew formula
@@ -338,6 +343,8 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
   design-system context for UI, frontend, and component work
 - **data-layer** — exports local dashboard data, cron timelines, KPIs, and
   daily reports across harnesses
+- **data-flywheel** — approved runs into context cards, evals, redacted traces,
+  training-ready JSONL, and flywheel metrics
 
 ## How it compounds
 
@@ -349,6 +356,35 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 6. `on_failure` flags skills that fail 3+ times in 14 days for rewrite.
 7. `git log .agent/memory/` becomes the agent's autobiography.
 8. Data-layer exports turn local activity into dashboard-ready monitoring.
+9. Approved, redacted runs can be exported into `.agent/flywheel/` artifacts
+   for retrieval, evals, prompt shrinking, and optional future adapters.
+
+## Export approved runs into a data flywheel
+
+Put sanitized human-approved runs in:
+
+```text
+.agent/flywheel/approved-runs.jsonl
+```
+
+Then run:
+
+```bash
+python3 .agent/tools/data_flywheel_export.py
+```
+
+Outputs land in `.agent/flywheel/exports/<date>/`:
+
+- `trace-records.jsonl`
+- `training-examples.jsonl`
+- `eval-cases.jsonl`
+- `context-cards/<domain>/<workflow>.md`
+- `flywheel-metrics.json`
+
+This is local-only and model-agnostic. It creates training-ready artifacts; it
+does not train a model.
+
+See [docs/data-flywheel.md](docs/data-flywheel.md).
 
 ## Run the staging cycle nightly
 

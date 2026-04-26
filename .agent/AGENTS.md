@@ -71,6 +71,9 @@ Daily driver, highest-leverage first:
 - `data_layer_export.py` — local cross-harness activity/data-layer export:
   agent events, cron timelines, tokens/cost estimates, categories,
   harness mix, `dashboard.html`, and `daily-report.md`.
+- `data_flywheel_export.py` — local export of approved, redacted runs into
+  trace records, context cards, eval cases, training-ready JSONL, and
+  flywheel metrics. It does not train models or call APIs.
 - `list_candidates.py` / `graduate.py` / `reject.py` / `reopen.py` — review
   protocol for patterns the dream cycle has staged.
 - `memory_reflect.py <skill> <action> <outcome>` — log a significant event.

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/flywheel/training-example.schema.json",
+  "title": "TrainingExample",
+  "description": "Redacted instruction/input/output example suitable for later local dataset export.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["instruction", "context", "input", "output", "metadata"],
+  "properties": {
+    "instruction": {"type": "string"},
+    "context": {"type": "string"},
+    "input": {"type": "string"},
+    "output": {"type": "string"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["domain", "workflow", "source_trace_ids", "split", "pii_level", "trainable"],
+      "properties": {
+        "domain": {"type": "string"},
+        "workflow": {"type": "string"},
+        "source_trace_ids": {"type": "array", "items": {"type": "string"}},
+        "split": {"type": "string", "examples": ["train", "validation", "test"]},
+        "pii_level": {"type": "string"},
+        "trainable": {"type": "boolean"}
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # Architecture
 
-Four modules, one principle: the harness is dumb, the knowledge and telemetry
-are in local files.
+Five modules, one principle: the harness is dumb, and the knowledge,
+telemetry, and reusable artifacts are in local files.
 
 ## Modules
 
@@ -31,6 +31,14 @@ are in local files.
   token/cost estimates, categories, and workflow outcomes across Claude Code,
   Hermes, OpenClaw, Codex, Cursor, OpenCode, and other adapters.
 
+### Data flywheel — approved work becomes reusable artifacts
+- `.agent/tools/data_flywheel_export.py` reads sanitized approved runs.
+- `.agent/flywheel/` is private runtime state and exports.
+- Exports include redacted trace records, context cards, eval cases,
+  training-ready JSONL, and flywheel metrics.
+- The flywheel prepares retrieval, evals, prompt shrinking, and optional future
+  open-weight adapter work. It does not train models.
+
 ## The feedback loops
 
 1. Skills log to episodic memory after every action.
@@ -42,13 +50,15 @@ are in local files.
    to global `LESSONS.md`.
 6. Data-layer exports turn local activity into screenshot-ready monitoring
    without adding remote telemetry.
+7. Human-approved runs can be exported into flywheel artifacts when the user
+   wants a private corpus for recurring workflows.
 
 ## Why the separation matters
 
 You can swap the harness for any of the adapters (Claude Code, Cursor,
 Windsurf, OpenCode, OpenClaw, Hermes, Pi, Codex, standalone Python,
 Antigravity) and lose nothing. The brain is portable; only the glue
-changes. The dashboard works for the same reason: every harness can write to
-the same local `.agent/` event stream.
+changes. The dashboard and flywheel work for the same reason: every harness can
+write to the same local `.agent/` event stream.
 
 See `diagram.svg` for a visual.
