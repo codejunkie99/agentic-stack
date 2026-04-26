@@ -23,6 +23,10 @@ tests/
 .agent/memory/dream.log
 *.log
 
+# local approved-run flywheel exports (private, regenerated)
+.agent/flywheel/
+.agent/flywheel/**
+
 # do NOT ignore memory files — they are the point
 !.agent/memory/
 !.agent/memory/**

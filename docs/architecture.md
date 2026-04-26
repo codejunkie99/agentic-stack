@@ -1,6 +1,6 @@
 # Architecture
 
-Three modules, one principle: the harness is dumb, the knowledge is in files.
+Four modules, one principle: the harness is dumb, the knowledge is in files.
 
 ## Modules
 
@@ -20,6 +20,14 @@ Three modules, one principle: the harness is dumb, the knowledge is in files.
 - `tool_schemas/` — typed interfaces for every external tool.
 - `delegation.md` — rules for sub-agent handoff.
 
+### Data flywheel — approved work becomes reusable artifacts
+- `.agent/tools/data_flywheel_export.py` reads sanitized approved runs.
+- `.agent/flywheel/` is private runtime state and exports.
+- Exports include redacted trace records, context cards, eval cases,
+  training-ready JSONL, and flywheel metrics.
+- The flywheel prepares retrieval, evals, prompt shrinking, and optional future
+  open-weight adapter work. It does not train models.
+
 ## The feedback loops
 
 1. Skills log to episodic memory after every action.
@@ -29,6 +37,8 @@ Three modules, one principle: the harness is dumb, the knowledge is in files.
    hits in 14 days.
 5. Constraint violations inside a skill escalate from local `KNOWLEDGE.md`
    to global `LESSONS.md`.
+6. Human-approved runs can be exported into flywheel artifacts when the user
+   wants a private corpus for recurring workflows.
 
 ## Why the separation matters
 
