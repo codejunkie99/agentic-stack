@@ -1,9 +1,9 @@
 class AgenticStack < Formula
   desc "One brain, many harnesses — portable .agent/ folder for AI coding agents"
   homepage "https://github.com/codejunkie99/agentic-stack"
-  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.9.1.tar.gz"
-  sha256 "09cc3b8c9ec159cf8b85cf672fc15a29e6bfa9377cc9c59dd270acd441ced568"
-  version "0.9.1"
+  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.10.0.tar.gz"
+  sha256 "5d1e7de9478bdeaf684b0b2eb600e597886aeab52dda8494c7e304cceb0f1438"
+  version "0.10.0"
   license "Apache-2.0"
 
   def install
