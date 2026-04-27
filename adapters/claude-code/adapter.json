@@ -40,5 +40,5 @@
       "merge_policy": "overwrite"
     }
   ],
-  "post_install": ["bcg_conditional_propagate"]
+  "post_install": ["bcg_conditional_propagate", "take_install_snapshot"]
 }

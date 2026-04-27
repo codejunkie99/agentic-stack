@@ -342,10 +342,85 @@ def bcg_conditional_unpropagate(
     return {"action": "bcg_conditional_propagate", "status": "ok", "removed": removed}
 
 
+def take_install_snapshot(
+    target_root: Path | str,
+    *,
+    stack_root: Path | str | None = None,
+    **_kwargs,
+) -> dict:
+    """Capture install-time fingerprint of evolvable harness surfaces.
+
+    Runs `.agent/tools/snapshot_diff.py --snapshot` against the target
+    root after all other post-install actions complete. The resulting
+    .agent/memory/working/install_snapshot.json is the basis for the
+    `--diff` mode the user runs after a dry-run, and for the
+    `harness-graduate.py` tool that lands in Step 8.4.
+
+    Idempotent — re-running just refreshes to current state. Failure
+    is non-fatal (status='snapshot_failed') because a missing snapshot
+    only affects later diff visibility, not install correctness.
+    """
+    target_root = Path(target_root)
+    snapshot_tool = target_root / ".agent" / "tools" / "snapshot_diff.py"
+
+    if not snapshot_tool.is_file():
+        return {
+            "action": "take_install_snapshot",
+            "status": "no_tool",
+            "stderr": f"{snapshot_tool} not found in target",
+        }
+
+    try:
+        result = subprocess.run(
+            ["python3", str(snapshot_tool), "--snapshot"],
+            cwd=target_root,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return {
+            "action": "take_install_snapshot",
+            "status": "snapshot_failed",
+            "stderr": str(e),
+        }
+
+    if result.returncode != 0:
+        return {
+            "action": "take_install_snapshot",
+            "status": "snapshot_failed",
+            "stderr": result.stderr.strip() or result.stdout.strip(),
+            "returncode": result.returncode,
+        }
+
+    return {
+        "action": "take_install_snapshot",
+        "status": "ok",
+        "stdout": result.stdout.strip(),
+    }
+
+
+def remove_install_snapshot(
+    target_root: Path | str,
+    *,
+    stack_root: Path | str | None = None,
+    **_kwargs,
+) -> dict:
+    """Reverse of take_install_snapshot — removes the snapshot file on
+    adapter remove. Diff report is preserved (it's user-readable history)."""
+    target_root = Path(target_root)
+    snapshot_path = target_root / ".agent" / "memory" / "working" / "install_snapshot.json"
+    if snapshot_path.exists():
+        snapshot_path.unlink()
+        return {"action": "take_install_snapshot", "status": "ok", "removed": True}
+    return {"action": "take_install_snapshot", "status": "ok", "removed": False}
+
+
 # Registry: action name -> (run_fn, reverse_fn)
 ACTIONS: dict[str, tuple[Callable, Callable | None]] = {
     "openclaw_register_workspace": (openclaw_register_workspace, openclaw_unregister_workspace),
     "bcg_conditional_propagate": (bcg_conditional_propagate, bcg_conditional_unpropagate),
+    "take_install_snapshot": (take_install_snapshot, remove_install_snapshot),
 }
 
 
