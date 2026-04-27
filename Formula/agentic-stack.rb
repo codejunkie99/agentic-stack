@@ -1,14 +1,14 @@
 class AgenticStack < Formula
   desc "One brain, many harnesses — portable .agent/ folder for AI coding agents"
   homepage "https://github.com/codejunkie99/agentic-stack"
-  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.8.0.tar.gz"
-  sha256 "7b26dbea6ff28eb3561c6a6514021713f6e6291cabbf5a362627ff0d3464d8a0"
-  version "0.8.0"
+  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.11.2.tar.gz"
+  sha256 "b9eb098466376c13e087dc91a0655d97481dfd13a6f640989384881990eb1e58"
+  version "0.11.2"
   license "Apache-2.0"
 
   def install
     # install the brain + adapters alongside install.sh so relative paths hold
-    pkgshare.install ".agent", "adapters", "install.sh",
+    pkgshare.install ".agent", "adapters", "harness_manager", "install.sh",
                      "onboard.py", "onboard_ui.py", "onboard_widgets.py",
                      "onboard_render.py", "onboard_write.py",
                      "onboard_features.py"

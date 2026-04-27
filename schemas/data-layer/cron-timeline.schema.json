@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/data-layer/cron-timeline.schema.json",
+  "title": "CronTimelineRow",
+  "description": "Gantt-ready scheduled-agent run row with normalized timeline offsets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "lane", "started_at", "duration_ms", "status", "start_offset_pct", "width_pct"],
+  "properties": {
+    "id": {"type": "string"},
+    "lane": {"type": "integer", "minimum": 0},
+    "name": {"type": ["string", "null"]},
+    "harness": {"type": ["string", "null"]},
+    "workflow": {"type": ["string", "null"]},
+    "category": {"type": ["string", "null"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": ["string", "null"], "format": "date-time"},
+    "duration_ms": {"type": ["integer", "null"], "minimum": 0},
+    "status": {"type": ["string", "null"], "examples": ["success", "error", "aborted", "unknown"]},
+    "timeline_start": {"type": "string", "format": "date-time"},
+    "timeline_end": {"type": "string", "format": "date-time"},
+    "start_offset_pct": {"type": "number", "minimum": 0, "maximum": 100},
+    "width_pct": {"type": "number", "minimum": 0}
+  }
+}

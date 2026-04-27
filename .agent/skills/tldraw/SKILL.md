@@ -29,6 +29,27 @@ Tell the user:
 If any tool returns `No tldraw browser connected`, repeat the hint and
 stop until they confirm.
 
+## Opt-in MCP setup
+
+This beta does not install MCP wiring during default adapter setup. After the
+user enables `tldraw` in `.agent/memory/.features.json`, they must add the
+server to their harness MCP config. Use this local block as the source of truth:
+
+```json
+{
+  "mcpServers": {
+    "tldraw": {
+      "command": "npx",
+      "args": ["-y", "@tldraw-mcp/server"]
+    }
+  }
+}
+```
+
+For Claude Code and Antigravity this usually lives in `.mcp.json`; for Cursor
+it usually lives in `.cursor/mcp.json`. If a config already exists, merge the
+`tldraw` server entry rather than overwriting the file.
+
 ## Tools
 
 | tool | purpose |

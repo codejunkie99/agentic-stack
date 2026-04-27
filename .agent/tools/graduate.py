@@ -154,7 +154,7 @@ def main():
     # If we crash mid-graduation, the staged candidate remains and the
     # reviewer can retry. The retry-safety block above catches the
     # specific "lesson appended but candidate not moved" scenario.
-    accepted_at = datetime.datetime.now().isoformat()
+    accepted_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     lesson = {
         "id": lesson_id,
         "claim": cand.get("claim"),

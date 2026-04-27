@@ -198,9 +198,9 @@ def migrate_legacy_bullets(semantic_dir):
                        for L in load_lessons(semantic_dir)}
     try:
         accepted_at = datetime.datetime.fromtimestamp(
-            os.path.getmtime(md_path)).isoformat()
+            os.path.getmtime(md_path), tz=datetime.timezone.utc).isoformat()
     except OSError:
-        accepted_at = datetime.datetime.now().isoformat()
+        accepted_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     migrated = 0
     for claim in bullets:

@@ -1,6 +1,7 @@
 """Failures are learning. High pain score + rewrite flag after repeat offenses."""
 import json, datetime, os
 from ._provenance import build_source
+from ._episodic_io import append_jsonl
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 EPISODIC = os.path.join(ROOT, "memory/episodic/AGENT_LEARNINGS.jsonl")
@@ -11,7 +12,7 @@ WINDOW_DAYS = 14
 def _count_recent_failures(skill_name):
     if not os.path.exists(EPISODIC):
         return 0
-    cutoff = datetime.datetime.now() - datetime.timedelta(days=WINDOW_DAYS)
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=WINDOW_DAYS)
     count = 0
     for line in open(EPISODIC):
         line = line.strip()
@@ -24,7 +25,10 @@ def _count_recent_failures(skill_name):
         if e.get("skill") != skill_name or e.get("result") != "failure":
             continue
         try:
-            if datetime.datetime.fromisoformat(e["timestamp"]) > cutoff:
+            ts = datetime.datetime.fromisoformat(e["timestamp"])
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=datetime.timezone.utc)
+            if ts > cutoff:
                 count += 1
         except (KeyError, ValueError):
             continue
@@ -47,7 +51,7 @@ def on_failure(skill_name, action, error, context="", confidence=0.9,
     # schema migration is recorded with its true importance and pain score;
     # the dream-cycle salience can't distinguish failure severity otherwise.
     entry = {
-        "timestamp": datetime.datetime.now().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "skill": skill_name,
         "action": action[:200],
         "result": "failure",
@@ -69,7 +73,4 @@ def on_failure(skill_name, action, error, context="", confidence=0.9,
             f"Flag for rewrite."
         )
         entry["pain_score"] = 10
-    os.makedirs(os.path.dirname(EPISODIC), exist_ok=True)
-    with open(EPISODIC, "a") as f:
-        f.write(json.dumps(entry) + "\n")
-    return entry
+    return append_jsonl(EPISODIC, entry)

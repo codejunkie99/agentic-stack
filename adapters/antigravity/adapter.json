@@ -1,0 +1,11 @@
+{
+  "name": "antigravity",
+  "description": "Antigravity — ANTIGRAVITY.md system context.",
+  "files": [
+    {
+      "src": "ANTIGRAVITY.md",
+      "dst": "ANTIGRAVITY.md",
+      "merge_policy": "overwrite"
+    }
+  ]
+}

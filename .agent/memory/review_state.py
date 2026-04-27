@@ -13,7 +13,7 @@ import os, json, datetime, hashlib
 
 
 def _now():
-    return datetime.datetime.now().isoformat()
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
 def _touch(candidate, action, reviewer, notes="", **fields):
@@ -177,7 +177,9 @@ def _age_factor(staged_at):
         staged = datetime.datetime.fromisoformat(staged_at)
     except (ValueError, TypeError):
         return 1.0
-    age_days = (datetime.datetime.now() - staged).days
+    if staged.tzinfo is None:
+        staged = staged.replace(tzinfo=datetime.timezone.utc)
+    age_days = (datetime.datetime.now(datetime.timezone.utc) - staged).days
     return 1.0 + min(1.0, age_days / 14.0)
 
 
