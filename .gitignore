@@ -39,3 +39,17 @@ tests/
 # Placed AFTER the negation above so the later rule wins.
 .agent/memory/.index/
 .agent/memory/.index/**
+
+# ...and Python bytecode that lands anywhere under .agent/memory/ when
+# modules there are imported. The negation above re-includes these by
+# default; re-exclude explicitly.
+.agent/memory/**/__pycache__/
+.agent/memory/**/*.py[cod]
+
+# Test scratch dir — the CLI round-trip test creates shim scripts here.
+.tmp/
+
+# tldraw skill runtime data — generated at use, not committed.
+.agent/skills/tldraw/INDEX.md
+.agent/skills/tldraw/snapshots/
+.agent/skills/tldraw/snapshots.jsonl

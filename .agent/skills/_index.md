@@ -56,3 +56,13 @@ Constraints: prefer DESIGN.md tokens over invented values, do not modify
 DESIGN.md unless the user explicitly asks, preserve unknown sections when
 an edit IS authorised, validate with `npx @google/design.md lint DESIGN.md`
 when available.
+
+## tldraw
+Draw, diagram, sketch, or lay out ideas on a live tldraw canvas.
+Worthwhile drawings snapshot into this skill's local store
+(`skills/tldraw/store.py`) for recall across sessions.
+Triggers: "draw", "diagram", "sketch", "wireframe", "flowchart",
+"mind-map", "visualize", "whiteboard"
+Constraints: get_canvas before edits; max 200 shapes per create_shape call.
+Requires: tldraw MCP server wired in the harness's MCP config; user has
+http://localhost:3030 open. Opt-in via `.features.json` (`tldraw: true`).

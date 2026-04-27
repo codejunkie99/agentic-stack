@@ -184,6 +184,7 @@ Plus one **Optional features** step (opt-in, off by default):
 | Feature | Default |
 |---|---|
 | Enable FTS memory search `[BETA]` | `no` |
+| Enable tldraw visual canvas `[BETA]` | `no` |
 
 **Flags:**
 
@@ -227,7 +228,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
 
 Every guide shows the folder structure. This repo gives you the folder
 structure **plus the files that actually go inside**: a working portable
-brain with eight seed skills, four memory layers, enforced permissions, a
+brain with nine seed skills, four memory layers, enforced permissions, a
 nightly staging cycle, host-agent review tools, and adapters for multiple
 harnesses.
 
@@ -375,6 +376,8 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
   daily reports across harnesses
 - **data-flywheel** — approved runs into context cards, evals, redacted traces,
   training-ready JSONL, and flywheel metrics
+- **tldraw** — opt-in beta skill for live canvas diagrams with a local
+  snapshot store under `.agent/skills/tldraw/`
 
 ## How it compounds
 
