@@ -214,7 +214,7 @@ def snapshot(shapes_payload, label: str, tags=None, note: str = "",
         f.write(json.dumps(meta, ensure_ascii=False) + "\n")
         f.flush()
         records = _read_jsonl_locked(f)
-    _render_index(records)
+        _render_index(records)
     return meta
 
 
@@ -269,7 +269,7 @@ def archive_snapshot(sid: str) -> dict:
         f.truncate()
         f.write(body)
         f.flush()
-    _render_index(records)
+        _render_index(records)
     return hit
 
 

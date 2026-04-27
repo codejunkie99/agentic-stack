@@ -11,11 +11,26 @@ it at the portable brain in `.agent/`.
 4. `.agent/protocols/permissions.md` — hard rules
 
 ## Skills
-Pi scans `.pi/skills/` and `.agents/skills/` for skill packages. The
-install script symlinks `.pi/skills` → `.agent/skills` so every skill
-under the portable brain is visible to pi without duplication. Pi's
-skill format (frontmatter + body) is compatible with ours out of the
-box.
+Pi scans `.pi/skills/` at startup. The install script symlinks
+`.pi/skills` → `.agent/skills` so every skill under the portable brain
+is visible to pi without duplication. Customize under `.agent/skills/`;
+pi sees it immediately on `/reload`.
+
+## Automatic memory (no manual calls needed)
+`.pi/extensions/memory-hook.ts` is installed by the adapter and
+auto-discovered by pi at startup. It:
+
+- Logs every `bash`, `edit`, and `write` tool call to
+  `.agent/memory/episodic/AGENT_LEARNINGS.jsonl` automatically —
+  same signal Claude Code captures via `PostToolUse`.
+- Skips `read`, `find`, `ls`, `grep` and low-importance bash calls
+  (grep, cat, echo, etc.) to keep the log signal-rich.
+- Runs `auto_dream.py` when the session ends (quit / new session /
+  resume) so the dream cycle fires without a cron job.
+
+For deploy / ship / migration / schema tasks the extension scores
+importance automatically — no manual `memory_reflect.py` calls needed
+for individual tool actions.
 
 ## Recall before non-trivial tasks
 For deploy / ship / migration / schema / timestamp / date / failing test /
@@ -41,8 +56,8 @@ them.
 - No force push to `main`, `production`, `staging`.
 - No modification of `.agent/protocols/permissions.md`.
 
-## Pi-specific extensions
-- System prompt override: put `.pi/SYSTEM.md` at project root if you
-  want to replace pi's default system prompt entirely.
-- Prompt templates go in `.pi/prompts/`.
-- TypeScript extensions go in `.pi/extensions/` (advanced).
+## Pi-specific
+- System prompt override: `.pi/SYSTEM.md` replaces pi's default system
+  prompt entirely.
+- Prompt templates: `.pi/prompts/`.
+- TypeScript extensions: `.pi/extensions/` (auto-discovered at startup).

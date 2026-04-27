@@ -16,7 +16,8 @@ cp /path/to/agentic-stack/install.sh ./
 
 ```bash
 ./install.sh claude-code        # or cursor, windsurf, opencode,
-                                # openclaw, hermes, standalone-python
+                                # openclaw, hermes, pi, codex,
+                                # standalone-python, antigravity
 ```
 
 Each adapter has its own `README.md` under `adapters/<name>/`.
@@ -40,6 +41,19 @@ crontab -e
 Open your harness and ask it anything. The first few days it will feel
 stateless. After ~2 weeks you'll notice it checking past lessons, logging
 failures with reflection, and (if you let it) proposing skill rewrites.
+
+## Optional: add a visual system with `DESIGN.md`
+
+If your project has UI, drop a Google Stitch-style `DESIGN.md` file in the
+project root. The bundled `design-md` skill tells compatible agents to use
+that file as the source of truth for colors, typography, spacing, component
+rules, and design rationale instead of inventing visual choices.
+
+When Node tooling is available, agents can validate the file with:
+
+```bash
+npx @google/design.md lint DESIGN.md
+```
 
 ## Verify the wiring
 ```bash

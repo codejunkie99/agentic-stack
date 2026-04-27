@@ -27,6 +27,36 @@ Triggers: "deploy", "ship", "release", "go live"
 Constraints: all tests passing, no unresolved TODOs in diff,
 requires human approval for production.
 
+## data-layer
+Cross-harness activity monitoring and dashboard exports. Use it as the
+injected dashboard surface when users ask naturally.
+Triggers: "data layer", "dashboard", "show me the dashboard",
+"what did my agents do", "agent analytics", "agent status", "resource usage",
+"usage report", "cron monitoring", "daily report", "tokens",
+"terminal dashboard", "TUI"
+Constraints: local-only by default; no screenshot delivery without explicit user
+approval; do not commit private `.agent/data-layer/` exports.
+
+## data-flywheel
+Turns approved, redacted runs into reusable local artifacts: trace records,
+context cards, eval cases, training-ready JSONL, and flywheel metrics.
+Triggers: "data flywheel", "trace to train", "training traces",
+"context cards", "eval cases", "approved runs", "vertical intelligence"
+Constraints: local-only by default; human-approved runs only; redaction required
+before trainable; does not train models.
+
+## design-md
+Uses a root `DESIGN.md` as the portable visual system contract for
+Google Stitch workflows. Loads only when `DESIGN.md` exists at the
+project root.
+Triggers: "DESIGN.md", "design.md", "Google Stitch", "design tokens",
+"design system", "visual design"
+Preconditions: DESIGN.md exists at project root.
+Constraints: prefer DESIGN.md tokens over invented values, do not modify
+DESIGN.md unless the user explicitly asks, preserve unknown sections when
+an edit IS authorised, validate with `npx @google/design.md lint DESIGN.md`
+when available.
+
 ## tldraw
 Draw, diagram, sketch, or lay out ideas on a live tldraw canvas.
 Worthwhile drawings snapshot into this skill's local store

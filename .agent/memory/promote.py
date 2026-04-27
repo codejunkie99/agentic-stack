@@ -138,7 +138,7 @@ def write_candidates(patterns, candidates_dir):
             if not evidence_changed and blocker_still_present:
                 continue
 
-        now = datetime.datetime.now().isoformat()
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         decisions = prev.get("decisions", [])
         decisions.append({"ts": now, "action": "staged", "reviewer": "auto_dream"})
 

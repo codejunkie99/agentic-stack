@@ -1,0 +1,11 @@
+{
+  "name": "cursor",
+  "description": "Cursor — .cursor/rules instruction text. No executable hooks; AI runs commands from project root cwd.",
+  "files": [
+    {
+      "src": ".cursor/rules/agentic-stack.mdc",
+      "dst": ".cursor/rules/agentic-stack.mdc",
+      "merge_policy": "overwrite"
+    }
+  ]
+}

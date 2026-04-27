@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validation suite for the tldraw skill + visual memory layer.
+"""Validation suite for the tldraw skill + local snapshot store.
 
 Run from the agentic-stack repo root:
 
@@ -11,31 +11,35 @@ Tests:
   1. SKILL.md exists and has valid YAML frontmatter with required fields
   2. _index.md references tldraw
   3. _manifest.jsonl has a valid tldraw entry
-  4. visual_memory.py imports and the layer directory is well-formed
+  4. store.py imports and the skill-local store is well-formed
   5. snapshot() writes a shape file, a jsonl record, and renders INDEX.md
   6. list_snapshots() surfaces the new record, filters by tag
   7. load_snapshot() round-trips shape data
   8. archive_snapshot() moves file + flips status, never deletes
   9. CLI: snapshot via stdin -> list -> archive roundtrip
  10. Feature flag: onboard_features.is_enabled('tldraw') respects the file
- 11. adapter MCP configs are valid JSON with mcpServers.tldraw
- 12. Claude Code /tldraw slash command file is present
+ 11. adapter installs do not wire beta MCP by default
+ 12. skill_loader honors the tldraw feature flag
 """
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AGENT = os.path.join(HERE, ".agent")
-VISUAL = os.path.join(AGENT, "memory", "visual")
+TLDRAW = os.path.join(AGENT, "skills", "tldraw")
+TOOLS = os.path.join(AGENT, "tools")
 
 sys.path.insert(0, HERE)
-sys.path.insert(0, VISUAL)
+sys.path.insert(0, TLDRAW)
+sys.path.insert(0, TOOLS)
 
 PASS = "\033[32m+\033[0m"
 FAIL = "\033[31mx\033[0m"
@@ -110,7 +114,7 @@ def test_registry() -> None:
                found.get("feature_flag") == "tldraw")
 
 
-# ── 3. visual memory module ────────────────────────────────────────────
+# ── 3. tldraw store module ─────────────────────────────────────────────
 
 SAMPLE_SHAPES = [
     {"type": "geo", "geo": "rectangle", "x": 100, "y": 100,
@@ -122,15 +126,14 @@ SAMPLE_SHAPES = [
 
 
 def _isolated_visual_module():
-    """Load visual_memory.py with its storage paths redirected into a tmp dir.
+    """Load store.py with its storage paths redirected into a tmp dir.
 
-    We don't want tests writing into the real memory/visual/ tree. Rebinding
+    We don't want tests writing into the real skill store. Rebinding
     module-level path constants to the tmpdir is the cleanest sandbox.
     """
-    import importlib
-    import visual_memory as vm  # type: ignore
+    import store as vm  # type: ignore
     importlib.reload(vm)
-    tmp = tempfile.mkdtemp(prefix="visual-mem-test-")
+    tmp = tempfile.mkdtemp(prefix="tldraw-store-test-")
     vm.SNAPSHOTS_DIR = os.path.join(tmp, "snapshots")
     vm.ARCHIVE_DIR = os.path.join(vm.SNAPSHOTS_DIR, "archive")
     vm.JSONL_PATH = os.path.join(tmp, "snapshots.jsonl")
@@ -139,11 +142,9 @@ def _isolated_visual_module():
 
 
 def test_visual_memory_api() -> None:
-    _section("visual memory — python API")
-    _check("visual/ dir exists", os.path.isdir(VISUAL))
-    _check("snapshots.jsonl exists", os.path.exists(os.path.join(VISUAL, "snapshots.jsonl")))
-    _check("snapshots/ dir exists", os.path.isdir(os.path.join(VISUAL, "snapshots")))
-    _check("README.md exists", os.path.exists(os.path.join(VISUAL, "README.md")))
+    _section("tldraw store — python API")
+    _check("tldraw skill dir exists", os.path.isdir(TLDRAW))
+    _check("store.py exists", os.path.exists(os.path.join(TLDRAW, "store.py")))
 
     vm, tmp = _isolated_visual_module()
     try:
@@ -194,6 +195,12 @@ def test_visual_memory_api() -> None:
             _check("missing id raises", True)
 
         try:
+            vm.load_snapshot("../does-not-exist")
+            _check("path traversal id rejected", False, "no exception")
+        except ValueError:
+            _check("path traversal id rejected", True)
+
+        try:
             vm.snapshot("not a list", label="bad")
             _check("non-list payload rejected", False, "no exception")
         except ValueError:
@@ -212,6 +219,39 @@ def test_visual_memory_api() -> None:
         _check("both snapshot files exist on disk",
                os.path.exists(os.path.join(vm.SNAPSHOTS_DIR, f"{a['id']}.json"))
                and os.path.exists(os.path.join(vm.SNAPSHOTS_DIR, f"{b['id']}.json")))
+
+        with open(vm.JSONL_PATH, "a", encoding="utf-8") as f:
+            f.write("{broken json\n")
+        rows = vm.list_snapshots(include_archived=True)
+        _check("malformed JSONL line is skipped", len(rows) >= 4)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_concurrent_snapshots_keep_index_complete() -> None:
+    _section("tldraw store — concurrency")
+    vm, tmp = _isolated_visual_module()
+    try:
+        created: list[str] = []
+        lock = threading.Lock()
+
+        def worker(i: int) -> None:
+            meta = vm.snapshot(SAMPLE_SHAPES, label=f"thread {i}", tags=["thread"])
+            with lock:
+                created.append(meta["id"])
+
+        threads = [threading.Thread(target=worker, args=(i,)) for i in range(16)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        rows = vm.list_snapshots()
+        index_text = open(vm.INDEX_PATH, encoding="utf-8").read()
+        _check("all concurrent snapshots wrote JSONL rows", len(rows) == 16)
+        _check("all concurrent snapshot ids are unique", len(set(created)) == 16)
+        _check("INDEX.md includes every concurrent snapshot",
+               all(sid in index_text for sid in created))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -219,7 +259,7 @@ def test_visual_memory_api() -> None:
 # ── 4. CLI ─────────────────────────────────────────────────────────────
 
 def test_cli_roundtrip() -> None:
-    _section("visual memory — CLI")
+    _section("tldraw store — CLI")
     tmp = tempfile.mkdtemp(prefix="visual-cli-test-")
     try:
         env = os.environ.copy()
@@ -229,8 +269,8 @@ def test_cli_roundtrip() -> None:
         with open(shim, "w", encoding="utf-8") as f:
             f.write(
                 "import sys, os, json\n"
-                f"sys.path.insert(0, {repr(VISUAL)})\n"
-                "import visual_memory as vm\n"
+                f"sys.path.insert(0, {repr(TLDRAW)})\n"
+                "import store as vm\n"
                 f"vm.SNAPSHOTS_DIR = {repr(os.path.join(tmp, 'snapshots'))}\n"
                 f"vm.ARCHIVE_DIR = {repr(os.path.join(tmp, 'snapshots', 'archive'))}\n"
                 f"vm.JSONL_PATH = {repr(os.path.join(tmp, 'snapshots.jsonl'))}\n"
@@ -288,28 +328,42 @@ def test_feature_flag() -> None:
 def test_mcp_configs() -> None:
     _section("adapter MCP wiring")
     shared = os.path.join(HERE, "adapters", "_shared", "tldraw-mcp.json")
-    cc = os.path.join(HERE, "adapters", "claude-code", ".mcp.json")
-    cursor = os.path.join(HERE, "adapters", "cursor", ".cursor", "mcp.json")
-    ag = os.path.join(HERE, "adapters", "antigravity", ".mcp.json")
-    cmd = os.path.join(HERE, "adapters", "claude-code", ".claude", "commands", "tldraw.md")
+    _check("shared mcp config exists", os.path.exists(shared), shared)
+    data = json.load(open(shared, encoding="utf-8"))
+    server = (data.get("mcpServers") or {}).get("tldraw") or {}
+    _check("shared mcp config registers tldraw",
+           isinstance(server, dict) and bool(server.get("command")))
 
-    for path, name in [(shared, "shared"), (cc, "claude-code"),
-                       (cursor, "cursor"), (ag, "antigravity")]:
-        if not os.path.exists(path):
-            _check(f"{name} mcp config exists", False, path)
-            continue
-        _check(f"{name} mcp config exists", True)
-        try:
-            data = json.load(open(path, encoding="utf-8"))
-        except json.JSONDecodeError as e:
-            _check(f"{name} mcp config is valid JSON", False, str(e))
-            continue
-        _check(f"{name} mcp config is valid JSON", True)
-        server = (data.get("mcpServers") or {}).get("tldraw") or {}
-        _check(f"{name} registers tldraw server",
-               isinstance(server, dict) and bool(server.get("command")))
+    for adapter in ("claude-code", "cursor", "antigravity"):
+        manifest_path = os.path.join(HERE, "adapters", adapter, "adapter.json")
+        manifest = json.load(open(manifest_path, encoding="utf-8"))
+        dsts = [entry.get("dst", "") for entry in manifest.get("files", [])]
+        _check(f"{adapter} does not install tldraw MCP by default",
+               not any("mcp" in dst.lower() for dst in dsts))
 
-    _check("/tldraw slash command present", os.path.exists(cmd))
+
+def test_skill_loader_feature_flag() -> None:
+    _section("skill loader feature flag")
+    import skill_loader as sl  # type: ignore
+    importlib.reload(sl)
+    tmp = tempfile.mkdtemp(prefix="skill-loader-feature-")
+    old_path = sl.FEATURES_PATH
+    try:
+        sl.FEATURES_PATH = os.path.join(tmp, ".features.json")
+        with open(sl.FEATURES_PATH, "w", encoding="utf-8") as f:
+            json.dump({"tldraw": {"enabled": False, "beta": True}}, f)
+        loaded = sl.progressive_load("draw an architecture diagram")
+        _check("tldraw skill disabled when feature flag is off",
+               all(row["name"] != "tldraw" for row in loaded))
+
+        with open(sl.FEATURES_PATH, "w", encoding="utf-8") as f:
+            json.dump({"tldraw": {"enabled": True, "beta": True}}, f)
+        loaded = sl.progressive_load("draw an architecture diagram")
+        _check("tldraw skill loads when feature flag is on",
+               any(row["name"] == "tldraw" for row in loaded))
+    finally:
+        sl.FEATURES_PATH = old_path
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 # ── main ───────────────────────────────────────────────────────────────
@@ -319,9 +373,11 @@ def main() -> int:
     test_skill_file()
     test_registry()
     test_visual_memory_api()
+    test_concurrent_snapshots_keep_index_complete()
     test_cli_roundtrip()
     test_feature_flag()
     test_mcp_configs()
+    test_skill_loader_feature_flag()
 
     passed = sum(1 for _, ok, _ in _results if ok)
     total = len(_results)

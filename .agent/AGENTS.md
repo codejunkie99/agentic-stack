@@ -41,6 +41,19 @@ are the exact failure mode this layer prevents.
 - Load a full `SKILL.md` only when its triggers match the current task
 - Every skill has a self-rewrite hook; invoke it after failures
 
+## Design Systems
+- If the project root contains `DESIGN.md`, treat it as the source of truth
+  for visual design decisions and load `skills/design-md/SKILL.md` when a
+  task mentions `DESIGN.md`, Google Stitch, design tokens, design system,
+  or visual design. (The skill's `preconditions` field gates loading on
+  `DESIGN.md` actually existing — keep this rule in lockstep with
+  `skills/_manifest.jsonl` to avoid same-task / different-harness drift.)
+- Prefer exact tokens, component rules, and design rationale from
+  `DESIGN.md` over invented colors, typography, spacing, shadows, or motion.
+- Do not modify `DESIGN.md` unless the user explicitly asks for a design
+  system change; implementation work consumes the contract, it doesn't
+  edit it.
+
 ## Protocols
 - `protocols/permissions.md` — read before any tool call
 - `protocols/tool_schemas/` — typed interfaces for external tools
@@ -55,6 +68,12 @@ Daily driver, highest-leverage first:
   in one shot (stage + graduate + render). For rules you already know.
 - `show.py` — one-screen dashboard of brain state: episodes, candidates,
   lessons, failing skills, activity graph.
+- `data_layer_export.py` — local cross-harness activity/data-layer export:
+  agent events, cron timelines, tokens/cost estimates, categories,
+  harness mix, `dashboard.html`, and `daily-report.md`.
+- `data_flywheel_export.py` — local export of approved, redacted runs into
+  trace records, context cards, eval cases, training-ready JSONL, and
+  flywheel metrics. It does not train models or call APIs.
 - `list_candidates.py` / `graduate.py` / `reject.py` / `reopen.py` — review
   protocol for patterns the dream cycle has staged.
 - `memory_reflect.py <skill> <action> <outcome>` — log a significant event.

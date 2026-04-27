@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .agent/harness/hooks/claude_code_post_tool.py"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.agent/harness/hooks/claude_code_post_tool.py\""
           }
         ]
       }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .agent/memory/auto_dream.py"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.agent/memory/auto_dream.py\""
           }
         ]
       }

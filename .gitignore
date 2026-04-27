@@ -10,6 +10,10 @@ __pycache__/
 venv/
 .pytest_cache/
 
+# tests live outside the repo — keep in your local working tree but don't
+# ship them in releases or the brew bottle.
+tests/
+
 # editor
 .DS_Store
 .idea/
@@ -18,6 +22,14 @@ venv/
 # runtime logs
 .agent/memory/dream.log
 *.log
+
+# local agent activity/data-layer exports (private, regenerated)
+.agent/data-layer/
+.agent/data-layer/**
+
+# local approved-run flywheel exports (private, regenerated)
+.agent/flywheel/
+.agent/flywheel/**
 
 # do NOT ignore memory files — they are the point
 !.agent/memory/
@@ -41,6 +53,3 @@ venv/
 .agent/skills/tldraw/INDEX.md
 .agent/skills/tldraw/snapshots/
 .agent/skills/tldraw/snapshots.jsonl
-
-# Local-only PR verification tests — not shipped.
-test_tldraw_visual_memory.py

@@ -4,6 +4,7 @@ import json, os
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 SKILLS_DIR = os.path.join(ROOT, "skills")
 MANIFEST = os.path.join(SKILLS_DIR, "_manifest.jsonl")
+FEATURES_PATH = os.path.join(ROOT, "memory", ".features.json")
 
 
 def load_manifest():
@@ -41,6 +42,21 @@ def check_preconditions(skill):
     return True
 
 
+def feature_enabled(key):
+    try:
+        with open(FEATURES_PATH, encoding="utf-8") as f:
+            features = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return False
+    entry = features.get(key) or {}
+    return bool(entry.get("enabled"))
+
+
+def skill_enabled(skill):
+    feature_flag = skill.get("feature_flag")
+    return True if not feature_flag else feature_enabled(feature_flag)
+
+
 def load_skill_full(name):
     base = os.path.join(SKILLS_DIR, name)
     skill_md = os.path.join(base, "SKILL.md")
@@ -58,6 +74,8 @@ def progressive_load(user_input):
     matches = match_triggers(user_input, manifest)
     loaded = []
     for skill in matches:
+        if not skill_enabled(skill):
+            continue
         if not check_preconditions(skill):
             continue
         content = load_skill_full(skill["name"])
