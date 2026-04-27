@@ -53,6 +53,14 @@ in through onboarding reconfiguration or `.agent/memory/.features.json`.
 ### Credits
 - PR #11 by @Siddharth11Roy, with review fixes and release prep by Codex.
 
+### Release
+- Tag `v0.12.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.12.0>
+- `Formula/agentic-stack.rb` bumped to v0.12.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `cd18a0cf82e027390ef10a102ec4bfed26fc45114f6ce96c0787e5a1cf0dce26`.
+
 ## [0.11.2] — 2026-04-26
 
 Patch release. Makes the data-layer dashboard easier to access from coding
