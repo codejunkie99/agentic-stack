@@ -27,7 +27,19 @@
   "permissions": {
     "deny": [
       "Bash(git push --force*)",
-      "Bash(rm -rf /*)"
+      "Bash(rm -rf /*)",
+      "Edit(./CLAUDE.md)",
+      "Write(./CLAUDE.md)",
+      "Edit(./.claude/settings.json)",
+      "Write(./.claude/settings.json)",
+      "Edit(./.claude/agents/**)",
+      "Write(./.claude/agents/**)",
+      "Edit(./.agent/protocols/permissions.md)",
+      "Write(./.agent/protocols/permissions.md)",
+      "Edit(./.agent/harness/**)",
+      "Write(./.agent/harness/**)",
+      "Edit(./.agent/AGENTS.md)",
+      "Write(./.agent/AGENTS.md)"
     ]
   }
 }
