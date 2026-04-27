@@ -25,23 +25,19 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.11.2 — natural dashboard access
+### New in v0.12.0 — tldraw visual canvas
 
-Patch release. The data-layer skill is now the injected dashboard surface: a
-model can decide to show the dashboard when a user asks naturally, without
-making people remember exporter flags.
+Minor release. Adds an opt-in `tldraw` seed skill for live canvas diagrams and
+a skill-local snapshot store. It is beta and off by default.
 
-- **Injected dashboard skill.** The `data-layer` skill now triggers on plain
-  phrases like "show me the dashboard" and "what did my agents do", then shows
-  the terminal dashboard directly in the coding tool.
-- **Natural-language exporter.** Users and agents can run
-  `python3 .agent/tools/data_layer_export.py show me last 7 days by hour`;
-  the exporter maps that to the right window and bucket while keeping explicit
-  flags available for scripts.
-- **Onboarding-style terminal view.** The dashboard now borrows the same
-  rail, marker, and summary style as the onboarding flow, and still saves a
-  plain `dashboard.tui.txt` beside `dashboard.html`, CSV, JSON, and
-  `daily-report.md`.
+- **`tldraw` seed skill.** Draw, diagram, sketch, wireframe, flowchart, and
+  whiteboard on a live canvas at `http://localhost:3030` through an MCP server.
+- **Skill-local snapshots.** Save worthwhile canvases with
+  `.agent/skills/tldraw/store.py snapshot`; list, load, and archive them later
+  without treating them as a fifth memory layer.
+- **Opt-in beta.** Onboarding writes `tldraw.enabled: false` by default. After
+  enabling it, users manually merge `adapters/_shared/tldraw-mcp.json` into
+  their harness MCP config.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
 

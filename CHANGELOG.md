@@ -5,6 +5,54 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] — 2026-04-27
+
+Minor release. Adds the opt-in `tldraw` seed skill for live canvas diagrams
+and a skill-local snapshot store. The feature stays beta and off by default.
+
+### Added
+- **`tldraw` seed skill — live canvas diagrams.** Adds
+  `.agent/skills/tldraw/SKILL.md` with MCP tool guidance, shape constraints,
+  and a self-rewrite hook for diagram, sketch, wireframe, flowchart,
+  whiteboard, and architecture visualization prompts.
+- **Skill-local snapshot store.** Adds `.agent/skills/tldraw/store.py` with
+  `snapshot`, `list`, `load`, and `archive` CLI/API support. Runtime output is
+  local and gitignored under `.agent/skills/tldraw/`: `snapshots.jsonl`,
+  `snapshots/`, and `INDEX.md`.
+- **Opt-in feature flag.** Onboarding now writes a `tldraw` beta feature flag,
+  default off. The skill loader skips flagged skills unless
+  `.agent/memory/.features.json` explicitly enables them.
+- **Manual MCP config source.** Adds `adapters/_shared/tldraw-mcp.json` as the
+  canonical tldraw MCP config block users can merge into Claude Code,
+  Cursor, or Antigravity after enabling the feature.
+
+### Changed
+- Seed skill count is now nine: `skillforge`, `memory-manager`, `git-proxy`,
+  `debug-investigator`, `deploy-checklist`, `design-md`, `data-layer`,
+  `data-flywheel`, and `tldraw`.
+- tldraw persistence is intentionally skill-local storage, not a fifth memory
+  layer: it has no dream-cycle, clustering, recall, or semantic-memory
+  lifecycle.
+- Default adapter installs no longer wire beta tldraw MCP config
+  automatically.
+
+### Fixed
+- Updated the tldraw validation suite to target
+  `.agent/skills/tldraw/store.py` instead of the removed
+  `.agent/memory/visual/visual_memory.py`.
+- `store.py` renders `INDEX.md` while holding the JSONL lock so concurrent
+  snapshots cannot leave the index stale.
+- Added coverage for feature-gated skill loading, no default MCP install, path
+  traversal rejection, malformed JSONL recovery, same-second snapshot ids, and
+  concurrent snapshots.
+
+### Migration
+No migration required. Existing installs keep tldraw disabled until users opt
+in through onboarding reconfiguration or `.agent/memory/.features.json`.
+
+### Credits
+- PR #11 by @Siddharth11Roy, with review fixes and release prep by Codex.
+
 ## [0.11.2] — 2026-04-26
 
 Patch release. Makes the data-layer dashboard easier to access from coding
