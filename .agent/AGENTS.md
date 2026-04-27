@@ -69,6 +69,18 @@ Toggle file read at session start. Fields:
   `memory/client/<id>/` directory. When set, scopes
   client-sensitive context to that engagement. Resolved per
   `protocols/permissions.md` lookup order (env var > parent dir > config).
+- `skill_evolution_mode` — `"in_place"` (default) or `"propose_only"`.
+  In `in_place` mode, per-skill self-rewrite hooks and `skillforge`
+  write directly to `.agent/skills/` — each install is a sovereign
+  brain that evolves independently. In `propose_only` mode, those
+  same edits route through `.agent/tools/propose_harness_fix.py`,
+  which appends a proposal to
+  `.agent/memory/working/HARNESS_FEEDBACK.md` instead of mutating
+  the skill file. Use `propose_only` on engagements where harness
+  drift across reinstalls is unacceptable. Cross-install propagation
+  capture is on regardless: `.agent/tools/snapshot_diff.py`
+  records install-time state and diffs current state for later
+  graduation back to fork.
 
 ## Host-agent CLI tools (in `tools/`)
 Daily driver, highest-leverage first:

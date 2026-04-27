@@ -1,5 +1,6 @@
 {
   "$schema": "./config.schema.json",
   "bcg_adapter": "disabled",
-  "active_client": null
+  "active_client": null,
+  "skill_evolution_mode": "in_place"
 }
