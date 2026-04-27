@@ -23,7 +23,18 @@ scaffolding that was missing.
 
 ## Stage plan
 
-- **Stage 1** — branch + WORKSPACE update (in progress)
+- **Stage 1** — branch + WORKSPACE update ✅
+- **Stage 2** — build the kit on fork ✅ (9 commits + smoke-test fix)
+- **Stage 3** — install + onboard target ✅
+  - Target: `~/code/case-dryrun-harnessX-internal/` (own git, fresh)
+  - Engagement: HarnessX v3 deck revision pass for Vince review 2026-04-28
+  - 8 briefing files indexed under lazy-load with summaries
+  - Brain installed cleanly: 21 agents, 25 skills, 65-file install snapshot
+- **Stage 4** — run the dry-run case (PENDING — user opens separate Claude Code session in target)
+- **Stage 5** — capture, gap log, fix loop (5 entries already)
+
+### Original Stage 2 commit list
+
 - **Stage 2** — build the kit on fork (8 atomic commits):
   - 2a. `skill_evolution_mode` config flag (Philosophy C, in_place default)
   - 2b. Slim 6-path install-side write protection (native `permissions.deny`)
