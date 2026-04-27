@@ -45,21 +45,62 @@ operationalized. Now operationalized: weekly cron + auto-memory entry.
   pattern as 8.2.1 / 8.2.4.
 - **8.2.5.5** — log + DECISIONS.md entry + episodic learning.
 
-## Open questions
+## Conflict surface (verified via `git merge-tree` dry-run, 2026-04-27)
 
-- [ ] Merge vs. rebase strategy — recommend merge, awaiting confirm
-- [ ] Take the `harness_manager/` Python package wholesale (yes likely)
-      and port our install.sh BCG logic into it?
-- [ ] Take `data-layer` and `data-flywheel` skills as-is, or treat as
-      out-of-scope for now and gitignore the new examples?
-- [ ] Any upstream commits to explicitly *not* take? (e.g., if their
-      `.agent/skills/` restructure conflicts with our knowledge-work
-      skill imports from 8.1)
+- **92 files we added** (all of `adapters/bcg/`, `.agent/context/`,
+  `.agent/personas/`, 13 knowledge-work skills, BCG agent-memory
+  templates, etc.) — kept clean, no upstream collision.
+- **58 files upstream added** — gained clean (entire `harness_manager/`
+  Python package, `data-layer/` + `data-flywheel/` + `design-md`
+  skills, codex adapter, pi rewrite, schemas, examples, docs, hooks).
+- **0 files deleted upstream that we still have** — no silent loss risk.
+
+### Real conflicts (4, manual resolution)
+
+| File | Type | Resolution strategy |
+|---|---|---|
+| `install.sh` | **HARD** — base 114 → ours 175 (+61 BCG block) ← → upstream 38 (-76, stripped to Python dispatcher) | Port BCG block into `harness_manager/install.py`. Real coding task, not just text resolution. |
+| `.agent/skills/_index.md` | Soft — disjoint skill lists | Mechanical merge. Ours: 13 knowledge-work + SDLC. Theirs: data-flywheel, data-layer, design-md. No name overlap. |
+| `.agent/skills/_manifest.jsonl` | Soft — 20 ours + 8 theirs, no overlap | Mechanical merge. |
+| `.agent/memory/semantic/DECISIONS.md` | Soft | Ours-wins (file is our project history). |
+
+### Auto-mergeable (2)
+
+- `.agent/AGENTS.md`, `.gitignore` — git resolves cleanly.
+
+### Lower-risk spot-checks during 8.2.5.3
+
+- `adapters/pi/{AGENTS.md, README.md, adapter.json, memory-hook.ts}` —
+  we don't customize pi, take upstream-wins (their #24 rewrite fixes
+  formula crash + decay tz bug).
+- `adapters/claude-code/{adapter.json, settings.json}` — small upstream
+  schema addition. Untouched by us. Take upstream-wins.
+- Hook scripts `auto_dream.py`, `decay.py`, `archive.py`, `promote.py`,
+  `render_lessons.py`, `review_state.py`, `salience.py`,
+  `on_failure.py`, `post_execution.py` — upstream changed, we didn't.
+  Clean upstream-wins. Verify memory layer end-to-end after.
+
+## Resolved decisions
+
+- ✅ **Merge, not rebase** — preserves dated 8.x decision history, and
+  conflict surface is identical either path.
+- ✅ **Take `harness_manager/` Python package wholesale** + port our BCG
+  install.sh logic into `harness_manager/install.py`.
+- ✅ **Take `data-layer` and `data-flywheel` skills as-is** — additive,
+  no name collision, observability surface BCG can opt into later.
+- ✅ **Net assessment**: merge is safe and the conflict surface is
+  small and bounded. Single load-bearing decision is install.sh →
+  harness_manager port.
 
 ## Next step
 
-Get user confirm on stage plan + merge-vs-rebase, then start 8.2.5.1
-(per-tag walkthrough).
+Execute the plan task-by-task:
+[`docs/superpowers/plans/2026-04-27-step-8-2-5-upstream-sync.md`](../../../docs/superpowers/plans/2026-04-27-step-8-2-5-upstream-sync.md)
+
+19 tasks across 6 stages (pre-flight → classification → merge →
+BCG port → smoke → log+push). Choose execution mode at kickoff:
+subagent-driven (recommended — fresh subagent per task with review
+between) or inline (executing-plans skill, batched with checkpoints).
 
 ## Recurring cadence
 
