@@ -20,6 +20,7 @@ def remove(
     adapter_name: str,
     yes: bool = False,
     log: Callable[[str], None] | None = None,
+    stack_root: Path | str | None = None,
 ) -> int:
     """Remove `adapter_name` from `target_root`. Returns exit code.
 
@@ -185,7 +186,7 @@ def remove(
             {},
         )
         kwargs = {k: v for k, v in recorded.items() if k not in ("action", "status", "stderr", "exit_code", "fallback_hint")}
-        result = post_install_mod.reverse(action_name, target_root, **kwargs)
+        result = post_install_mod.reverse(action_name, target_root, stack_root=stack_root, **kwargs)
         st = result.get("status", "?")
         if st == "ok":
             log(f"    ✓ reversed")

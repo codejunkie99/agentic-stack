@@ -17,7 +17,7 @@ SCHEMA_VERSION = 1
 
 VALID_MERGE_POLICIES = {"overwrite", "skip_if_exists", "merge_or_alert"}
 VALID_FALLBACKS = {"rsync_with_delete"}
-VALID_POST_INSTALL_ACTIONS = {"openclaw_register_workspace"}
+VALID_POST_INSTALL_ACTIONS = {"openclaw_register_workspace", "bcg_conditional_propagate"}
 
 
 class ManifestError(ValueError):

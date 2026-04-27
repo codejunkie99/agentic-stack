@@ -225,9 +225,127 @@ def openclaw_unregister_workspace(target_root: Path | str, **kwargs) -> dict:
     }
 
 
+def bcg_conditional_propagate(
+    target_root: Path | str,
+    *,
+    stack_root: Path | str | None = None,
+    **_kwargs,
+) -> dict:
+    """Propagate BCG-adapter content into target/.claude/ when enabled.
+
+    Reads target_root/.agent/config.json. If "bcg_adapter" == "enabled",
+    copies adapters/bcg/{agents,commands}/*.md from stack_root into
+    target/.claude/{agents,commands}/, and adapters/bcg/agent-memory-
+    templates/*.md into target/.claude/agent-memory/ using copy-if-
+    missing semantics so re-installs preserve in-progress per-agent
+    memory.
+
+    Replaces the bash propagation block that lived in install.sh master
+    pre-Step-8.2.5; the v0.9.0 manager-pkg refactor moved install logic
+    to Python and this action restores the BCG conditional that the
+    bash block carried.
+    """
+    import json
+    target_root = Path(target_root)
+    if stack_root is None:
+        return {
+            "action": "bcg_conditional_propagate",
+            "status": "no_stack_root",
+            "stderr": "stack_root not passed through from harness_manager.install",
+        }
+    stack_root = Path(stack_root)
+
+    config_path = target_root / ".agent" / "config.json"
+    if not config_path.exists():
+        return {"action": "bcg_conditional_propagate", "status": "no_config"}
+
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return {
+            "action": "bcg_conditional_propagate",
+            "status": "bad_config",
+            "stderr": str(e),
+        }
+
+    if config.get("bcg_adapter") != "enabled":
+        return {"action": "bcg_conditional_propagate", "status": "disabled"}
+
+    bcg_src = stack_root / "adapters" / "bcg"
+    if not bcg_src.is_dir():
+        return {"action": "bcg_conditional_propagate", "status": "no_bcg_dir"}
+
+    counts = {"agents": 0, "commands": 0, "agent_memory": 0}
+
+    for kind in ("agents", "commands"):
+        src_dir = bcg_src / kind
+        if not src_dir.is_dir():
+            continue
+        dst = target_root / ".claude" / kind
+        dst.mkdir(parents=True, exist_ok=True)
+        for f in sorted(src_dir.glob("*.md")):
+            shutil.copy2(f, dst / f.name)
+            counts[kind] += 1
+
+    src_dir = bcg_src / "agent-memory-templates"
+    if src_dir.is_dir():
+        dst = target_root / ".claude" / "agent-memory"
+        dst.mkdir(parents=True, exist_ok=True)
+        for f in sorted(src_dir.glob("*.md")):
+            if f.name == "README.md":
+                continue
+            target_file = dst / f.name
+            if not target_file.exists():
+                shutil.copy2(f, target_file)
+                counts["agent_memory"] += 1
+
+    return {
+        "action": "bcg_conditional_propagate",
+        "status": "ok",
+        "counts": counts,
+    }
+
+
+def bcg_conditional_unpropagate(
+    target_root: Path | str,
+    *,
+    stack_root: Path | str | None = None,
+    **_kwargs,
+) -> dict:
+    """Reverse of bcg_conditional_propagate.
+
+    On adapter `remove`, deletes the BCG agents and commands we
+    installed (matched by filename against the source stack). Agent-
+    memory files are preserved — those become user data once seeded.
+    """
+    target_root = Path(target_root)
+    if stack_root is None:
+        return {"action": "bcg_conditional_propagate", "status": "no_stack_root"}
+    stack_root = Path(stack_root)
+
+    bcg_src = stack_root / "adapters" / "bcg"
+    if not bcg_src.is_dir():
+        return {"action": "bcg_conditional_propagate", "status": "no_bcg_dir"}
+
+    removed = 0
+    for kind in ("agents", "commands"):
+        src_dir = bcg_src / kind
+        if not src_dir.is_dir():
+            continue
+        dst = target_root / ".claude" / kind
+        for f in sorted(src_dir.glob("*.md")):
+            target_file = dst / f.name
+            if target_file.exists():
+                target_file.unlink()
+                removed += 1
+
+    return {"action": "bcg_conditional_propagate", "status": "ok", "removed": removed}
+
+
 # Registry: action name -> (run_fn, reverse_fn)
 ACTIONS: dict[str, tuple[Callable, Callable | None]] = {
     "openclaw_register_workspace": (openclaw_register_workspace, openclaw_unregister_workspace),
+    "bcg_conditional_propagate": (bcg_conditional_propagate, bcg_conditional_unpropagate),
 }
 
 

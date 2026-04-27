@@ -298,7 +298,7 @@ def install(
     post_install_results: list[dict] = []
     for action_name in manifest.get("post_install", []):
         log(f"  → post-install: {action_name}")
-        result = post_install_mod.run(action_name, target_root)
+        result = post_install_mod.run(action_name, target_root, stack_root=stack_root)
         post_install_results.append(result)
         # User-facing summary line
         status = result.get("status", "?")

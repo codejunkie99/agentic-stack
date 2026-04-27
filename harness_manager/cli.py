@@ -221,7 +221,7 @@ def cmd_add(adapter_name: str, target: Path) -> int:
 
 
 def cmd_remove(adapter_name: str, target: Path, yes: bool) -> int:
-    return remove_mod.remove(target_root=target, adapter_name=adapter_name, yes=yes)
+    return remove_mod.remove(target_root=target, adapter_name=adapter_name, yes=yes, stack_root=_stack_root())
 
 
 def cmd_doctor(target: Path) -> int:

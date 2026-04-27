@@ -39,5 +39,6 @@
       "dst": ".claude/agents/reviewer.md",
       "merge_policy": "overwrite"
     }
-  ]
+  ],
+  "post_install": ["bcg_conditional_propagate"]
 }
