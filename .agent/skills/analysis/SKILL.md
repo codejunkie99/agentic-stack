@@ -54,3 +54,13 @@ sensitivity:
     range: <plausible range>
     impact: <how conclusion changes>
 ```
+
+## Self-rewrite hook
+
+After every 5 analyses produced, or the first time a confidence
+assignment turns out to be miscalibrated (a high-confidence finding
+proved wrong, or a low-confidence finding proved correct), read the
+last 5 analysis entries from episodic memory. If better decomposition
+heuristics, sensitivity-range patterns, or confidence-assignment
+rules have emerged, update this file. Commit:
+`skill-update: analysis, <one-line reason>`.

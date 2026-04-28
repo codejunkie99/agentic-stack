@@ -1,0 +1,25 @@
+#!/bin/sh
+# Pre-commit hook for agent-stack fork.
+#
+# Activate locally with:
+#   git config core.hooksPath git-hooks
+#
+# This hook runs:
+#   1. .agent/tools/skill_linter.py --staged
+#      Catches missing self-rewrite hooks, frontmatter drift, manifest /
+#      index inconsistencies on staged SKILL.md changes. Cheap when no
+#      skill files are staged.
+#
+# Exits non-zero if any check fails. To bypass (rare — investigate the
+# failure first), use git commit --no-verify.
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+LINTER="$REPO_ROOT/.agent/tools/skill_linter.py"
+
+if [ ! -x "$LINTER" ] && [ ! -f "$LINTER" ]; then
+    echo "pre-commit: $LINTER not found; skipping skill audit" >&2
+    exit 0
+fi
+
+python3 "$LINTER" --staged

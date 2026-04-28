@@ -52,3 +52,13 @@ overall_comment: <1-2 sentence summary of the overall assessment>
 - Every finding must cite a specific location in the document
 - Recommendations must be specific enough for a maker to act on without asking for clarification
 - Do not combine findings — one issue = one entry
+
+## Self-rewrite hook
+
+After every 10 reviews produced, or the first time a critical issue
+slips past review and surfaces in production / final delivery (a
+false negative — the review missed something that mattered), read
+the last 10 review entries from episodic memory. If better severity-
+classification rubrics, finding-evidence patterns, or recommendation-
+actionability standards have emerged, update this file. Commit:
+`skill-update: review, <one-line reason>`.
