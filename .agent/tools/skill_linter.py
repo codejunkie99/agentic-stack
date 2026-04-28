@@ -122,11 +122,25 @@ def _load_manifest() -> dict[str, dict]:
 
 
 def _load_index_skill_names() -> set[str]:
-    """Return set of skill names that appear as `## <name>` headers in _index.md."""
+    """Return set of skill names that appear in _index.md.
+
+    Accepts two index entry formats — both are valid pointer-style
+    progressive disclosure:
+
+      ## skill-name
+      Brief description...
+
+      - **skill-name** — brief description...
+
+    The compact bullet form (used after slice-3 trim) packs more
+    skills into fewer lines while still being a clear pointer.
+    """
     if not INDEX_PATH.is_file():
         return set()
     text = INDEX_PATH.read_text(encoding="utf-8")
-    return set(re.findall(r"^##\s+([a-z][a-z0-9-]+)", text, re.MULTILINE))
+    names = set(re.findall(r"^##\s+([a-z][a-z0-9-]+)", text, re.MULTILINE))
+    names |= set(re.findall(r"^-\s+\*\*([a-z][a-z0-9-]+)\*\*", text, re.MULTILINE))
+    return names
 
 
 def lint_skill(skill_dir: Path, manifest: dict[str, dict], index_names: set[str]) -> list[str]:

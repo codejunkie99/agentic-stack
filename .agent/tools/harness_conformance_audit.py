@@ -82,6 +82,9 @@ BUDGETS = {
 # Files that are ALWAYS eager-loaded by the session-start protocol
 # (per adapters/claude-code/CLAUDE.md). Relative to REPO_ROOT for the
 # fork, or to install root in installed targets.
+#
+# Note: glossary/frameworks/quality-standards CONTENT files are
+# trigger-loaded post slice-3 (2026-04-28). Only the index is eager.
 ALWAYS_EAGER_REL = [
     ".agent/AGENTS.md",
     ".agent/config.json",
@@ -89,9 +92,7 @@ ALWAYS_EAGER_REL = [
     ".agent/memory/working/REVIEW_QUEUE.md",
     ".agent/memory/semantic/LESSONS.md",
     ".agent/protocols/permissions.md",
-    ".agent/context/glossary.md",
-    ".agent/context/frameworks.md",
-    ".agent/context/quality-standards.md",
+    ".agent/context/_index.md",
     ".agent/skills/_index.md",
 ]
 
@@ -106,13 +107,11 @@ CLAUDE_MD_CANDIDATES = [
 
 # Files that are EAGER-LOADED only when bcg_adapter is enabled.
 # Audited as "conditional-eager" — counted toward total when on.
+#
+# Note: only README.md (the BCG adapter's index) is eager-loaded
+# post slice-3 (2026-04-28). protocols/ + context/ load on-demand.
 BCG_CONDITIONAL_EAGER_REL = [
     "adapters/bcg/README.md",
-    "adapters/bcg/protocols/atlassian-rules.md",
-    "adapters/bcg/protocols/formatting.md",
-    "adapters/bcg/context/firm/bcg-firm-context.md",
-    "adapters/bcg/context/firm/case-engagement-process.md",
-    "adapters/bcg/context/frameworks/bcg-matrix.md",
 ]
 
 
@@ -383,16 +382,17 @@ def run_audit(repo_root: Path, staged: bool = False) -> tuple[list[dict], int]:
             BUDGETS["agents_md_max_lines"],
         )
     )
-    for rel in (
-        ".agent/context/glossary.md",
-        ".agent/context/frameworks.md",
-        ".agent/context/quality-standards.md",
-    ):
-        checks.append(
-            _check_line_budget(
-                rel, repo_root / rel, BUDGETS["context_file_max_lines"]
-            )
+    # Per-file budget on the context INDEX (eager-loaded). Individual
+    # context content files (glossary, frameworks, quality-standards)
+    # are now trigger-loaded and audited via the SKILL.md budget pool
+    # below, since they behave like skills (load-on-demand reference).
+    checks.append(
+        _check_line_budget(
+            ".agent/context/_index.md",
+            repo_root / ".agent" / "context" / "_index.md",
+            BUDGETS["context_file_max_lines"],
         )
+    )
 
     # 2. SKILL.md budgets
     checks.extend(_check_skill_md_budgets(repo_root / ".agent" / "skills", BUDGETS["skill_md_max_lines"]))

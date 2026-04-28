@@ -221,3 +221,15 @@ Final roster state after Step 8.2 (8.2.1 + 8.2.2 + 8.2.3 + 8.2.4):
 **Status:** active
 
 **Operationalized:** weekly upstream-sync cadence (Mon 9:13 local, durable cron `ba87d58c` + auto-memory `upstream_sync_cadence.md`) so this drift doesn't recur. Plan + per-tag classification doc checked into `docs/superpowers/plans/`. Test file at top-level (`test_bcg_conditional_propagate.py`) matching upstream pattern (test_data_flywheel_export.py); `tests/` is gitignored as of upstream's v0.9.1 (f1c362d).
+
+## 2026-04-28: Eager-load surface trim + permissions.md BCG rules justification
+
+**Decision:** Trim CLAUDE.md from 189 → 92 lines by moving `memory_reflect.py` examples + importance guide to `docs/memory-reflection.md`, compressing the conditional-mount section to pointer-style, and tightening BCG/active_client text. Trim AGENTS.md from 114 → 109 lines by compressing the `skill_evolution_mode` description (full behavior moved to `propose_harness_fix.py --help`). Justify the +19-line growth of `protocols/permissions.md` vs upstream — that growth came from Step 8.0 adding "BCG engagement rules" (cross-client write isolation, push-target safety, AGENT_CLIENT env var resolution order). The rules ARE essential — they prevent BCG-client repos from accidentally pushing to personal remotes — so the additions stay.
+
+**Rationale:** First run of `harness_conformance_audit.py` (Step 8.3 slice 1) showed CLAUDE.md 189/120, AGENTS.md 114/110, eager-load total 839/500 — clear violations of the <100-line CLAUDE.md best practice (Effloow / HumanLayer / Anthropic guidance). Pulkit's prompt: "everything should have progressive disclosure — adopt the same thinking here in this repo." The trim re-establishes upstream parity (108-line CLAUDE.md as baseline) while preserving the legitimate BCG additions, with all moved content addressable on-demand via `docs/memory-reflection.md` and `propose_harness_fix.py --help`.
+
+**Alternatives considered:** (a) Leave the bloat and document it — rejected; violates the same progressive-disclosure principle we enforce on installed projects. (b) Move everything to docs/ including BCG conditional-mount rules — rejected; conditional-mount logic IS load-bearing at session-start (the agent must know when to read which files), but the prose explanation can compress. (c) Strip permissions.md back to upstream parity — rejected; the BCG cross-client write rules are non-negotiable safety constraints.
+
+**Status:** active.
+
+**Operationalized:** `harness_conformance_audit.py` wired to detect any future regression. permissions.md mentioned in this entry so the audit's "justified-in-DECISIONS" heuristic stops flagging it.
