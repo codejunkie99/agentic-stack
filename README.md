@@ -305,6 +305,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 
 adapters/                       # one small shim per harness, each with adapter.json manifest
 ├── claude-code/   (CLAUDE.md + settings.json hooks — $CLAUDE_PROJECT_DIR wired, closes #18)
+├── copilot-cli/   (AGENTS.md + .github/instructions/ + .github/hooks/ + .github/skills/ mirror)
 ├── cursor/        (.cursor/rules/*.mdc)
 ├── windsurf/      (.windsurfrules)
 ├── opencode/      (AGENTS.md + opencode.json)
@@ -349,6 +350,7 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 | Harness | Config file it reads | Hook support |
 |---|---|---|
 | **Claude Code** | `CLAUDE.md` + `.claude/settings.json` | yes (PostToolUse, Stop) |
+| **GitHub Copilot CLI** | `AGENTS.md` + `.github/instructions/*.instructions.md` | yes (postToolUse, sessionEnd) |
 | **Cursor** | `.cursor/rules/*.mdc` | no (manual reflect calls) |
 | **Windsurf** | `.windsurfrules` | no (manual reflect calls) |
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |
