@@ -37,6 +37,7 @@ DETECT_SIGNALS = {
     "opencode": [("opencode.json", "strong")],
     "hermes": [("AGENTS.md", "weak")],  # AGENTS.md alone is ambiguous
     "standalone-python": [("run.py", "weak")],
+    "copilot-cli": [(".github/instructions/agentic-stack.instructions.md", "strong")],
 }
 
 

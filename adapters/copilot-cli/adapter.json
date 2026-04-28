@@ -1,0 +1,11 @@
+{
+  "name": "copilot-cli",
+  "description": "GitHub Copilot CLI — .github/instructions/ instruction file. Uses the modular instructions directory so it composes cleanly with existing copilot-instructions.md.",
+  "files": [
+    {
+      "src": "agentic-stack.instructions.md",
+      "dst": ".github/instructions/agentic-stack.instructions.md",
+      "merge_policy": "overwrite"
+    }
+  ]
+}
