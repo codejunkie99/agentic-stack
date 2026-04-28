@@ -4,11 +4,15 @@
 # Activate locally with:
 #   git config core.hooksPath git-hooks
 #
-# This hook runs:
+# This hook runs (in order):
 #   1. .agent/tools/skill_linter.py --staged
 #      Catches missing self-rewrite hooks, frontmatter drift, manifest /
 #      index inconsistencies on staged SKILL.md changes. Cheap when no
 #      skill files are staged.
+#   2. .agent/tools/harness_conformance_audit.py --staged
+#      Catches eager-load budget violations + upstream-parity drift on
+#      CLAUDE.md / AGENTS.md / context indices / skill index changes.
+#      Cheap when no eager-load files are staged.
 #
 # Exits non-zero if any check fails. To bypass (rare — investigate the
 # failure first), use git commit --no-verify.
@@ -16,10 +20,16 @@ set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 LINTER="$REPO_ROOT/.agent/tools/skill_linter.py"
+AUDIT="$REPO_ROOT/.agent/tools/harness_conformance_audit.py"
 
-if [ ! -x "$LINTER" ] && [ ! -f "$LINTER" ]; then
+if [ -f "$LINTER" ]; then
+    python3 "$LINTER" --staged
+else
     echo "pre-commit: $LINTER not found; skipping skill audit" >&2
-    exit 0
 fi
 
-python3 "$LINTER" --staged
+if [ -f "$AUDIT" ]; then
+    python3 "$AUDIT" --staged
+else
+    echo "pre-commit: $AUDIT not found; skipping conformance audit" >&2
+fi
