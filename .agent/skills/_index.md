@@ -190,3 +190,15 @@ client's `INDEX.md`. Drives the lazy-load pattern.
 Triggers: "summarize this document", "researcher", "index this upload"
 Constraints: mandatory user description; bounded summary length;
 never auto-load raw upload content into broader session context.
+
+## consulting-deck-builder (deliverable-production)
+Builds an MBB-quality deck through three mandatory phases — Storyboard
+(spine + horizontal-MECE check) → Content (per-slide vertical-logic
+draft with stickies, all slides at once) → Format (visualization).
+Never skips a phase. Action-voice titles only. Stickies (CONTENT /
+LAYOUT / TODO) migrate through phases.
+Triggers: "build a deck", "storyboard", "iterate on slides",
+"structure the storyline", "vertical horizontal logic check"
+Constraints: phase boundaries require explicit user sign-off;
+every slide passes vertical-logic check; deck spine passes MECE;
+lazy-load source material from summaries/ first.
