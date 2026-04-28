@@ -27,9 +27,16 @@ scaffolding that was missing.
 - **Stage 2** — build the kit on fork ✅ (9 commits + smoke-test fix)
 - **Stage 3** — install + onboard target ✅
   - Target: `~/code/case-dryrun-harnessX-internal/` (own git, fresh)
-  - Engagement: HarnessX v3 deck revision pass for Vince review 2026-04-28
-  - 8 briefing files indexed under lazy-load with summaries
-  - Brain installed cleanly: 21 agents, 25 skills, 65-file install snapshot
+  - Engagement: HarnessX deck iteration (post-Vince-edit baseline)
+  - 14 briefing files indexed under lazy-load with summaries (8 original + 6 new from 04-28)
+  - Brain installed cleanly: 21 agents, 26 skills (incl. new `consulting-deck-builder`), 66-file install snapshot baselined at 14:23 on 04-28
+- **Stage 3.5 (mid-engagement augment, 2026-04-28)**
+  - Vince meeting completed; deck restructured around 3-plane Harness Framework
+  - v3 deck retired; v4 post-Vince-edit baselined
+  - 6 new files indexed: HarnessX_v4 PDF, BOCHK PDF, Balaji PDF, SC AI SDLC PDF, 04-28 meeting summary md + transcript pdf + mind map png
+  - NEW skill `consulting-deck-builder` authored on fork branch — 3-phase storyboard → content → format methodology with vertical/horizontal MBB logic gates and sticky migration. Manually synced to target (Gap 7 surfaced — same root cause as Gap 1).
+  - Mission shifted from "revise v3 against 5 quality bars" to "build content per slide using all sources + online research, iterate via consulting-deck-builder skill"
+  - `pypdf` installed (Gap 6) so PDF source material extracts cleanly
 - **Stage 4** — run the dry-run case (PENDING — user opens separate Claude Code session in target)
 - **Stage 5** — capture, gap log, fix loop (5 entries already)
 
