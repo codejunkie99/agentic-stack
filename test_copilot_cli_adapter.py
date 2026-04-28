@@ -9,14 +9,16 @@ Run from the agentic-stack repo root:
 Exit 0 = all tests passed. Non-zero = something is broken.
 
 Tests:
-  1. adapter.json schema validation
-  2. Install into temp project — brain + instruction file created
-  3. Instruction file content checks (brain wiring references)
+  1. adapter.json schema validation (files, skills_link, AGENTS.md, hooks)
+  2. Install into temp project — brain + instruction file + hooks + skills created
+  3. Instruction file content checks (brain wiring references, applyTo frontmatter)
   4. Tool availability — referenced tools exist after install
   5. Memory layer availability — memory dirs/files exist
   6. Skills availability — skills index + at least one skill
   7. Doctor detection signal — adapter detected from filesystem
-  8. Remove roundtrip — instruction file cleaned up
+  8. Hooks file — valid JSON with correct structure
+  9. Hook script — copilot_cli_post_tool.py exists in .agent/harness/hooks/
+ 10. Remove roundtrip — instruction file + hooks file cleaned up
 """
 
 import json
@@ -82,16 +84,47 @@ def test_manifest_validation():
     else:
         fail("name field", f"expected 'copilot-cli', got '{manifest['name']}'")
 
-    if len(manifest["files"]) >= 1:
+    if len(manifest["files"]) >= 3:
+        ok(f"files array has {len(manifest['files'])} entries (instruction + hooks + AGENTS.md)")
+    elif len(manifest["files"]) >= 1:
         ok(f"files array has {len(manifest['files'])} entry(ies)")
     else:
         fail("files array is empty")
 
     dst = manifest["files"][0]["dst"]
     if dst == ".github/instructions/agentic-stack.instructions.md":
-        ok(f"dst = {dst}")
+        ok(f"files[0].dst = {dst}")
     else:
-        fail("dst path", f"expected .github/instructions/agentic-stack.instructions.md, got {dst}")
+        fail("files[0].dst path", f"expected .github/instructions/agentic-stack.instructions.md, got {dst}")
+
+    # Check hooks.json entry
+    hooks_entries = [f for f in manifest["files"]
+                     if f.get("dst") == ".github/hooks/agentic-stack.json"]
+    if hooks_entries:
+        ok("manifest has hooks.json entry (dst=.github/hooks/agentic-stack.json)")
+    else:
+        fail("manifest missing hooks.json entry (dst=.github/hooks/agentic-stack.json)")
+
+    # Check AGENTS.md entry with merge_or_alert
+    agents_entries = [f for f in manifest["files"]
+                      if f.get("dst") == "AGENTS.md"]
+    if agents_entries:
+        if agents_entries[0].get("merge_policy") == "merge_or_alert":
+            ok("manifest has AGENTS.md entry with merge_or_alert policy")
+        else:
+            fail("AGENTS.md entry has wrong policy", f"got {agents_entries[0].get('merge_policy')}")
+    else:
+        fail("manifest missing AGENTS.md entry")
+
+    # Check skills_link
+    if "skills_link" in manifest:
+        sl = manifest["skills_link"]
+        if sl.get("dst") == ".github/skills":
+            ok("manifest has skills_link → .github/skills")
+        else:
+            fail("skills_link dst", f"expected .github/skills, got {sl.get('dst')}")
+    else:
+        fail("manifest missing skills_link")
 
     return manifest
 
@@ -125,6 +158,20 @@ def test_install_into_temp(manifest):
             ok("instruction file created at .github/instructions/")
         else:
             fail("instruction file not created")
+
+        # Hooks file created
+        hooks_file = target / ".github" / "hooks" / "agentic-stack.json"
+        if hooks_file.is_file():
+            ok("hooks file created at .github/hooks/agentic-stack.json")
+        else:
+            fail("hooks file not created at .github/hooks/agentic-stack.json")
+
+        # Skills mirror created
+        skills_dst = target / ".github" / "skills"
+        if skills_dst.exists():
+            ok(".github/skills/ created (skills link)")
+        else:
+            fail(".github/skills/ not created")
 
         # install.json recorded
         install_json = target / ".agent" / "install.json"
@@ -169,6 +216,12 @@ def test_instruction_content(target: Path):
             ok(label)
         else:
             fail(label, f"'{needle}' not found in instruction file")
+
+    # Check applyTo frontmatter
+    if content.startswith("---") and "applyTo:" in content[:100]:
+        ok("instruction file has applyTo frontmatter")
+    else:
+        fail("instruction file missing applyTo frontmatter", "expected '---\\napplyTo: ...' at file start")
 
 
 def test_tool_availability(target: Path):
@@ -272,8 +325,74 @@ def test_doctor_detection(target: Path):
         fail("detection signal file not found in target")
 
 
+def test_hooks_file(target: Path):
+    section("8. Hooks file")
+    # Check hooks.json exists in the adapter directory
+    adapter_hooks = ADAPTER_DIR / "hooks.json"
+    if adapter_hooks.is_file():
+        ok("hooks.json exists in adapter dir")
+    else:
+        fail("hooks.json missing from adapter dir")
+        return
+
+    try:
+        data = json.loads(adapter_hooks.read_text(encoding="utf-8"))
+        ok("hooks.json is valid JSON")
+    except json.JSONDecodeError as e:
+        fail("hooks.json parse error", str(e))
+        return
+
+    if data.get("version") == 1:
+        ok("hooks.json has version: 1")
+    else:
+        fail("hooks.json version", f"expected 1, got {data.get('version')}")
+
+    hooks = data.get("hooks", {})
+    if "postToolUse" in hooks:
+        ok("hooks.json has postToolUse hook")
+    else:
+        fail("hooks.json missing postToolUse hook")
+
+    if "sessionEnd" in hooks:
+        ok("hooks.json has sessionEnd hook")
+    else:
+        fail("hooks.json missing sessionEnd hook")
+
+    # Check deployed hooks file
+    deployed = target / ".github" / "hooks" / "agentic-stack.json"
+    if deployed.is_file():
+        ok("hooks file deployed to .github/hooks/agentic-stack.json")
+    else:
+        fail("hooks file not deployed")
+
+
+def test_hook_script():
+    section("9. Hook script")
+    hook_script = HERE / ".agent" / "harness" / "hooks" / "copilot_cli_post_tool.py"
+    if hook_script.is_file():
+        ok("copilot_cli_post_tool.py exists in .agent/harness/hooks/")
+    else:
+        fail("copilot_cli_post_tool.py missing from .agent/harness/hooks/")
+        return
+
+    content = hook_script.read_text(encoding="utf-8")
+    checks = [
+        ("toolName", "handles Copilot CLI toolName field"),
+        ("toolArgs", "handles Copilot CLI toolArgs field"),
+        ("toolResult", "handles Copilot CLI toolResult field"),
+        ("claude_code_post_tool", "reuses cc.* helpers"),
+        ("log_execution", "calls log_execution"),
+        ("on_failure", "calls on_failure"),
+    ]
+    for needle, label in checks:
+        if needle in content:
+            ok(label)
+        else:
+            fail(label, f"'{needle}' not found in hook script")
+
+
 def test_remove_roundtrip(target: Path):
-    section("8. Remove roundtrip")
+    section("10. Remove roundtrip")
     from harness_manager import remove as remove_mod
 
     inst_file = target / ".github" / "instructions" / "agentic-stack.instructions.md"
@@ -298,6 +417,12 @@ def test_remove_roundtrip(target: Path):
         ok("instruction file removed")
     else:
         fail("instruction file still present after remove")
+
+    hooks_file = target / ".github" / "hooks" / "agentic-stack.json"
+    if not hooks_file.exists():
+        ok("hooks file removed")
+    else:
+        fail("hooks file still present after remove")
 
     # Brain should still be there (remove doesn't delete .agent/)
     if (target / ".agent" / "AGENTS.md").is_file():
@@ -329,6 +454,8 @@ def main():
         test_memory_availability(target)
         test_skills_availability(target)
         test_doctor_detection(target)
+        test_hooks_file(target)
+        test_hook_script()
         test_remove_roundtrip(target)
     finally:
         shutil.rmtree(target, ignore_errors=True)
