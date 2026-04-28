@@ -37,6 +37,17 @@ scaffolding that was missing.
   - NEW skill `consulting-deck-builder` authored on fork branch — 3-phase storyboard → content → format methodology with vertical/horizontal MBB logic gates and sticky migration. Manually synced to target (Gap 7 surfaced — same root cause as Gap 1).
   - Mission shifted from "revise v3 against 5 quality bars" to "build content per slide using all sources + online research, iterate via consulting-deck-builder skill"
   - `pypdf` installed (Gap 6) so PDF source material extracts cleanly
+- **Stage 3.6 — skill conformance audit + linter (2026-04-28)**
+  - Audit found 5/26 skills missing self-rewrite hook (analysis,
+    context-search, document-assembly, draft-status-update, review)
+  - All 5 hooks added — each tailored to that skill's failure mode
+  - New `.agent/tools/skill_linter.py` validates frontmatter,
+    self-rewrite hook presence, manifest match, index match
+  - New `git-hooks/pre-commit` runs linter on staged skill changes
+  - Activated locally: `git config core.hooksPath git-hooks`
+  - 26/26 skills now conformant; linter verified by passing on its
+    own commit
+  - Closes Gap 8 ("no structural-conformance enforcement on skills")
 - **Stage 4** — run the dry-run case (PENDING — user opens separate Claude Code session in target)
 - **Stage 5** — capture, gap log, fix loop (5 entries already)
 
