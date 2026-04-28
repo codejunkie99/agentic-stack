@@ -14,7 +14,7 @@
 #                                              # to add
 #
 # adapter-name: claude-code | cursor | windsurf | opencode | openclaw |
-#               hermes | pi | codex | standalone-python | antigravity
+# hermes | pi | codex | standalone-python | antigravity | gemini-cli
 #
 # All real logic lives in harness_manager/ (Python). This script is a
 # thin dispatcher so install.sh and install.ps1 share one backend —
