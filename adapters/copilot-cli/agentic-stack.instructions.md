@@ -1,3 +1,7 @@
+---
+applyTo: "**"
+---
+
 # Project Instructions (GitHub Copilot CLI)
 
 This project uses the **agentic-stack** portable brain. All memory, skills,
