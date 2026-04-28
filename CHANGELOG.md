@@ -5,6 +5,43 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] — UNRELEASED
+
+Minor release. Adds a `gemini-cli` adapter so the portable brain works with
+Google's Gemini CLI via its native MCP server extension mechanism.
+
+### Added
+- **`gemini-cli` adapter.** Adds `adapters/gemini-cli/` with an
+  `adapter.json` manifest, `GEMINI.md` project context, an MCP server
+  bridge (`mcp-server.js` + `mcp-package.json`) that exposes `recall`,
+  `memory_reflect`, `learn`, and `agentic_status` as MCP tools, and four
+  custom TOML slash commands (`/agentic:recall`, `/agentic:learn`,
+  `/agentic:status`, `/agentic:reflect`).
+- **Per-harness docs.** Adds `docs/per-harness/gemini-cli.md` covering
+  install, MCP server registration, tool reference, slash commands, and
+  troubleshooting.
+- **Validation suite.** Adds `test_gemini_mcp.py` with 15 checks: manifest
+  validation, GEMINI.md wiring, MCP server syntax/imports/tool
+  registration, package.json deps/engines, TOML command fields, docs, and
+  install/remove cycle.
+
+### Changed
+- Supported harness count is now eleven: Claude Code, Cursor, Windsurf,
+  OpenCode, OpenClaw, Hermes, Pi, Codex, Standalone Python, Antigravity,
+  and Gemini CLI.
+- The adapter installs MCP server files into
+  `<project>/.gemini/agentic-stack-mcp/` and custom commands into
+  `<project>/.gemini/commands/agentic/`. Users must register the MCP
+  server in `.gemini/settings.json` manually (documented in the per-harness
+  guide and adapter README).
+
+### Fixed
+- n/a
+
+### Migration
+No migration required. Existing installs are unaffected. The gemini-cli
+adapter is purely additive.
+
 ## [0.12.0] — 2026-04-27
 
 Minor release. Adds the opt-in `tldraw` seed skill for live canvas diagrams

@@ -1,0 +1,10 @@
+description = "Teach the agentic-stack a new rule that should never be violated again"
+prompt = """
+Teach this rule to the agentic-stack portable brain so future sessions remember it.
+
+Rule: {{args}}
+
+Run: !{python3 .agent/tools/learn.py "{{args}}" --rationale "Rule taught from gemini-cli session"}
+
+Confirm the rule was accepted and will be available in future sessions.
+"""

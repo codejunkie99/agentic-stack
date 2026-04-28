@@ -1,0 +1,19 @@
+{
+  "name": "agentic-stack-mcp",
+  "version": "0.1.0",
+  "description": "MCP server bridge that exposes agentic-stack portable brain tools (recall, memory_reflect, learn, show) to Gemini CLI.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "install-deps": "npm install --production"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "Apache-2.0"
+}

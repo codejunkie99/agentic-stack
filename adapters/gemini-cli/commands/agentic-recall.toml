@@ -1,0 +1,10 @@
+description = "Query agentic-stack memory for lessons relevant to a task before starting it"
+prompt = """
+Before starting this task, query the agentic-stack portable brain for relevant lessons.
+
+Run: !{python3 .agent/tools/recall.py "{{args}}"}
+
+If the output contains a "Consulted lessons for intent:" block with results, present them as a "Consulted lessons before acting:" block and adjust your plan to respect them. If a surfaced lesson would be violated by your intended action, stop and explain why.
+
+Then proceed with the task.
+"""

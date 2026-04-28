@@ -1,0 +1,43 @@
+{
+  "name": "gemini-cli",
+  "description": "Google Gemini CLI — GEMINI.md project context + MCP server bridge exposing recall, memory_reflect, learn, and show as tools. Custom commands in .gemini/commands/agentic/.",
+  "files": [
+    {
+      "src": "GEMINI.md",
+      "dst": "GEMINI.md",
+      "merge_policy": "merge_or_alert"
+    },
+    {
+      "src": "mcp-package.json",
+      "dst": ".gemini/agentic-stack-mcp/package.json",
+      "merge_policy": "skip_if_exists",
+      "substitute": true
+    },
+    {
+      "src": "mcp-server.js",
+      "dst": ".gemini/agentic-stack-mcp/server.js",
+      "merge_policy": "skip_if_exists",
+      "substitute": true
+    },
+    {
+      "src": "commands/agentic-recall.toml",
+      "dst": ".gemini/commands/agentic/recall.toml",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "commands/agentic-learn.toml",
+      "dst": ".gemini/commands/agentic/learn.toml",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "commands/agentic-status.toml",
+      "dst": ".gemini/commands/agentic/status.toml",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "commands/agentic-reflect.toml",
+      "dst": ".gemini/commands/agentic/reflect.toml",
+      "merge_policy": "overwrite"
+    }
+  ]
+}

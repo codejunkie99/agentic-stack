@@ -2,7 +2,7 @@
 
 **Keep one portable memory-and-skills layer across coding-agent harnesses, so switching tools doesn't reset how your agent works.**
 
-A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
+A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, Gemini CLI, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
 
 It also includes a local data layer so you can monitor the whole suite of
 agents from one place: harness activity, cron runs, active agents, token/cost
@@ -97,7 +97,7 @@ brew install agentic-stack
 # drop the brain into any project — the onboarding wizard runs automatically
 cd your-project
 agentic-stack claude-code
-# or: cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
+# or: cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity | gemini-cli
 ```
 
 ### Windows (PowerShell)
@@ -121,7 +121,7 @@ brew update && brew upgrade agentic-stack
 git clone https://github.com/codejunkie99/agentic-stack.git
 cd agentic-stack && ./install.sh claude-code         # mac / linux / git-bash
 # or on Windows PowerShell: .\install.ps1 claude-code
-# adapters: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
+# adapters: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity | gemini-cli
 ```
 
 ### Once installed: manage what's wired
@@ -313,7 +313,8 @@ adapters/                       # one small shim per harness, each with adapter.
 ├── pi/            (AGENTS.md + .pi/skills symlink)
 ├── codex/         (AGENTS.md + .agents/skills symlink)
 ├── standalone-python/  (DIY conductor entrypoint)
-└── antigravity/   (ANTIGRAVITY.md)
+└── antigravity/ (ANTIGRAVITY.md)
+└── gemini-cli/ (GEMINI.md + MCP server bridge + custom commands)
 
 harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── schema.py                   # adapter.json validator (path-safe on POSIX + Windows)
@@ -358,6 +359,7 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 | **Codex** | `AGENTS.md` + `.agents/skills/` | no (manual reflect calls) |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
 | **Antigravity** | `ANTIGRAVITY.md` | yes (system context) |
+| **Gemini CLI** | `GEMINI.md` + `.gemini/settings.json` (MCP) | partial (MCP tools, custom commands) |
 
 ## Seed skills
 
