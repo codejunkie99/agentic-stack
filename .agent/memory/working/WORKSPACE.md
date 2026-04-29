@@ -48,8 +48,28 @@ scaffolding that was missing.
   - 26/26 skills now conformant; linter verified by passing on its
     own commit
   - Closes Gap 8 ("no structural-conformance enforcement on skills")
-- **Stage 4** — run the dry-run case (PENDING — user opens separate Claude Code session in target)
-- **Stage 5** — capture, gap log, fix loop (5 entries already)
+- **Stage 4** — run the dry-run case ✅ (Phase 1 storyboard v3 + Phase 2
+  content-draft 20 main + 8 appendices + 3-reviewer panel GO-WITH-FIXES;
+  Phase 3 deferred — gated on Slide 6 metric verify, SC brand-strip,
+  Slide 3 rubric spot-check, Slide 7 demo binary)
+- **Stage 5** — capture, gap log, fix loop ✅ (post-mortem 2026-04-29)
+  - `snapshot_diff.py --diff` clean: 7 added, 0 modified, 0 removed.
+    All 7 are `.claude/agent-memory/*.md` for `deck-builder` and
+    `delivery-lead` (project + feedback + user types). No skill self-
+    rewrites; no agent edits. `in_place` evolution working as designed.
+  - `HARNESS_FEEDBACK.md` empty after 130 episodes → surfaced as Gap 11
+    (capture tool mechanically present, behaviorally invisible — no
+    skill or protocol names the trigger for `propose_harness_fix.py`).
+  - 13 dream candidates staged but all are file-write tool-use noise —
+    none graduate-worthy. Net lessons promoted: 0 (correctly). Surfaced
+    as Gap 9 (auto-dream signal/noise on long content sessions).
+  - Workflow audit timing surfaced as Gap 10 — framework-lead's 8-
+    section coverage check fired after storyboard v2, forcing 6
+    structural moves; should fire as Phase 1.5 gate inside
+    `consulting-deck-builder` before storyboard sign-off.
+  - Gap log: 8 entries (5 from Stages 2-3 + Gap 8 closed-on-branch +
+    Gaps 9/10/11 from post-mortem). Gaps 9/10/11 all open as 8.4
+    candidates.
 
 ### Original Stage 2 commit list
 

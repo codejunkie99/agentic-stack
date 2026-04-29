@@ -233,3 +233,33 @@ Final roster state after Step 8.2 (8.2.1 + 8.2.2 + 8.2.3 + 8.2.4):
 **Status:** active.
 
 **Operationalized:** `harness_conformance_audit.py` wired to detect any future regression. permissions.md mentioned in this entry so the audit's "justified-in-DECISIONS" heuristic stops flagging it.
+
+
+## 2026-04-29: Step 8.3 Phase 2 dry-run outcome — three new harness gaps surfaced
+
+**Decision:** Conclude Step 8.3 Stage 4 (consulting workflow dry-run) with Phase 2 deck-content build complete and Phase 3 (format production) deferred behind 4 explicit entry preconditions. Capture three new harness-shaped gaps from the post-mortem (Gaps 9/10/11) and route them to Step 8.4 instead of fixing on this branch.
+
+**Outcome of the dry-run:**
+- HarnessX engagement (Tier-1 APAC bank C-suite pitch deck on agentic SDLC) ran end-to-end through the BCG pipeline: storyboard v1 → v2 → v3 (framework-lead 8-section audit) → 5 case-analysts in parallel (one per act-cluster) → deck-builder consolidation + delivery-lead review → 3-reviewer partner panel (strategy / analytics / delivery) all returning GO-WITH-FIXES → Pulkit panel decisions applied → Phase 2 final-fix pass.
+- Output artefacts: `output/storyboard.md` (v3 + Phase 2 decisions), `output/content-draft.md` (20 main + 8 appendix), `output/phase-2-complete.md` (status note + Phase 3 entry preconditions). 5 cluster files + 5 review files preserved as audit trail.
+- Snapshot/diff confirms `in_place` evolution worked as designed: 7 added agent-memory files, 0 modified, 0 removed. No skill self-rewrites during the engagement; no agent file edits. Lock set held — none of the 6 read-only paths were touched.
+
+**Three new gaps (all open, deferred to 8.4):**
+1. **Gap 9 — Auto-dream noise on long content sessions.** 13 candidates staged after Phase 2; all are file-write tool-use claims ("Wrote storyboard.md (781 lines)"). None graduate-worthy. Root cause: `auto_dream.py` clusters by token overlap of action text; on long sessions the dominant signal is filename + tool, not insight. Fix: collapse Write/Edit on the same file within a session before clustering, OR weight `memory_reflect.py` reflections higher than tool-use episodes.
+2. **Gap 10 — Workflow contract reconciliation runs too late.** `consulting-deck-builder` Phase 1 (Storyboard) had no workflow-contract gate. Framework-lead 8-section audit fired *after* storyboard v2 was complete; identified 3 critical missing/mis-framed sections; v3 then required 6 structural moves. Fix: add Phase 1.5 gate to `consulting-deck-builder` SKILL.md — 8-section coverage check against source workflow file before Phase 2 entry.
+3. **Gap 11 — `propose_harness_fix.py` invisible to agents.** HARNESS_FEEDBACK.md empty after 130 episodes despite multiple harness-shaped frictions surfaced during the run. Tool exists and is documented; no skill/protocol names the trigger for invocation. Fix: two-part — (a) explicit trigger list in CLAUDE.md "When to use"; (b) session-end hook prompts "any harness friction to capture?".
+
+**What did NOT regress (validates earlier 8.x decisions):**
+- Lock set: 0 attempted writes to any of the 6 read-only paths.
+- `in_place` skill evolution: held; `consulting-deck-builder` did not self-rewrite during use, even when its own 3-phase methodology hit edge cases (cold transitions; positioning split). Skill self-rewrite hooks are present but agents preferred surfacing as findings to the user, not auto-editing.
+- Lazy-load: 14 indexed briefing files; INDEX.md the only eager surface; raw-uploads loaded on-demand only by `document-researcher`.
+- Agent-memory: 4 files for `deck-builder`, 3 for `delivery-lead`. Both correctly used the per-agent memory pattern (project + feedback + user types). The other 5 active agents (case-analysts, framework-lead, 3 partner-panel reviewers) did NOT persist agent-memory — Gap 11 root cause overlap (no rule names when to capture).
+
+**Rationale for deferring 9/10/11 to 8.4:**
+- All three are skill/tool-tuning issues, not blockers for Step 8.3's scope (which was "exercise the stack against a real consulting workflow and surface gaps"). 8.3 succeeded at surfacing.
+- Step 8.4 was already scoped as `harness-graduate.py` + dream-cycle improvements informed by 8.3 data. Gaps 9/10/11 are exactly that data.
+- Fixing 9/10/11 on this branch would expand 8.3 scope beyond the stated capture-and-surface objective and delay merge.
+
+**Status:** active. Step 8.3 complete pending merge; Phase 3 of HarnessX engagement is a Pulkit-driven workstream, not a harness deliverable.
+
+**Operationalized:** Gap log updated (8 entries total — 5 original + Gap 8 closed-on-branch + Gaps 9/10/11 from post-mortem). WORKSPACE.md marks Stages 4 + 5 complete. Step 8.4 plan to address 9/10/11 paired with `harness-graduate.py` design.
