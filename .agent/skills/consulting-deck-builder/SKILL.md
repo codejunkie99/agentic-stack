@@ -1,5 +1,6 @@
 ---
 name: consulting-deck-builder
+description: Use proactively when work involves building or iterating on a deck with MBB structure. Triggers on "build a deck", "storyboard", "iterate on slides", "structure the storyline", "vertical horizontal logic check". Three-phase methodology: Storyboard (spine + MECE check) → Content (per-slide draft with stickies, all slides at once) → Format. Never skips a phase. Phase 2 dispatches per-act subagents in parallel via the matching workflow contract.
 version: 2026-04-28
 triggers: ["build a deck", "build pitch deck", "storyboard", "iterate on slides", "structure the storyline", "scrape these resources for the deck", "vertical horizontal logic check", "slide-by-slide build", "what should each slide say"]
 tools: [bash, memory_reflect, web_search, web_fetch]
@@ -140,54 +141,90 @@ Steps:
 Phase 1 exit criterion: user explicitly approves the storyboard. The
 agent never proceeds to Phase 2 on its own.
 
-## Phase 2 — Slide content (all slides at once)
+## Phase 2 — Slide content (delegated, parallel, all slides at once)
 
 Goal: draft what every slide says, before any visualization choices.
+Phase 2 is parallelized — the lead orchestrates and synthesises but
+does NOT draft slides itself. Drafting is delegated to per-act
+case-analysts and a deck-builder dispatched via the Agent tool.
 
-Steps:
+### Delegation contract
 
-1. **For each slide in storyboard order:** load the source material
-   referenced in the slide's `Source(s)` line. Pull from
-   `summaries/<f>.md` first; only Read raw uploads if the summary is
-   insufficient. Optionally use `web_search` / `web_fetch` if the
-   storyboard flagged a need for external content.
-2. **Draft slide content.** For each slide:
-   ```markdown
-   ## Slide <N> — <action-voice title>
-   
-   **Top takeaway (vertical-logic apex):** <complete sentence>
-   
-   **Support 1 — <one-line claim>**
-   - Evidence: <bullet>
-   - Evidence: <bullet>
-   
-   **Support 2 — <one-line claim>**
-   - Evidence: ...
-   
-   **Support 3 — <one-line claim>**
-   - Evidence: ...
-   
-   **So what?:** <implication for the audience>
-   
-   [STICKY: CONTENT — note about content choice]
-   [STICKY: LAYOUT — note about visualization]
-   [STICKY: TODO — open question / missing input]
-   ```
-3. **Output target:** ALL slides in single `output/content-draft.md`,
-   in storyboard order. Reviewing all at once is mandatory — see
-   constraint below.
-4. **Run vertical-logic check on every slide.** For each slide: does
-   title follow from supports? Do supports follow from evidence? Are
-   there exactly 3 supports (≠ 2, ≠ 4+ unless explicitly justified)?
-   Document compliance at end of `content-draft.md`.
-5. **Run horizontal-MECE check on the deck.** Re-verify spine still
-   holds at content depth. Sometimes content drafting reveals overlaps
-   or gaps the storyboard missed — flag with TODO stickies and surface.
-6. **Stop and ask.** Present the full content draft. User reviews ALL
-   slides at once (their preference, locked at engagement start). Ask:
-   what to keep, kill, sharpen, merge. Iterate until user signs off.
+1. **Look up the workflow.** Match the engagement to a workflow file
+   in `.agent/workflows/`:
+   - Mid-engagement deck → `mid-case-findings-deck.md`
+     (`team_structure: coordinated`)
+   - Final deliverable → `final-recommendations-deck.md`
+     (`team_structure: full`)
+   - Proposal / pitch deck → `proposal-deck.md`
+     (`team_structure: coordinated`; 8-section canonical structure)
+   - Other deck shapes → check `.agent/workflows/_index.md`
 
-Phase 2 exit criterion: user explicitly approves the content draft. The
+2. **Dispatch the team in parallel.** Per the workflow's
+   team_structure, dispatch via the Agent tool:
+   - **N case-analysts in parallel** — one per Act in the storyboard.
+     Each case-analyst gets a prompt like: *"You are case-analyst for
+     Act <N> of the HarnessX deck. Read storyboard.md for the slide
+     map of your assigned act. Read summaries/<files-for-your-act>
+     for source material. Draft slide content per the act's slides
+     (vertical logic: title → 3 supports → evidence → so what).
+     Output as `output/act-<N>-content.md`. Do NOT cross into other
+     acts."* Each case-analyst is the SAME agent type (single
+     subagent_type, parallel instances per act).
+   - **1 deck-builder** — handles cross-slide structural concerns:
+     action-voice title check, transition flow, MECE across acts.
+     Prompt: *"Read storyboard.md and the in-progress
+     output/act-*-content.md files as case-analysts produce them.
+     Audit titles for action-voice (complete sentences with
+     conclusions, not topics). Audit cross-act flow. Output
+     consolidated `output/content-draft.md`."*
+
+3. **Lead orchestrates only.** While case-analysts and deck-builder
+   work, the lead does NOT draft slides. The lead:
+   - Reads each Agent tool result as it returns
+   - Resolves cross-act conflicts surfaced by deck-builder
+   - Runs vertical-logic check on the consolidated draft (every
+     slide: title → 3 supports → evidence)
+   - Runs horizontal-MECE check on the full deck
+
+4. **Dispatch the review panel** (parallel, after workers complete).
+   Per workflow's review section:
+   - **partner-strategy** — reviews business logic + strategic
+     alignment + client-readiness
+   - **partner-analytics** — reviews analytical rigor + data accuracy
+   - **principal-delivery** — reviews workplan / next-steps
+     feasibility
+   Each reviewer reads the consolidated `output/content-draft.md`
+   and returns a structured verdict with severity-ranked findings.
+
+5. **Stop and ask.** Present the full content draft + 3 review
+   verdicts to the user. User reviews ALL slides at once (their
+   preference, locked at engagement start). Iterate until user
+   signs off.
+
+### Hard rules
+
+- The lead does NOT draft slide content during Phase 2 if the
+  workflow declares a team. If you find yourself writing
+  `## Slide N — title...` in the orchestrator session instead of
+  via Agent tool dispatch, STOP and dispatch.
+- N case-analysts are the SAME agent type with different prompts —
+  not N different specialised roles. (Per HumanLayer 2026 research:
+  task-based parallel dispatch beats role-based agent zoo.)
+- Reviewers run AFTER workers complete, not concurrently with them.
+  Reviewing in-progress content produces noise, not signal.
+- Sticky migration rule unchanged: stickies persist through phase 2,
+  refined for content-and-layout focus.
+
+### Output files (Phase 2)
+
+- `output/act-1-content.md` ... `output/act-N-content.md` (per-act,
+  drafted by case-analysts in parallel)
+- `output/content-draft.md` (consolidated by deck-builder)
+- `output/review-verdicts.md` (3 reviewer verdicts collated by lead)
+
+Phase 2 exit criterion: user explicitly approves the consolidated
+content-draft.md (and addresses or defers reviewer findings). The
 agent never proceeds to Phase 3 on its own.
 
 ## Phase 3 — Format + content (visualization)

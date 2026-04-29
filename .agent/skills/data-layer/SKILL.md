@@ -1,5 +1,6 @@
 ---
 name: data-layer
+description: Use proactively when work involves agent activity dashboards, cron timelines, token/cost estimates, or screenshot-ready exports. Triggers on "show me the dashboard", "what did my agents do", "agent analytics", "agent status", "resource usage", "cron monitoring", "daily report". Local-only by default; do not commit private exports.
 version: 2026-04-26
 triggers: ["data layer", "dashboard", "show me the dashboard", "what did my agents do", "agent analytics", "agent status", "resource usage", "usage report", "cron monitoring", "daily report", "tokens", "terminal dashboard", "TUI"]
 tools: [bash, git]

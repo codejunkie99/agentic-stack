@@ -1,5 +1,6 @@
 ---
 name: design-md
+description: Use proactively when work involves DESIGN.md, Google Stitch, design tokens, or visual design system decisions. Triggers on "DESIGN.md", "Stitch", "design tokens", "design system", "visual design". Precondition: DESIGN.md exists at project root.
 version: 2026-04-26
 triggers: ["DESIGN.md", "design.md", "Google Stitch", "Stitch", "design tokens", "design system", "visual design"]
 tools: [bash, memory_reflect]

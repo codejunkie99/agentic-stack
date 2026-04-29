@@ -1,5 +1,6 @@
 ---
 name: client-onboarding
+description: Use proactively when a new client engagement is starting and the workspace needs scaffolding. Triggers on "new engagement", "start client", "onboard client", "kick off case". Sets active_client, scaffolds .agent/memory/client/<slug>/, initializes INDEX.md, prompts user for upload pack, and dispatches document-researcher per file. Never auto-loads raw uploads — INDEX.md is the only eager surface.
 version: 2026-04-27
 triggers: ["new engagement", "start client", "onboard client", "new client", "set up engagement", "kick off case"]
 tools: [bash, memory_reflect]

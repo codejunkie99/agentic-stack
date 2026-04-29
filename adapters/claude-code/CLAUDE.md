@@ -13,6 +13,9 @@ skills, and protocols live in `.agent/`.
 6. `.agent/protocols/permissions.md` — hard constraints
 7. `.agent/context/_index.md` — generic consulting frameworks index
    (load specific files only when an analytical task triggers them)
+8. `.agent/workflows/_index.md` — deliverable-production workflows
+   (lookup table; load specific workflow files only when producing
+   the matching deliverable)
 
 ## Conditional mounts (based on `config.json`)
 
@@ -46,6 +49,14 @@ surfaced lesson would be violated, stop and explain why.
 **Skills.** Read `.agent/skills/_index.md` and load the full
 `SKILL.md` for any skill whose triggers match. Skills carry
 constraints the permissions file doesn't cover.
+
+**Deliverables → workflows.** For any deliverable-shaped task
+(deck, document, analysis, status update), look up the matching
+workflow in `.agent/workflows/<workflow-id>.md`. The workflow's
+frontmatter declares `team_structure` (flat / coordinated / full)
+and the named subagents to dispatch. Default to delegate: lead
+orchestrates, teammates produce. The orchestrator should not draft
+deliverable content itself when the workflow declares a team.
 
 **Workspace.** Update `.agent/memory/working/WORKSPACE.md` when
 you start a task, change hypothesis, or finish/abandon work.
@@ -81,6 +92,10 @@ ritual. Same mechanism for `skill_evolution_mode: "propose_only"`.
 
 ## Rules that override all defaults
 
+- Default to delegate. For deliverable tasks, dispatch the workflow's
+  team via the Agent tool BEFORE drafting. If you find yourself
+  writing deliverable content in the orchestrator session when a
+  workflow declares a team, stop and dispatch.
 - Never force push to `main`, `production`, or `staging`.
 - Never delete episodic or semantic memory entries — archive them.
 - Never modify `.agent/protocols/permissions.md` — humans only.

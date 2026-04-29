@@ -1,5 +1,6 @@
 ---
 name: document-researcher
+description: Use proactively when a single document has been dropped into a client engagement's raw-uploads/ and needs a bounded summary + INDEX entry. Triggers on "summarize this document", "researcher", "index this upload", "process upload". Demands a one-line user description before summarizing; produces a ~300-word bounded summary at summaries/<filename>.md and appends a Documents-table row to client INDEX.md. One file per invocation — forces triage.
 version: 2026-04-27
 triggers: ["summarize this document", "researcher", "index this upload", "process upload", "summarize file"]
 tools: [bash, memory_reflect]

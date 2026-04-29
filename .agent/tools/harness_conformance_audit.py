@@ -94,6 +94,7 @@ ALWAYS_EAGER_REL = [
     ".agent/protocols/permissions.md",
     ".agent/context/_index.md",
     ".agent/skills/_index.md",
+    ".agent/workflows/_index.md",
 ]
 
 # CLAUDE.md path differs between fork (source) and install (target).

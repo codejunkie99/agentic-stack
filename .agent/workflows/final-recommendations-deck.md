@@ -18,11 +18,11 @@ Deliver BCG's final recommendations to the client with full analytical backing, 
 7. Appendices (supporting analytics, benchmarks, data exhibits)
 
 ## Team Structure: Full
-- **analyst** leads and coordinates:
-  - **analyst** (×N) — Per-workstream analytical sections
+- **framework-lead** leads and coordinates:
+  - **case-analyst** (×N) — Per-workstream analytical sections
   - **deck-builder** — Full slide production
-  - **program-manager** — Implementation roadmap
-- analyst runs internal review before partner escalation
+  - **delivery-lead** — Implementation roadmap
+- framework-lead runs internal review before partner escalation
 
 ## Review Panel (independent, parallel)
 - **partner-strategy** — Strategic alignment and commercial credibility

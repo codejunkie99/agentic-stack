@@ -1,5 +1,6 @@
 ---
 name: git-proxy
+description: Use proactively when work involves git operations with safety constraints. Triggers on "commit", "push", "branch", "merge", "rebase". Constraints: never force push to main; run tests before push.
 version: 2026-01-01
 triggers: ["commit", "push", "branch", "merge", "rebase", "pull request", "PR"]
 tools: [bash]

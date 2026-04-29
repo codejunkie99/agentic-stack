@@ -1,5 +1,6 @@
 ---
 name: skillforge
+description: Use proactively when a new capability is needed and a recurring pattern in user work justifies a new skill. Triggers on "create skill", "new skill", "build skill", "new capability", "I keep doing this manually". Constraints: do not duplicate existing skills; always include self-rewrite hook.
 version: 2026-01-01
 triggers: ["create skill", "new skill", "build skill", "new capability"]
 tools: [bash, memory_reflect, git]
