@@ -238,14 +238,15 @@ def _exp_deck_builder_phase_2() -> list[dict]:
 # ---- Matchers --------------------------------------------------------
 
 def _match_read_of(path_substring: str, suffix: str | None = None):
+    """Episodic schema: action='read: <full_path>'."""
     def fn(entries, install_root):
         for e in entries:
-            if e.get("tool_name") != "Read":
+            action = e.get("action", "")
+            if not action.startswith("read: "):
                 continue
-            inp = e.get("tool_input") or {}
-            fp = inp.get("file_path") or ""
+            fp = action[len("read: "):]
             if path_substring in fp and (suffix is None or fp.endswith(suffix)):
-                return True, f"Read {fp} at {e.get('timestamp', 'unknown')}"
+                return True, f"Read {Path(fp).name} at {e.get('timestamp', 'unknown')}"
         return False, None
     return fn
 
@@ -255,10 +256,10 @@ def _match_path_count(path_substring: str, min_count: int = 0, max_count: int | 
         count = 0
         examples = []
         for e in entries:
-            if e.get("tool_name") != "Read":
+            action = e.get("action", "")
+            if not action.startswith("read: "):
                 continue
-            inp = e.get("tool_input") or {}
-            fp = inp.get("file_path") or ""
+            fp = action[len("read: "):]
             if path_substring in fp:
                 count += 1
                 if len(examples) < 3:
@@ -281,27 +282,24 @@ def _match_file_exists(rel_path: str):
 
 
 def _match_agent_dispatch(subagent_name: str):
+    """Episodic schema: action='agent: <subagent_name> — <description>'."""
+    prefix = f"agent: {subagent_name}"
     def fn(entries, install_root):
         for e in entries:
-            if e.get("tool_name") not in {"Agent", "Task"}:
-                continue
-            inp = e.get("tool_input") or {}
-            stype = inp.get("subagent_type") or inp.get("agent") or ""
-            if stype == subagent_name:
+            action = e.get("action", "")
+            if action.startswith(prefix):
                 return True, f"dispatched at {e.get('timestamp', 'unknown')}"
         return False, f"{subagent_name} never dispatched via Agent tool"
     return fn
 
 
 def _match_parallel_dispatch(subagent_name: str, min_count: int = 2, window_s: int = 60):
+    prefix = f"agent: {subagent_name}"
     def fn(entries, install_root):
         timestamps = []
         for e in entries:
-            if e.get("tool_name") not in {"Agent", "Task"}:
-                continue
-            inp = e.get("tool_input") or {}
-            stype = inp.get("subagent_type") or inp.get("agent") or ""
-            if stype != subagent_name:
+            action = e.get("action", "")
+            if not action.startswith(prefix):
                 continue
             ts = e.get("timestamp")
             if ts:
@@ -312,7 +310,6 @@ def _match_parallel_dispatch(subagent_name: str, min_count: int = 2, window_s: i
         if len(timestamps) < min_count:
             return False, f"only {len(timestamps)} dispatch(es) — below min ({min_count})"
         timestamps.sort()
-        # Find longest run within window_s
         for i in range(len(timestamps) - min_count + 1):
             if (timestamps[i + min_count - 1] - timestamps[i]).total_seconds() <= window_s:
                 return True, f"{min_count}+ {subagent_name}(s) within {window_s}s window"
@@ -322,9 +319,10 @@ def _match_parallel_dispatch(subagent_name: str, min_count: int = 2, window_s: i
 
 
 def _match_assistant_text(keywords: list[str]):
+    """Search across action / detail / reflection fields for any keyword."""
     def fn(entries, install_root):
         for e in entries:
-            text = (e.get("tool_response") or {}).get("output", "") + " " + str(e.get("note", ""))
+            text = " ".join(str(e.get(f, "")) for f in ("action", "detail", "reflection"))
             text_lower = text.lower()
             for kw in keywords:
                 if kw.lower() in text_lower:
@@ -334,32 +332,26 @@ def _match_assistant_text(keywords: list[str]):
 
 
 def _match_dispatch_plan_before_agents(entries, install_root):
-    """Dispatch plan must appear in some signal BEFORE first Agent call."""
+    """Dispatch plan must appear in some signal BEFORE first Agent call.
+    Episodic schema: action='agent: <name> — <desc>'."""
     first_agent_ts = None
     for e in entries:
-        if e.get("tool_name") in {"Agent", "Task"}:
-            ts = e.get("timestamp")
-            if ts:
-                try:
-                    first_agent_ts = dt.datetime.fromisoformat(ts.rstrip("Z")).replace(tzinfo=None)
-                    break
-                except ValueError:
-                    pass
+        action = e.get("action", "")
+        if action.startswith("agent: ") or action.startswith("task: "):
+            t = _parse_ts(e.get("timestamp"))
+            if t is not None:
+                first_agent_ts = t
+                break
     if first_agent_ts is None:
         return False, "no Agent dispatch yet — cannot evaluate ordering"
-    # Look for "dispatch plan" / "I'll dispatch" / "plan for dispatch" in entries before that timestamp
     keywords = ["dispatch plan", "i'll dispatch", "i will dispatch", "plan for dispatch", "dispatch the team"]
     for e in entries:
-        ts = e.get("timestamp")
-        if not ts:
-            continue
-        try:
-            t = dt.datetime.fromisoformat(ts.rstrip("Z")).replace(tzinfo=None)
-        except ValueError:
+        t = _parse_ts(e.get("timestamp"))
+        if t is None:
             continue
         if t >= first_agent_ts:
             break
-        text = (str(e.get("note", "")) + " " + str((e.get("tool_response") or {}).get("output", ""))).lower()
+        text = " ".join(str(e.get(f, "")) for f in ("action", "detail", "reflection")).lower()
         for kw in keywords:
             if kw in text:
                 return True, f"plan signaled before first dispatch (matched '{kw}')"
@@ -367,46 +359,38 @@ def _match_dispatch_plan_before_agents(entries, install_root):
 
 
 def _match_no_main_session_drafts(entries, install_root):
-    """Lead should NOT have written slide content directly. Detect via
-    Edit/Write to output/content-draft.md from the parent session."""
-    # If any Edit or Write to content-draft.md happened WITHOUT a preceding
-    # Agent dispatch in the same minute, that's likely the lead drafting.
-    # This is a heuristic; refine when we have real session data.
+    """Lead should NOT have written slide content directly.
+    Episodic schema: action='write: <path>' or 'edit: <path>'."""
     direct_writes = 0
     for e in entries:
-        if e.get("tool_name") not in {"Edit", "Write"}:
-            continue
-        inp = e.get("tool_input") or {}
-        fp = inp.get("file_path") or ""
-        if "content-draft" in fp and "act-" not in fp:
-            direct_writes += 1
+        action = e.get("action", "")
+        for prefix in ("write: ", "edit: "):
+            if action.startswith(prefix):
+                fp = action[len(prefix):]
+                if "content-draft" in fp and "act-" not in fp:
+                    direct_writes += 1
+                break
     if direct_writes == 0:
         return True, "no main-session writes to content-draft.md (good)"
-    # Was content-draft.md written by deck-builder dispatch result?
-    # Hard to distinguish without subagent attribution in the log. v1 is
-    # heuristic — flag for human review.
     return True, f"{direct_writes} write(s) to content-draft.md — verify these came from deck-builder, not lead"
 
 
 def _match_reviewer_panel_after_workers(entries, install_root):
-    """3 reviewer dispatches (partner-strategy / partner-analytics /
-    principal-delivery) should fire AFTER the case-analyst dispatches
-    complete."""
+    """3 reviewer dispatches should fire AFTER case-analyst dispatches.
+    Episodic schema: action='agent: <name> — <desc>'."""
     reviewer_types = {"partner-strategy", "partner-analytics", "principal-delivery"}
     reviewers_seen = set()
     last_worker_ts = None
     first_reviewer_ts = None
     for e in entries:
-        if e.get("tool_name") not in {"Agent", "Task"}:
+        action = e.get("action", "")
+        if not action.startswith("agent: "):
             continue
-        inp = e.get("tool_input") or {}
-        stype = inp.get("subagent_type") or inp.get("agent") or ""
-        ts = e.get("timestamp")
-        if not ts:
-            continue
-        try:
-            t = dt.datetime.fromisoformat(ts.rstrip("Z")).replace(tzinfo=None)
-        except ValueError:
+        # Parse "agent: <subagent_name> — <description>"
+        rest = action[len("agent: "):]
+        stype = rest.split(" — ", 1)[0].split(" ", 1)[0]
+        t = _parse_ts(e.get("timestamp"))
+        if t is None:
             continue
         if stype == "case-analyst":
             last_worker_ts = max(t, last_worker_ts) if last_worker_ts else t
@@ -416,7 +400,7 @@ def _match_reviewer_panel_after_workers(entries, install_root):
     if len(reviewers_seen) < 3:
         return False, f"only {len(reviewers_seen)} of 3 reviewers dispatched ({sorted(reviewers_seen)})"
     if last_worker_ts and first_reviewer_ts and first_reviewer_ts < last_worker_ts:
-        return False, f"reviewers fired BEFORE last case-analyst — wrong sequencing"
+        return False, "reviewers fired BEFORE last case-analyst — wrong sequencing"
     return True, f"3 reviewers dispatched after workers: {sorted(reviewers_seen)}"
 
 
@@ -441,7 +425,10 @@ def _load_episodic(since_minutes: int | None = None) -> list[dict]:
     out = []
     cutoff = None
     if since_minutes is not None:
-        cutoff = dt.datetime.now() - dt.timedelta(minutes=since_minutes)
+        # Episodic timestamps are written in UTC; compare in UTC to avoid
+        # timezone drift (a Singapore-local cutoff against UTC stamps would
+        # exclude entries written within the last 8 hours by local clock).
+        cutoff = dt.datetime.utcnow() - dt.timedelta(minutes=since_minutes)
     for line in EPISODIC.read_text(encoding="utf-8", errors="replace").splitlines():
         line = line.strip()
         if not line:
