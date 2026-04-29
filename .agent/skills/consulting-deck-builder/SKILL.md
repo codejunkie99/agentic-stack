@@ -160,7 +160,21 @@ case-analysts and a deck-builder dispatched via the Agent tool.
      (`team_structure: coordinated`; 8-section canonical structure)
    - Other deck shapes → check `.agent/workflows/_index.md`
 
-2. **Dispatch the team in parallel.** Per the workflow's
+2. **Show the dispatch plan FIRST (mandatory gate).** Before any
+   Agent tool calls, present to the user:
+   - For each case-analyst dispatch: cluster name, sections owned,
+     summaries assigned (specific filenames from `summaries/`), rough
+     slide-count budget
+   - For deck-builder: which structural concerns (titles / transitions
+     / MECE check)
+   - For delivery-lead: which sections (MVP / TOM / next steps)
+   - For each reviewer: which lens
+   The user confirms or edits the plan before any dispatch fires.
+   This gate prevents the documented LLM tendency to misassign
+   sources or over-fan the dispatch. Single-step delegation without
+   prior plan-confirmation is a failure mode.
+
+3. **Dispatch the team in parallel.** Per the workflow's
    team_structure, dispatch via the Agent tool:
    - **N case-analysts in parallel** — one per Act in the storyboard.
      Each case-analyst gets a prompt like: *"You are case-analyst for
@@ -179,7 +193,7 @@ case-analysts and a deck-builder dispatched via the Agent tool.
      conclusions, not topics). Audit cross-act flow. Output
      consolidated `output/content-draft.md`."*
 
-3. **Lead orchestrates only.** While case-analysts and deck-builder
+4. **Lead orchestrates only.** While case-analysts and deck-builder
    work, the lead does NOT draft slides. The lead:
    - Reads each Agent tool result as it returns
    - Resolves cross-act conflicts surfaced by deck-builder
@@ -187,7 +201,7 @@ case-analysts and a deck-builder dispatched via the Agent tool.
      slide: title → 3 supports → evidence)
    - Runs horizontal-MECE check on the full deck
 
-4. **Dispatch the review panel** (parallel, after workers complete).
+5. **Dispatch the review panel** (parallel, after workers complete).
    Per workflow's review section:
    - **partner-strategy** — reviews business logic + strategic
      alignment + client-readiness
@@ -197,7 +211,7 @@ case-analysts and a deck-builder dispatched via the Agent tool.
    Each reviewer reads the consolidated `output/content-draft.md`
    and returns a structured verdict with severity-ranked findings.
 
-5. **Stop and ask.** Present the full content draft + 3 review
+6. **Stop and ask.** Present the full content draft + 3 review
    verdicts to the user. User reviews ALL slides at once (their
    preference, locked at engagement start). Iterate until user
    signs off.
