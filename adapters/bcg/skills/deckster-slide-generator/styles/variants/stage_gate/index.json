@@ -1,0 +1,14 @@
+{
+  "pattern": "stage_gate",
+  "description": "Horizontal phases with colored gates and connecting arrows for approval processes",
+  "default_variant": "gate_flow",
+  "variants": {
+    "gate_flow": {
+      "file": "gate_flow.py",
+      "description": "Horizontal phase blocks with colored gate bars between them and connecting arrows",
+      "inputs": ["stages", "gates"],
+      "min_stages": 3,
+      "max_stages": 6
+    }
+  }
+}

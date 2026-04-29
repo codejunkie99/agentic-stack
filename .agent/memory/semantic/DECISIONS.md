@@ -311,3 +311,38 @@ Each template requires the agent to write a DURABLE LESSON sentence (transferabl
 - Existing target REVIEW_QUEUE retains 10 noise candidates from pre-fix run; clearing happens in Phase M
 
 **Status:** active. Pairs with Phase K (which made target's semantic engagement-blank so these new high-salience reflections accumulate against a clean substrate) and Phase M (clears the pre-fix noisy candidates). Next time consulting-deck-builder runs through a phase exit, the reflection will be the cluster canonical and the dream cycle will stage a lesson-shaped candidate, not a file-write claim.
+
+
+## 2026-04-29: Phase I — vendored deckster-slide-generator + content-faithful Phase 3 contract
+
+**Decision:** Install the BCG-internal `deckster-slide-generator` skill (v1.0, sourced from `~/Downloads/deckster-slide-generator.skill`) at `adapters/bcg/skills/deckster-slide-generator/` as a vendored skill. Wire it into `consulting-deck-builder` Phase 3 as the rendering engine under a content-faithful contract that forbids deckster from regenerating titles, reordering slides, dropping/adding slides, or rewriting body content. Document the contract in a sidecar `INTEGRATION.md` so the vendored SKILL.md stays unmodified and can be re-synced from upstream without losing our integration. Add a vendored-skill convention to `skill_linter.py`: skill directories containing `INTEGRATION.md` are exempt from conformance checks.
+
+**Why this matters now:** HarnessX engagement Phase 3 (deck format production) is imminent. The Phase 3 deliverable was the missing methodology layer in `consulting-deck-builder` (Phase I task). Building a BCG-quality format-pass skill from scratch would have taken hours and produced something inferior to deckster — which already encodes BCG's color palette, font hierarchy (TITLE 24, SUBHEADER 16, BODY 14, LABEL 12), layout templates (`references/frameworks/`, `references/layouts/`), chart rendering (`references/charts/`), and QA pass (`check_deck()` + per-slide PNG inspection). Deckster is the right tool; the only adaptation needed is the content-faithful constraint.
+
+**The content-faithful problem and its solution:** Deckster's stock scope is "create new deck from scratch" — it expects to plan storyline, draft titles, generate body content. But Phase 3 is downstream of Phase 2's panel-approved `content-draft.md` (20 main + 8 appendix slides, action-voice titles verbatim, body content locked, sticky annotations preserved as render hints, binding decisions logged). Re-running deckster's planning pass against locked content would discard the entire Phase 1 + Phase 2 arc and regress on titles, positioning, and panel decisions — unacceptable.
+
+The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` enforces:
+1. `content-draft.md` is read-only authoritative input — titles, body, slide order locked
+2. 8 sticky types translate to render-time hints, not regeneration triggers (LAYOUT, CONTENT, TODO, TRANSITION, GATE, WAIVER, BRAND_STRIP, SCOPE)
+3. The 4 Phase 3 entry preconditions (Slide 6 metric verify, SC brand-strip, Slide 3 rubric spot-check, Slide 7 demo binary) fire as hard render gates BEFORE deckster invocation
+4. Speaker-note pass happens IN `consulting-deck-builder` Phase 3 (text-content task); deckster receives finalised notes
+5. `mode="content_faithful"` flag at invocation signals the host agent to revert any deckster operation that wasn't a sticky translation
+6. Deckster's mandatory disclaimer applies to every .pptx delivery
+
+**Vendored-skill convention added to linter:** Skill dirs containing `INTEGRATION.md` are excluded from conformance checks (frontmatter shape, self-rewrite hook presence, manifest match, index match). Vendored skills don't need our self-rewrite hook because they're not ours to evolve — they sync from upstream. The `INTEGRATION.md` sidecar IS the harness-side wrapper. Linter output now reads "ok: all 26 skill(s) pass conformance checks (1 vendored skipped: deckster-slide-generator)" on the target.
+
+**Rationale:** Build vs buy for a 17MB methodology-rich vendored skill was an obvious buy. The skill is BCG-internal, contributed by Jan Wulff / Justin Grosz / Marc Puig, and represents organisational knowledge we cannot reproduce in a session. The risk was content regression; the contract closes that. Sidecar pattern (vs modifying SKILL.md) preserves upstream sync. Vendored-skill linter convention generalises beyond deckster — future BCG-internal skills (e.g., the `bcg-slide-generator-6.2.0.skill` also in Downloads) install the same way.
+
+**Alternatives considered:** (a) Build `bcg-slide-format` from scratch — rejected; would take hours, produce inferior output, and miss BCG-specific layout primitives. (b) Modify deckster's SKILL.md to add the content-faithful constraint inline — rejected; pollutes vendored content, breaks upstream resync. (c) Wrap deckster in a new harness-side skill that calls it — rejected; introduces a third skill layer and double-dispatches. (d) Place deckster at `.agent/skills/` directly — rejected; would conflate generic skills with BCG-vendored, and the existing `confluence-access` precedent puts BCG skills under `adapters/bcg/skills/`. (e) Add `vendored: true` frontmatter marker instead of sidecar file — rejected; modifies the vendored file, and a frontmatter-only marker doesn't carry the integration contract.
+
+**Operationalised:**
+- Vendored skill installed: `adapters/bcg/skills/deckster-slide-generator/` (17MB, 23 Python scripts, references/ methodology, assets/, agents/, styles/)
+- Sidecar contract: `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md`
+- `consulting-deck-builder/SKILL.md` Phase 3 section rewritten to dispatch deckster under `mode="content_faithful"` with INTEGRATION.md as the binding contract
+- `skill_linter.py` updated with vendored-skill exemption (INTEGRATION.md sidecar = skip)
+- Manually synced to HarnessX target at `<target>/.agent/skills/deckster-slide-generator/` (until Phase J / sync-target.sh)
+- Skill linter passes 26/26 on fork, 26/26 on target with 1 vendored skipped
+
+**Open propagation gap (deferred):** `bcg_conditional_propagate` in `harness_manager/post_install.py` propagates `adapters/bcg/{agents,commands,agent-memory-templates}/` to target's `.claude/`, but does NOT propagate `adapters/bcg/skills/` to target's `.agent/skills/`. So fresh installs with `bcg_adapter=enabled` will get the BCG agents but NOT the BCG skills. Phase J (sync-target.sh) should cover skill propagation; longer-term `bcg_conditional_propagate` itself should be extended. Logged here so the gap doesn't fall through.
+
+**Status:** active. Phase 3 of HarnessX is now unblocked — `consulting-deck-builder` Phase 3 dispatches deckster against the locked content-draft.md once the 4 entry preconditions are cleared.

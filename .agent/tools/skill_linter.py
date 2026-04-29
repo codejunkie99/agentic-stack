@@ -255,6 +255,15 @@ def main(argv: list[str] | None = None) -> int:
     else:
         targets = sorted(d for d in SKILLS_DIR.iterdir() if d.is_dir())
 
+    # Vendored skills (ones we don't own — e.g., upstream firm-internal
+    # skills like deckster-slide-generator) are excluded from conformance
+    # checks. Convention: a sibling INTEGRATION.md file in the skill dir
+    # marks it as vendored, and documents how this harness wraps it.
+    # The vendored skill's own SKILL.md is not modified, so it can be
+    # re-synced from upstream without losing our integration contract.
+    skipped_vendored = [d.name for d in targets if (d / "INTEGRATION.md").is_file()]
+    targets = [d for d in targets if not (d / "INTEGRATION.md").is_file()]
+
     failed = 0
     for skill_dir in targets:
         violations = lint_skill(skill_dir, manifest, index_names)
@@ -272,7 +281,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"ok: all {total} skill(s) pass conformance checks")
+    msg = f"ok: all {total} skill(s) pass conformance checks"
+    if skipped_vendored:
+        msg += f" ({len(skipped_vendored)} vendored skipped: {', '.join(skipped_vendored)})"
+    print(msg)
     return 0
 
 

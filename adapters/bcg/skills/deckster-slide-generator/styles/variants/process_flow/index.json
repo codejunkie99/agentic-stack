@@ -1,0 +1,28 @@
+{
+  "pattern": "process_flow",
+  "description": "Sequential process with distinct stages",
+  "default_variant": "chevron_arrows",
+  "variants": {
+    "chevron_arrows": {
+      "file": "chevron_arrows.py",
+      "description": "Connected chevron arrow shapes with detail cards below each phase",
+      "inputs": ["stages"],
+      "min_stages": 3,
+      "max_stages": 7
+    },
+    "numbered_steps": {
+      "file": "numbered_steps.py",
+      "description": "Numbered circles connected by horizontal lines with title and description below",
+      "inputs": ["stages"],
+      "min_stages": 2,
+      "max_stages": 7
+    },
+    "clean_steps": {
+      "file": "clean_steps.py",
+      "description": "Minimal thin-bordered numbered circles with clean connecting line and light detail cards",
+      "inputs": ["stages"],
+      "min_stages": 2,
+      "max_stages": 7
+    }
+  }
+}

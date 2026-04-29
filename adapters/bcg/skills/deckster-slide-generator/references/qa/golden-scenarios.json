@@ -1,0 +1,135 @@
+{
+  "scenarios": [
+    {
+      "id": "executive_summary",
+      "prompt": "Create an executive-summary slide for a CFO showing that a $150M digital manufacturing investment yields $380M NPV over three years.",
+      "expected_layout_family": "content",
+      "expected_primary_docs": [
+        "references/runtime/plan.md",
+        "references/frameworks/exec-summary-cards.md"
+      ],
+      "must_validate": [
+        "action title",
+        "SCQA labels remain invisible",
+        "recommendation lives in the title placeholder"
+      ]
+    },
+    {
+      "id": "chart_led_finding",
+      "prompt": "Build a slide proving that client satisfaction improved 10 points after launch using a bar chart with the standout month highlighted.",
+      "expected_layout_family": "content",
+      "expected_primary_docs": [
+        "references/runtime/plan.md",
+        "references/charts/index.md",
+        "references/charts/bar.md"
+      ],
+      "must_validate": [
+        "chart chosen from the argument",
+        "highlighted insight carrier",
+        "callout added after the chart",
+        "source line"
+      ]
+    },
+    {
+      "id": "decision_ask",
+      "prompt": "Create a decision-ask slide asking the board to approve the Transformation Office model with supporting proof on the right.",
+      "expected_layout_family": "green_left_arrow",
+      "expected_primary_docs": [
+        "references/runtime/plan.md",
+        "references/layouts/framing.md"
+      ],
+      "must_validate": [
+        "short framing title",
+        "right panel vertically centered",
+        "no peer-grid treatment"
+      ]
+    },
+    {
+      "id": "roadmap",
+      "prompt": "Create a three-phase rollout roadmap with dates, milestones, and a bottom summary callout.",
+      "expected_layout_family": "content",
+      "expected_primary_docs": [
+        "references/runtime/build.md",
+        "references/process/index.md",
+        "references/process/timeline.md"
+      ],
+      "must_validate": [
+        "left-to-right sequence",
+        "12pt minimum in timeline cards",
+        "bottom callout stays above source zone"
+      ]
+    },
+    {
+      "id": "framework_matrix",
+      "prompt": "Create a capability maturity matrix using Harvey balls for five domains across four criteria.",
+      "expected_layout_family": "content",
+      "expected_primary_docs": [
+        "references/frameworks/index.md",
+        "references/frameworks/harvey-ball.md"
+      ],
+      "must_validate": [
+        "relative scoring, not faux precision",
+        "visible legend",
+        "12pt readable labels"
+      ]
+    },
+    {
+      "id": "image_led",
+      "prompt": "Create an image-led transformation slide where the image materially supports the thesis and the slide is title + image only.",
+      "expected_layout_family": "green_half",
+      "expected_primary_docs": [
+        "references/runtime/plan.md",
+        "references/layouts/image-led.md"
+      ],
+      "must_validate": [
+        "image is evidentiary",
+        "no manual body text is added to the green title panel",
+        "placeholder image path rather than arbitrary placement"
+      ]
+    },
+    {
+      "id": "ee4p_template",
+      "prompt": "Ingest a client .ee4p file, build against the derived template, and persist the template for reuse in the workspace.",
+      "expected_layout_family": "template_runtime",
+      "expected_primary_docs": [
+        "references/runtime/build.md"
+      ],
+      "must_validate": [
+        "template ingestion",
+        "build-ready runtime template config",
+        "save_template persistence path"
+      ]
+    },
+    {
+      "id": "dynamic_style_override",
+      "prompt": "Render a flywheel slide for a client template that should prefer the concentric-rings treatment and KPI slides that should use the big-number dashboard treatment.",
+      "expected_layout_family": "pattern_variant_override",
+      "expected_primary_docs": [
+        "references/core/dynamic-styles.md",
+        "references/runtime/build.md",
+        "references/process/flywheel.md",
+        "references/charts/kpi-tiles.md"
+      ],
+      "must_validate": [
+        "variant discovery before override",
+        "public deck-level variant override API",
+        "template-level pattern_variants defaults",
+        "no semantic routing drift"
+      ]
+    },
+    {
+      "id": "qa_only_review",
+      "prompt": "Review an already-generated deck, run QA, render and visually inspect every slide, fix blocking issues, and present the report.",
+      "expected_layout_family": "qa_review",
+      "expected_primary_docs": [
+        "references/runtime/qa.md"
+      ],
+      "must_validate": [
+        "first visual pass uses rendered slide PNGs (view in Chat, Read in Code)",
+        "HIGH issues fixed before presentation",
+        "every slide visually inspected",
+        "QA report and visually reviewed deck shown to the user"
+      ]
+    }
+  ]
+}

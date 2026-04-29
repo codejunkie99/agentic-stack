@@ -52,6 +52,25 @@ scaffolding that was missing.
   content-draft 20 main + 8 appendices + 3-reviewer panel GO-WITH-FIXES;
   Phase 3 deferred — gated on Slide 6 metric verify, SC brand-strip,
   Slide 3 rubric spot-check, Slide 7 demo binary)
+- **Stage 8 — Phase I — vendored deckster + content-faithful Phase 3 ✅ (2026-04-29)**
+  - Vendored deckster-slide-generator (BCG-internal, 17MB) installed
+    at `adapters/bcg/skills/deckster-slide-generator/` per existing
+    `confluence-access` convention
+  - Sidecar `INTEGRATION.md` documents content-faithful contract:
+    content-draft.md is read-only authoritative; titles, body, slide
+    order locked; 8 sticky types translate to render hints, not
+    regen triggers; 4 Phase 3 entry preconditions are hard render
+    gates BEFORE deckster invocation; speaker-note pass happens in
+    consulting-deck-builder, not in deckster
+  - `consulting-deck-builder` Phase 3 section rewritten to dispatch
+    deckster under `mode="content_faithful"`
+  - New vendored-skill convention in `skill_linter.py`: dirs with
+    `INTEGRATION.md` skip conformance (vendored skills don't need
+    our self-rewrite hook — they sync from upstream)
+  - Manually synced to HarnessX target; both lint surfaces clean
+  - Open gap: `bcg_conditional_propagate` doesn't propagate skills;
+    Phase J should cover it. Logged in DECISIONS.md.
+  - Phase 3 of HarnessX now unblocked (subject to 4 entry preconds)
 - **Stage 7 — Phase L — memory-write discipline in consulting-deck-builder ✅ (2026-04-29)**
   - Replaced single `--importance 6` reflect call with 3 structured
     phase-exit blocks: Phase 1 (8×5=40, dominates cluster), Phase 2

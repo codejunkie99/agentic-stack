@@ -1,0 +1,14 @@
+{
+  "pattern": "gantt",
+  "description": "Horizontal timeline bars for overlapping workstream schedules",
+  "default_variant": "workstream_bars",
+  "variants": {
+    "workstream_bars": {
+      "file": "workstream_bars.py",
+      "description": "Horizontal bars with quarter headers, alternating row backgrounds, milestone diamonds, and duration labels",
+      "inputs": ["workstreams", "milestones", "total_months"],
+      "min_stages": 2,
+      "max_stages": 8
+    }
+  }
+}

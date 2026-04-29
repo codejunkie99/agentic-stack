@@ -1,0 +1,42 @@
+{
+  "pattern": "split_panel",
+  "description": "Split layouts with green accent panels and structured content zones",
+  "default_variant": "green_one_third",
+  "variants": {
+    "green_one_third": {
+      "file": "green_one_third.py",
+      "description": "Title-led one-third framing with right-side numbered items with badges",
+      "inputs": ["section_header", "items"],
+      "min_items": 1,
+      "max_items": 6
+    },
+    "green_left_arrow": {
+      "file": "green_left_arrow.py",
+      "description": "Title-led arrow framing with icon+title+desc rows on the white right side",
+      "inputs": ["subheader", "items"],
+      "min_items": 1,
+      "max_items": 5
+    },
+    "decision_cards": {
+      "file": "decision_cards.py",
+      "description": "Decision-option cards on the right side with one recommended path highlighted",
+      "inputs": ["subheader", "options"],
+      "min_items": 2,
+      "max_items": 4
+    },
+    "green_highlight_quote": {
+      "file": "green_highlight_quote.py",
+      "description": "Left analysis zone + right green panel with Format A quote and attribution",
+      "inputs": ["quote", "attribution"],
+      "min_items": 1,
+      "max_items": 1
+    },
+    "green_highlight_insights": {
+      "file": "green_highlight_insights.py",
+      "description": "Left analysis zone + right green panel with Format B structured insight rows",
+      "inputs": ["insights"],
+      "min_items": 1,
+      "max_items": 6
+    }
+  }
+}

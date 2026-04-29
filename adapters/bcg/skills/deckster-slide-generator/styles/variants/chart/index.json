@@ -1,0 +1,49 @@
+{
+  "pattern": "chart",
+  "description": "Chart wrappers that position native charts within bounds with source annotations",
+  "default_variant": "bar",
+  "variants": {
+    "bar": {
+      "file": "bar.py",
+      "description": "Clustered column bar chart with optional source line",
+      "inputs": ["categories", "series"],
+      "min_items": 1,
+      "max_items": 10
+    },
+    "stacked_bar": {
+      "file": "stacked_bar.py",
+      "description": "Stacked column bar chart with optional source line",
+      "inputs": ["categories", "series"],
+      "min_items": 1,
+      "max_items": 10
+    },
+    "horizontal_bar": {
+      "file": "horizontal_bar.py",
+      "description": "Horizontal bar chart with optional highlight color on one bar",
+      "inputs": ["categories", "series"],
+      "min_items": 1,
+      "max_items": 10
+    },
+    "line": {
+      "file": "line.py",
+      "description": "Line chart with optional dashed reference series",
+      "inputs": ["categories", "series"],
+      "min_items": 1,
+      "max_items": 10
+    },
+    "donut": {
+      "file": "donut.py",
+      "description": "Doughnut chart with configurable hole_size and data labels",
+      "inputs": ["categories", "series"],
+      "min_items": 1,
+      "max_items": 10
+    },
+    "area": {
+      "file": "area.py",
+      "description": "Stacked area chart with optional source line",
+      "inputs": ["categories", "series"],
+      "min_items": 1,
+      "max_items": 10
+    }
+  }
+}

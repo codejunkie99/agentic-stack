@@ -1,0 +1,12 @@
+{
+  "pattern": "org_chart",
+  "description": "Hierarchical cascade boxes showing parent-child organizational structure",
+  "default_variant": "cascade_boxes",
+  "variants": {
+    "cascade_boxes": {
+      "file": "cascade_boxes.py",
+      "description": "Top box with connecting lines to child boxes supporting 2-3 levels of hierarchy",
+      "inputs": ["root", "children"]
+    }
+  }
+}

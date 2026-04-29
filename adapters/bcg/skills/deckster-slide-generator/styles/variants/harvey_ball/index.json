@@ -1,0 +1,12 @@
+{
+  "pattern": "harvey_ball",
+  "description": "Grid of colored ovals for qualitative maturity scoring with row/column headers and legend",
+  "default_variant": "maturity_matrix",
+  "variants": {
+    "maturity_matrix": {
+      "file": "maturity_matrix.py",
+      "description": "Grid of 5-level colored ovals with row and column headers and a bottom legend",
+      "inputs": ["rows", "columns", "values"]
+    }
+  }
+}

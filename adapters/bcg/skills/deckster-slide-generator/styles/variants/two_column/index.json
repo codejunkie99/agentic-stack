@@ -1,0 +1,12 @@
+{
+  "pattern": "two_column",
+  "description": "Two symmetric columns with accent bars and a bottom callout",
+  "default_variant": "callout_comparison",
+  "variants": {
+    "callout_comparison": {
+      "file": "callout_comparison.py",
+      "description": "Two symmetric columns with accent bars, bullet content, and bottom callout box",
+      "inputs": ["left", "right", "callout"]
+    }
+  }
+}

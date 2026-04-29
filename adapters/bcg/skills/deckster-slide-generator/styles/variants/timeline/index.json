@@ -1,0 +1,14 @@
+{
+  "pattern": "timeline",
+  "description": "Sequential phases over time with milestones",
+  "default_variant": "phase_cards",
+  "variants": {
+    "phase_cards": {
+      "file": "phase_cards.py",
+      "description": "Horizontal timeline with dots on a green line, phase labels above, detail cards below",
+      "inputs": ["phases"],
+      "min_phases": 2,
+      "max_phases": 5
+    }
+  }
+}

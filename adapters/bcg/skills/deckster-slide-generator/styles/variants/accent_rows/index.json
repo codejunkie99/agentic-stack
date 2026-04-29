@@ -1,0 +1,14 @@
+{
+  "pattern": "accent_rows",
+  "description": "Repeating rows with cycling left accent colors, icons, and content",
+  "default_variant": "left_bar_items",
+  "variants": {
+    "left_bar_items": {
+      "file": "left_bar_items.py",
+      "description": "Rows with cycling left accent colors, icon, title, and description",
+      "inputs": ["items"],
+      "min_items": 2,
+      "max_items": 7
+    }
+  }
+}

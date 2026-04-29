@@ -1,0 +1,12 @@
+{
+  "pattern": "scatter_bubble",
+  "description": "Portfolio positioning matrix with sized bubbles on a 2x2 background",
+  "default_variant": "portfolio_matrix",
+  "variants": {
+    "portfolio_matrix": {
+      "file": "portfolio_matrix.py",
+      "description": "2x2 tinted background with sized circles positioned by value, external labels with leader lines",
+      "inputs": ["items", "x_label", "y_label"]
+    }
+  }
+}

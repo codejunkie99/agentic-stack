@@ -1,0 +1,28 @@
+{
+  "pattern": "kpi",
+  "description": "Key performance indicator displays with large values, labels, and change indicators",
+  "default_variant": "tile_row",
+  "variants": {
+    "tile_row": {
+      "file": "tile_row.py",
+      "description": "3-4 KPI cards with green accent bar, big value, label, and change indicator",
+      "inputs": ["kpis"],
+      "min_items": 1,
+      "max_items": 6
+    },
+    "big_number_dashboard": {
+      "file": "big_number_dashboard.py",
+      "description": "2-4 large numbers (52pt) with labels and sublabels, vertical separators between",
+      "inputs": ["metrics"],
+      "min_items": 2,
+      "max_items": 4
+    },
+    "chart_kpi_callout": {
+      "file": "chart_kpi_callout.py",
+      "description": "Chart at top + KPI tile row + callout box at bottom",
+      "inputs": ["chart_type", "chart_data", "kpis", "callout"],
+      "min_items": 1,
+      "max_items": 6
+    }
+  }
+}

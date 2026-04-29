@@ -1,0 +1,14 @@
+{
+  "pattern": "funnel",
+  "description": "Progressive narrowing bars encoding quantity reduction across stages",
+  "default_variant": "narrowing_stages",
+  "variants": {
+    "narrowing_stages": {
+      "file": "narrowing_stages.py",
+      "description": "Centered horizontal bars that progressively narrow with label and metric per bar",
+      "inputs": ["stages"],
+      "min_stages": 3,
+      "max_stages": 6
+    }
+  }
+}

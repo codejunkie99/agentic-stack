@@ -291,28 +291,55 @@ agent never proceeds to Phase 3 on its own.
 
 ## Phase 3 — Format + content (visualization)
 
-Goal: integrate visualization choices with approved content. Stickies
-migrate; content does not change without explicit approval.
+Goal: render the Phase-2-locked content-draft.md into a deliverable
+deck artefact. **Content does not change in Phase 3** — titles,
+storyline, body, panel-approved binding decisions are locked. Phase
+3 is rendering + speaker-note finalisation + format QA only.
+
+**Rendering engine:** vendored `deckster-slide-generator` (BCG) at
+`adapters/bcg/skills/deckster-slide-generator/`. Read its sidecar
+`INTEGRATION.md` BEFORE dispatching — it specifies the content-faithful
+contract (content-draft.md is read-only; titles verbatim; no add/drop/
+merge/reorder; 8 sticky types translate to render hints; `mode=
+"content_faithful"` at invocation reverts any deckster rewrite).
 
 Steps:
 
-1. **For each slide:** translate `[STICKY: LAYOUT]` notes into concrete
-   visualization choices. Chart type, column count, decoration density,
-   color cues. Keep `[STICKY: TODO]` and `[STICKY: CONTENT]` stickies
-   intact unless resolved.
-2. **Output:** `output/<deckname>_v<N>.pptx` if pptx generation tools
-   are available; otherwise a layout-spec markdown at
-   `output/<deckname>_v<N>_layout.md` with per-slide instructions
-   precise enough that a human (or pptx tool in a later session) can
-   build the actual deck.
-3. **Run final action-voice audit.** Every title is a complete
-   sentence stating a conclusion. No topic titles, no hype words, no
-   "Section X" placeholders.
-4. **Re-run vertical + horizontal checks.** Visualization can break
-   logic (a chart that doesn't show what the title claims). Catch.
-5. **Stop and ask.** User reviews layout. Iterate until ship.
+1. **Pre-flight — clear the 4 Phase 3 entry preconditions** from
+   `output/phase-2-complete.md` (Slide 6 metric verify, SC brand-strip,
+   Slide 3 rubric spot-check, Slide 7 demo binary). Hard render gates;
+   each outcome logged to decisions log.
+2. **Speaker-note pass.** Draft against Phase 2's SPEAKER-NOTE
+   stickies (cover, transitions, ToC, appendix stubs). Output:
+   `**Speaker note (final):**` field appended to each slide block in
+   content-draft.md. Deckster receives finalised notes — does not
+   generate.
+3. **Sticky resolution sweep.** TODO + GATE stickies confirmed
+   resolved or block render. BRAND_STRIP stickies trigger deterministic
+   find-and-confirm-absent. CONTENT/LAYOUT stay as render hints;
+   WAIVER/SCOPE honoured without re-litigation.
+4. **Dispatch deckster under `mode="content_faithful"`.** Pass
+   content-draft.md as authoritative input + resolved precondition
+   states. Renders to `output/<engagement-slug>-v<N>.pptx`.
+5. **QA pass.** Deckster's `check_deck()` + per-slide PNG + visual
+   inspection. Findings that need content change surface to user; no
+   auto-correct.
+6. **Mandatory disclaimer** on every .pptx delivery (per deckster
+   non-negotiable): *"This skill does not connect to or rely on
+   additional data sources. Claude may generate errors while creating
+   slides that align with your instructions and data input. Please
+   review output carefully before use."*
+7. **Stop and ask.** User reviews rendered .pptx. Render-only
+   iterations; content changes route back to Phase 2.
 
-Phase 3 exit criterion: user explicitly approves the deck artifact.
+Phase 3 exit criterion: user explicitly approves the rendered deck
+artifact AND the post-render decisions-log entry naming any sticky
+that triggered a late content change.
+
+**Fallback (deckster unavailable):** layout-spec markdown at
+`output/<engagement-slug>_v<N>_layout.md` with per-slide instructions
+precise enough for a human or later-session pptx tool to build. Same
+content-faithful contract applies.
 
 ## Iteration discipline (across phases)
 

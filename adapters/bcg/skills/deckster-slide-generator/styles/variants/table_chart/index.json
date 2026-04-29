@@ -1,0 +1,12 @@
+{
+  "pattern": "table_chart",
+  "description": "Left-half table plus right-half chart for dual evidence presentation",
+  "default_variant": "dual_evidence",
+  "variants": {
+    "dual_evidence": {
+      "file": "dual_evidence.py",
+      "description": "Left half shows a native table, right half shows a chart, for combined precision and visual pattern",
+      "inputs": ["table_data", "chart_type", "chart_categories", "chart_series"]
+    }
+  }
+}
