@@ -78,12 +78,13 @@ Stickies are TODOs and annotations that travel with the deck through all
 phases. They are an artifact, not pollution — they capture intent and
 gaps that the team needs to resolve.
 
-Three types:
+Four types:
 
 ```text
 [STICKY: CONTENT — what content goes in this tile/box; where it comes from]
 [STICKY: LAYOUT — how this should be visualized: chart type, columns, decoration]
 [STICKY: TODO — open question, missing data, blocking dependency, needs human input]
+[STICKY: COPY_AS_IS — <source-deck>:slide-<N>] — body uses bespoke source formatting; Phase 3 renders title + placeholder; user pastes original
 ```
 
 Default convention: split (three distinct sticky types per slide as
@@ -317,7 +318,11 @@ Steps:
 3. **Sticky resolution sweep.** TODO + GATE stickies confirmed
    resolved or block render. BRAND_STRIP stickies trigger deterministic
    find-and-confirm-absent. CONTENT/LAYOUT stay as render hints;
-   WAIVER/SCOPE honoured without re-litigation.
+   WAIVER/SCOPE honoured without re-litigation. **COPY_AS_IS stickies**
+   flip render mode for that slide — deckster generates a placeholder
+   (title + "paste from `<source>`" instruction box + speaker note)
+   instead of body content; logged to `phase-3-copy-as-is-log.md` for
+   deck-owner pre-delivery checklist.
 4. **Dispatch deckster under `mode="content_faithful"`.** Pass
    content-draft.md as authoritative input + resolved precondition
    states. Renders to `output/<engagement-slug>-v<N>.pptx`.

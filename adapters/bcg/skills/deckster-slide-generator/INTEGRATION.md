@@ -86,6 +86,56 @@ render hints, not content regeneration triggers:
 | `[WAIVER: <decision>]` | Already-resolved deviation from the workflow contract — render as drafted; do not re-litigate |
 | `[BRAND_STRIP: <names>]` | Verify the listed brand/individual names are NOT present in body, title, or speaker note before render. Hard render-time check |
 | `[SCOPE: <hint>]` | Scope clarification for the slide — fold into speaker note unless slide already addresses |
+| `[COPY_AS_IS: <source-spec>]` | **DO NOT RENDER body or visual content.** Generate a placeholder slide with: (a) the action-voice title at top, (b) a centred visible instruction box reading "PLACEHOLDER — paste slide from `<source-spec>` here before delivery", (c) the speaker note attached. Source-spec format: `<source-deck-filename>:slide-<N>` (e.g., `HarnessX_v4.pptx:slide-6`, `BOCHK_2026Q1.pptx:slide-21`). Use case: source slide has bespoke formatting / branded chart / specific layout that deckster's auto-render would break. User manually pastes the original post-render to preserve formatting. Saves tokens + compute by skipping body rendering, and avoids the "rendered slide is unusable" failure mode |
+
+### 3a. COPY_AS_IS slides — placeholder render, not full render
+
+Slides marked `[COPY_AS_IS: <source-spec>]` flip deckster's render
+mode for that slide only:
+
+- **Skip:** body rendering, support drafting, evidence layout, chart
+  generation, layout pattern selection. None of `add_content_slide`'s
+  body-shaping primitives run.
+- **Render:** the action-voice title at top of slide using the
+  template's title placeholder, plus a single centred placeholder
+  block of the form:
+
+  ```
+  ┌────────────────────────────────────────────────────────────┐
+  │  PLACEHOLDER — paste slide from <source-spec> here         │
+  │  before delivery.                                          │
+  │                                                            │
+  │  Source: <source-deck-filename>, slide <N>                 │
+  │  Reason: bespoke formatting / branded chart preserved      │
+  │  from source                                               │
+  └────────────────────────────────────────────────────────────┘
+  ```
+
+- **Attach:** the slide's speaker note as drafted in
+  content-draft.md. Speaker note for COPY_AS_IS slides should remind
+  the deck owner: "**Reminder:** this slide is a placeholder — paste
+  the original from `<source-spec>` before delivery. Verify the
+  pasted slide's brand-strip + metric-verify status before share."
+
+- **Audit:** every COPY_AS_IS slide is logged at render time to
+  `output/phase-3-copy-as-is-log.md` so the deck owner has a deterministic
+  checklist of slides to paste before delivery. Format:
+  `<slide-N> — <source-spec> — <render-timestamp>`.
+
+**Why this exists:** some source slides (e.g., HarnessX_v4 slide 6's
+UOB metrics one-pager, BOCHK Context Hub diagrams, or any client-
+branded chart) have layouts deckster's auto-render produces poorly
+or breaks. Re-rendering wastes tokens and produces a slide the deck
+owner has to redo manually anyway. The placeholder pattern: deckster
+makes the slot, deck owner pastes the source.
+
+**Constraint:** COPY_AS_IS does NOT exempt the slide from the brand-
+strip sweep (Phase 3 entry precondition #2). The brand-strip check
+runs against the rendered placeholder text + speaker note + the
+source slide reference. If `<source-spec>` itself names a client
+brand we anonymise (e.g., "DBS_2026.pptx" → reference text would
+leak DBS), the source-spec is rewritten to a generic ("leading APAC
+bank deck, slide N") before render.
 
 ### 4. Phase 3 entry preconditions are a hard gate
 
