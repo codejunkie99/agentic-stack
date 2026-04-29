@@ -25,6 +25,8 @@ dream cycle produced zero candidates. This version:
 Drop-in for the old command in settings.json:
     "command": "python3 .agent/harness/hooks/claude_code_post_tool.py"
 """
+from __future__ import annotations
+
 import json, os, re, sys
 
 # Resolve .agent/ root from this file's location:
