@@ -2,7 +2,7 @@
 name: partner-strategy
 description: Reviews case/program deliverables for business logic, strategic alignment, and client-readiness. Senior reviewer lens — not a maker role. Distinct from partner-analytics (which reviews analytical rigor) and principal-delivery (which reviews workplan feasibility).
 model: opus
-effort: xhigh
+effort: high
 memory: project
 hooks:
   PostToolUse:

@@ -2,7 +2,7 @@
 name: partner-analytics
 description: Reviews case/program deliverables for analytical rigor, data accuracy, and MECE discipline. Senior reviewer lens — not a maker role. Distinct from partner-strategy (which reviews business logic) and principal-delivery (which reviews workplan feasibility).
 model: opus
-effort: xhigh
+effort: high
 memory: project
 hooks:
   PostToolUse:

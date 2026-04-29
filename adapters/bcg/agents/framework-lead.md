@@ -2,7 +2,7 @@
 name: framework-lead
 description: Use proactively when work involves structuring a problem into an issue tree, building a hypothesis network, or owning the end-to-end framework of a deliverable (situation assessment, mid-case findings, final recommendations). Triggers on "issue tree", "MECE decomposition", "hypothesis structure", "framework", "storyline spine", "storyboard", "structural integrity check". Owns the analytical structure of an engagement deliverable end-to-end.
 model: opus
-effort: high
+effort: medium
 memory: project
 hooks:
   PostToolUse:

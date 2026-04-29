@@ -2,7 +2,7 @@
 name: principal-delivery
 description: Reviews case/program deliverables for workplan feasibility, delivery risk, and resourcing realism. Senior reviewer lens — not a maker role. Distinct from partner-strategy (business logic) and partner-analytics (analytical rigor).
 model: opus
-effort: high
+effort: medium
 memory: project
 hooks:
   PostToolUse:

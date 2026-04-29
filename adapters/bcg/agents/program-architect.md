@@ -2,7 +2,7 @@
 name: program-architect
 description: Designs system structure and technical approach for a large-scale program (BCG consulting roster). Distinct from the SDLC `architect` subagent, which translates a single PRD into an ADR + design sketch. This agent operates at program scale — technology stack, standards, build-vs-buy, ADRs across multiple workstreams.
 model: opus
-effort: high
+effort: medium
 memory: project
 ---
 

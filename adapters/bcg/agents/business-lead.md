@@ -2,7 +2,7 @@
 name: business-lead
 description: Use proactively when business goals, scope, or stakeholder alignment on the BU side surface. Triggers on "business goals", "scope", "BU stakeholder alignment", "BU vs IT trade-off", "business sponsor". Owns BU-side accountability; counterpart to program-director on IT track.
 model: opus
-effort: high
+effort: medium
 memory: project
 ---
 

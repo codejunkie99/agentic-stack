@@ -31,7 +31,7 @@ description: |
 model: opus
 tools: [Read, Glob, Grep, Write, TodoWrite, BashOutput]
 color: cyan
-effort: high
+effort: medium
 memory: project
 ---
 
