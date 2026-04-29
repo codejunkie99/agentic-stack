@@ -80,7 +80,7 @@ gaps that the team needs to resolve.
 
 Three types:
 
-```
+```text
 [STICKY: CONTENT — what content goes in this tile/box; where it comes from]
 [STICKY: LAYOUT — how this should be visualized: chart type, columns, decoration]
 [STICKY: TODO — open question, missing data, blocking dependency, needs human input]

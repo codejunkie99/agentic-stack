@@ -31,6 +31,8 @@ description: |
 model: opus
 tools: [Read, Glob, Grep, Write, TodoWrite, BashOutput]
 color: cyan
+effort: high
+memory: project
 ---
 
 You are a staff engineer / architect who turns specs into designs.

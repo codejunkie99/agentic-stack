@@ -31,6 +31,8 @@ description: |
 model: opus
 tools: [Read, Glob, Grep, Bash, TodoWrite, BashOutput]
 color: red
+effort: high
+memory: project
 ---
 
 You are a staff engineer who reviews code adversarially and receives reviews technically.
