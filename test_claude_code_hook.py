@@ -26,6 +26,11 @@ Tests:
 
 import json, os, shutil, subprocess, sys, tempfile, textwrap
 
+try:
+    import pytest
+except ImportError:
+    pytest = None
+
 # ── find .agent/ ─────────────────────────────────────────────────────────────
 
 def find_agent_root():
@@ -110,6 +115,38 @@ def _load_hook():
     spec.loader.exec_module(mod)
     return mod
 
+
+if pytest is not None:
+    @pytest.fixture
+    def mod():
+        return _load_hook()
+
+    @pytest.fixture(autouse=True)
+    def _preserve_agent_state_for_pytest():
+        """Keep script-style validation side effects out of pytest runs."""
+        memory_dir = os.path.join(AGENT_DIR, "memory")
+        patterns_path = os.path.join(AGENT_DIR, "protocols", "hook_patterns.json")
+        result_start = len(_results)
+        with tempfile.TemporaryDirectory() as tmp:
+            memory_backup = os.path.join(tmp, "memory")
+            patterns_backup = os.path.join(tmp, "hook_patterns.json")
+            if os.path.isdir(memory_dir):
+                shutil.copytree(memory_dir, memory_backup)
+            if os.path.exists(patterns_path):
+                shutil.copy2(patterns_path, patterns_backup)
+
+            yield
+
+            new_failures = [name for ok_flag, name in _results[result_start:] if not ok_flag]
+            if os.path.isdir(memory_backup):
+                if os.path.exists(memory_dir):
+                    shutil.rmtree(memory_dir)
+                shutil.copytree(memory_backup, memory_dir, dirs_exist_ok=True)
+            if os.path.exists(patterns_backup):
+                shutil.copy2(patterns_backup, patterns_path)
+            del _results[result_start:]
+            assert not new_failures, "\n".join(new_failures)
+
 # ── tests ─────────────────────────────────────────────────────────────────────
 
 def test_hook_exists():
@@ -120,7 +157,7 @@ def test_hook_exists():
         fail("claude_code_post_tool.py NOT FOUND",
              f"expected: {HOOK_SCRIPT}")
 
-def test_hook_imports():
+def _check_hook_imports():
     section("2. Import / path resolution")
     try:
         mod = _load_hook()
@@ -129,6 +166,9 @@ def test_hook_imports():
     except Exception as e:
         fail("hook import failed", str(e))
         return None
+
+def test_hook_imports():
+    assert _check_hook_imports() is not None
 
 def test_empty_stdin():
     section("3. Empty stdin — graceful fallback")
@@ -453,7 +493,7 @@ def main():
     print(f"agent dir:    {AGENT_DIR}")
 
     test_hook_exists()
-    mod = test_hook_imports()
+    mod = _check_hook_imports()
     if mod is None:
         print("\n\033[31mCannot continue — hook did not import.\033[0m")
         sys.exit(1)

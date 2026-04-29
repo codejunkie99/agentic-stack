@@ -22,6 +22,12 @@ Output modes:
   --quiet                no logging (useful for scripting / tests)
 """
 import argparse, json, os, re, sys
+from functools import lru_cache
+
+try:
+    import sqlite3
+except ImportError:  # pragma: no cover - sqlite3 is part of normal CPython builds.
+    sqlite3 = None
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(BASE, "harness"))
@@ -31,6 +37,75 @@ LESSONS_JSONL = os.path.join(BASE, "memory/semantic/lessons.jsonl")
 LESSONS_MD = os.path.join(BASE, "memory/semantic/LESSONS.md")
 
 _STATUS_RE = re.compile(r"status=(\w+)")
+_SQLITE_PORTER_AVAILABLE = None
+
+
+def _simple_stem(token):
+    """Small fallback stemmer for builds without SQLite FTS5 Porter support."""
+    t = (token or "").lower()
+    if len(t) <= 3:
+        return t
+    for suffix, replacement in (
+        ("izations", "ize"),
+        ("ization", "ize"),
+        ("isations", "ize"),
+        ("isation", "ize"),
+        ("izers", "ize"),
+        ("izer", "ize"),
+        ("izing", "ize"),
+        ("ized", "ize"),
+        ("izes", "ize"),
+    ):
+        if t.endswith(suffix) and len(t) > len(suffix) + 1:
+            return t[: -len(suffix)] + replacement
+    if t.endswith("ies") and len(t) > 4:
+        return t[:-3] + "y"
+    if t.endswith("sses"):
+        return t[:-2]
+    if t.endswith("s") and not t.endswith(("ss", "us")):
+        return t[:-1]
+    return t
+
+
+@lru_cache(maxsize=4096)
+def _stem_terms(token):
+    """Return Porter-normalized terms for one existing `word_set()` token.
+
+    SQLite FTS5 exposes the same Porter tokenizer used by memory_search.py,
+    keeping recall's cheap lexical scoring aligned with the opt-in FTS path.
+    """
+    global _SQLITE_PORTER_AVAILABLE
+    if sqlite3 is not None and _SQLITE_PORTER_AVAILABLE is not False:
+        conn = None
+        try:
+            conn = sqlite3.connect(":memory:")
+            conn.execute(
+                "CREATE VIRTUAL TABLE docs "
+                "USING fts5(content, tokenize='porter unicode61')"
+            )
+            conn.execute("INSERT INTO docs(content) VALUES (?)", (token,))
+            conn.execute("CREATE VIRTUAL TABLE vocab USING fts5vocab(docs, 'row')")
+            terms = frozenset(row[0] for row in conn.execute("SELECT term FROM vocab"))
+            _SQLITE_PORTER_AVAILABLE = True
+            if terms:
+                return terms
+        except Exception:
+            _SQLITE_PORTER_AVAILABLE = False
+        finally:
+            if conn is not None:
+                conn.close()
+    return frozenset({_simple_stem(token)})
+
+
+def _stemmed_tokens(tokens):
+    out = set()
+    for token in tokens or []:
+        out.update(_stem_terms(token))
+    return out
+
+
+def _stemmed_word_set(text):
+    return _stemmed_tokens(word_set(text))
 
 
 def _load_structured():
@@ -43,18 +118,19 @@ def _load_structured():
     if not os.path.exists(LESSONS_JSONL):
         return []
     out = []
-    for line in open(LESSONS_JSONL):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            l = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if l.get("status") != "accepted":
-            continue
-        l.setdefault("_source", "lessons.jsonl")
-        out.append(l)
+    with open(LESSONS_JSONL, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                l = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if l.get("status") != "accepted":
+                continue
+            l.setdefault("_source", "lessons.jsonl")
+            out.append(l)
     return out
 
 
@@ -68,7 +144,8 @@ def _load_markdown_fallback():
     """
     if not os.path.exists(LESSONS_MD):
         return []
-    text = open(LESSONS_MD).read()
+    with open(LESSONS_MD, encoding="utf-8") as f:
+        text = f.read()
     out = []
     for line in text.splitlines():
         s = line.strip()
@@ -98,10 +175,10 @@ def _load_markdown_fallback():
 def _score(claim, conditions, query_words):
     """Lexical overlap of query content words with claim + conditions, in [0, 1].
 
-    NOT "relevance" in the semantic sense — this is lexical (token) overlap.
-    A strong semantic match with different vocabulary will score low. A
-    weak semantic match with shared buzzwords may score high. Use as a
-    cheap first-pass retrieval signal, not a final ranking authority.
+    NOT "relevance" in the semantic sense — this is lexical (stemmed token)
+    overlap. A strong semantic match with different vocabulary will score
+    low. A weak semantic match with shared buzzwords may score high. Use
+    as a cheap first-pass retrieval signal, not a final ranking authority.
 
     Conditions are weighted 2x because they're the explicit trigger
     surface — a condition match is a stronger lexical signal than
@@ -112,10 +189,11 @@ def _score(claim, conditions, query_words):
     """
     if not query_words:
         return 0.0
-    claim_words = word_set(claim)
+    query_words = _stemmed_tokens(query_words)
+    claim_words = _stemmed_word_set(claim)
     cond_words = set()
     for c in conditions or []:
-        cond_words |= word_set(c)
+        cond_words |= _stemmed_word_set(c)
     claim_hits = len(query_words & claim_words)
     cond_hits = len(query_words & cond_words)
     raw = claim_hits + 2 * cond_hits
