@@ -52,6 +52,20 @@ scaffolding that was missing.
   content-draft 20 main + 8 appendices + 3-reviewer panel GO-WITH-FIXES;
   Phase 3 deferred — gated on Slide 6 metric verify, SC brand-strip,
   Slide 3 rubric spot-check, Slide 7 demo binary)
+- **Stage 7 — Phase L — memory-write discipline in consulting-deck-builder ✅ (2026-04-29)**
+  - Replaced single `--importance 6` reflect call with 3 structured
+    phase-exit blocks: Phase 1 (8×5=40, dominates cluster), Phase 2
+    (10×8=80, auto-graduates), Phase 3 (9×7=63, dominates cluster)
+  - Salience math (`recency × pain/10 × importance/10 × min(recurrence,3)`)
+    documented inline so future maintainers understand the numbers
+  - Reflection note must be a DURABLE LESSON sentence — transferable
+    rule, not activity description (Bad: "drafted 20 slides"; Good:
+    "When storyboard collides with workflow contract late, gate the
+    contract check at v1 instead.")
+  - Skill version bumped to 2026-04-29; manifest/index synced; 26/26
+    skills lint clean; skill synced to HarnessX target manually
+  - Pairs with Phase K (engagement-blank substrate for these new
+    high-salience reflections to accumulate against)
 - **Stage 6 — Phase K — engagement-blank semantic on fresh installs ✅ (2026-04-29)**
   - Templates committed at `harness_manager/templates/semantic/`
   - `install.py:_apply_semantic_templates()` resets LESSONS / DOMAIN_KNOWLEDGE

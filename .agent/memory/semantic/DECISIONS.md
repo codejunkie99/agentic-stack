@@ -284,3 +284,30 @@ Final roster state after Step 8.2 (8.2.1 + 8.2.2 + 8.2.3 + 8.2.4):
 - HarnessX target reset manually (one-time): pre-state archived at `<target>/.agent/memory/semantic/.archive/2026-04-29-phase-K-reset/`; templates applied; verified all 4 files match
 
 **Status:** active. Pairs with Phase L (memory-write discipline so engagement-specific lessons accumulate into the now-blank files) and Phase M (graduate.py to clear the noise-only candidate queue). Phase J (sync-target.sh) will need to honour this reset — never overwrite target's semantic during sync.
+
+
+## 2026-04-29: Phase L — memory-write discipline in consulting-deck-builder
+
+**Decision:** Replace the single `--importance 6 --pain default(2)` memory_reflect call at phase exit with three structured per-phase blocks at importance 8-10 + pain 5-8, with required durable-lesson reflection text. Phase 2 exit is set to graduate alone (importance × pain = 80 → salience 8.0, above the 7.0 threshold); Phase 1 + Phase 3 exits are set to dominate their cluster as canonical (so the cluster claim becomes the lesson, not a file-write).
+
+**Why:** Phase 2 of the HarnessX run produced 130 episodes and 13 dream candidates — but all 13 candidates had file-write claims ("Wrote storyboard.md (781 lines)") because the lone memory_reflect call at importance 6 + default pain 2 scored salience 1.2, well below file-write episodes whose pain default and cluster recurrence pushed them above 7.0. The `cluster.py:max(cluster, key=salience_score)` rule means the highest-salience episode within a cluster wins as canonical claim. To make a phase-exit reflection win that race, `importance × pain ≥ 70` is the rule of thumb (max 100). Salience formula: `recency × (pain/10) × (importance/10) × min(recurrence, 3)`.
+
+**Mechanism:** SKILL.md "Logging discipline" section now specifies three explicit phase-exit memory_reflect templates:
+- Phase 1 storyboard sign-off: importance 8, pain 5 (importance×pain=40 — dominates cluster as canonical, does not auto-graduate)
+- Phase 2 panel-verdict applied: importance 10, pain 8 (importance×pain=80 — auto-graduates as standalone candidate)
+- Phase 3 deck production: importance 9, pain 7 (importance×pain=63 — dominates cluster as canonical)
+
+Each template requires the agent to write a DURABLE LESSON sentence (transferable rule, not activity description) plus structured fields (binding decisions, patterns observed, gates that fired). The rationale and salience math are documented inline in the skill so the agent or future maintainers understand why these numbers, not arbitrary picks.
+
+**Rationale:** memory_reflect.py already supports `--pain` (line 36-38: 2=routine, 5=significant success, 8=failure, 10=incident); the skill just never used it. Phase exits are not "routine" — they encode binding decisions on engagement direction. Treating them as pain=5-8 ("significant" to "failure-grade attention") matches the salience system's intent. Bumping importance into 8-10 for the same events makes the math work without distorting the importance scale (which is meant to range 1-10).
+
+**Alternatives considered:** (a) Lower the PROMOTION_THRESHOLD from 7.0 to ~3.0 in auto_dream.py — rejected; would graduate file-write noise (Gap 9) globally instead of fixing the specific case. (b) Add a "milestone" episode type that bypasses salience scoring — rejected; introduces a parallel episodic primitive when the existing `pain_score` arg already encodes "this matters." (c) Auto-call memory_reflect from the skill on every "Stops, asks" gate — rejected; over-captures, creates more noise. The fix is to capture LESS but at higher salience.
+
+**Operationalised:**
+- `.agent/skills/consulting-deck-builder/SKILL.md` updated; version bumped to 2026-04-29
+- `_manifest.jsonl` version bumped
+- Skill linter passes 26/26
+- Skill + manifest + index synced to HarnessX target (manual until Phase J ships sync-target.sh)
+- Existing target REVIEW_QUEUE retains 10 noise candidates from pre-fix run; clearing happens in Phase M
+
+**Status:** active. Pairs with Phase K (which made target's semantic engagement-blank so these new high-salience reflections accumulate against a clean substrate) and Phase M (clears the pre-fix noisy candidates). Next time consulting-deck-builder runs through a phase exit, the reflection will be the cluster canonical and the dream cycle will stage a lesson-shaped candidate, not a file-write claim.

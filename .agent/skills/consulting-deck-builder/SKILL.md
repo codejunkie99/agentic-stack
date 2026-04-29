@@ -1,7 +1,7 @@
 ---
 name: consulting-deck-builder
 description: Use proactively when work involves building or iterating on a deck with MBB structure. Triggers on "build a deck", "storyboard", "iterate on slides", "structure the storyline", "vertical horizontal logic check". Three-phase methodology: Storyboard (spine + MECE check) → Content (per-slide draft with stickies, all slides at once) → Format. Never skips a phase. Phase 2 dispatches per-act subagents in parallel via the matching workflow contract.
-version: 2026-04-28
+version: 2026-04-29
 triggers: ["build a deck", "build pitch deck", "storyboard", "iterate on slides", "structure the storyline", "scrape these resources for the deck", "vertical horizontal logic check", "slide-by-slide build", "what should each slide say"]
 tools: [bash, memory_reflect, web_search, web_fetch]
 preconditions: ["active_client is set OR engagement scope is otherwise resolved", "raw material exists in client/<active>/raw-uploads or summaries"]
@@ -326,16 +326,77 @@ Phase 3 exit criterion: user explicitly approves the deck artifact.
   history kept at the bottom; `content-draft.md` and the deck artifact
   use `_v<N>` suffixes when major iterations land.
 
-## Logging discipline
+## Logging discipline (MANDATORY at every phase exit)
 
-After each phase exit (user sign-off):
+The dream cycle (`auto_dream.py` on Stop hook) clusters episodic events
+by token similarity, picks the highest-salience event in each cluster
+as the canonical claim, and stages clusters above
+`canonical_salience >= 7.0` as graduation candidates. Salience formula:
+`recency × (pain/10) × (importance/10) × min(recurrence, 3)`.
+
+A long deck-build session writes hundreds of file-edit episodes that
+share tokens with the engagement context, so any reflection at default
+`importance=5, pain=2` gets buried — the cluster canonical becomes
+"Wrote storyboard.md (781 lines)" instead of the lesson learned. Phase-
+exit reflections must score high enough to win their cluster:
+`importance × pain ≥ 70` is the rule of thumb (caps at 100).
+
+### Phase 1 exit (Storyboard sign-off) — REQUIRED
 
 ```bash
 python3 .agent/tools/memory_reflect.py "consulting-deck-builder" \
-  "phase-<N> approved" "<engagement-slug> phase-<N> signed off" \
-  --importance 6 \
-  --note "phase: <storyboard|content|format>; deck: <name>; n_slides: <count>; major_changes: <one-line>"
+  "phase-1 storyboard signed off" \
+  "<engagement-slug>: storyboard v<N> approved — <n_slides> slides, <n_acts> acts" \
+  --importance 8 --pain 5 \
+  --note "DURABLE LESSON: <one sentence — what about this storyboard structure transfers to future engagements? E.g. '5-act spine works for C-suite proposal decks when Act 1 defines a discipline, Act 2 proves it at scale.'> | DECISIONS LOG: <key binding decisions — title rewrites, MECE waivers, sticky migrations> | WHAT NEARLY FAILED: <if any — what almost broke this phase, e.g. workflow-contract gap, MECE violation that needed late repair>"
 ```
+
+### Phase 2 exit (Content panel verdict applied) — REQUIRED
+
+```bash
+python3 .agent/tools/memory_reflect.py "consulting-deck-builder" \
+  "phase-2 content panel-verdict applied" \
+  "<engagement-slug>: content draft <n_slides>+<n_appendices> — panel verdict <GO|GO-WITH-FIXES|STOP>; <n_findings_applied> findings applied" \
+  --importance 10 --pain 8 \
+  --note "DURABLE LESSON: <one sentence on what worked or failed in the parallel-cluster + reviewer-panel pattern — e.g. 'positioning split (lighten main, push detail to appendix) resolves topic-intro vs programme-proposal pull cleanly when the audience is C-suite'> | BINDING DECISIONS: <Pulkit-confirmed final-fix decisions — these become per-engagement feedback memory> | PATTERN OBSERVED: <repeating shape across slides — e.g. cold-transitions cluster at act boundaries, attribution moats need 3 explicit mentions>"
+```
+
+### Phase 3 exit (Deck production complete) — REQUIRED
+
+```bash
+python3 .agent/tools/memory_reflect.py "consulting-deck-builder" \
+  "phase-3 deck produced" \
+  "<engagement-slug>: deck v<N> rendered — <n_slides> slides + <n_appendices> appendices, all entry preconditions cleared" \
+  --importance 9 --pain 7 \
+  --note "DURABLE LESSON: <one sentence on format/visual decisions that transfer — e.g. 'speaker notes carrying moat-protection ammunition matter more than visual polish for partner-in-the-room delivery'> | GATES THAT FIRED: <which Phase 3 entry preconditions caught real problems, which were unnecessary> | DECK-SPECIFIC SOURCING: <surprising sources that made or broke a slide>"
+```
+
+### Why importance × pain ≥ 70
+
+| Reflection type             | importance × pain | salience (single, recency=10) | Crosses 7.0? |
+|-----------------------------|-------------------|-------------------------------|--------------|
+| Default (importance 5, pain 2) | 10            | 1.0                           | no           |
+| Old skill (importance 6, pain 2) | 12          | 1.2                           | no           |
+| Phase 1 exit (8 × 5 = 40)   | 40                | 4.0                           | no alone, dominates cluster |
+| Phase 2 exit (10 × 8 = 80)  | 80                | 8.0                           | yes — graduates alone |
+| Phase 3 exit (9 × 7 = 63)   | 63                | 6.3                           | dominates cluster |
+
+Phase 2 exit is set to graduate alone (importance × pain = 80) because
+the panel-verdict-applied moment is the engagement's highest-leverage
+learning event. Phase 1 and Phase 3 exits are set to win their cluster
+(become the canonical claim) without auto-graduating — the dream cycle
+will still stage them when surrounding tool-write activity bulks
+recurrence above 3.
+
+### What the reflection text should be
+
+**The reflection note is the candidate's claim text** — what the dream
+cycle promotes if the candidate clusters. Write the LESSON, not the
+ACTIVITY. Bad: "drafted 20 slides for HarnessX deck." Good: "When
+storyboard collides with workflow contract late (8-section audit fired
+post-v2), 6 structural moves are needed to reconcile — gate the
+contract check at v1 instead." The first describes what happened; the
+second is a transferable rule.
 
 This produces the episodic trail the dream cycle clusters into lessons,
 and the data this skill's self-rewrite hook reads.
