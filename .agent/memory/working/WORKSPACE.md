@@ -52,6 +52,16 @@ scaffolding that was missing.
   content-draft 20 main + 8 appendices + 3-reviewer panel GO-WITH-FIXES;
   Phase 3 deferred — gated on Slide 6 metric verify, SC brand-strip,
   Slide 3 rubric spot-check, Slide 7 demo binary)
+- **Stage 6 — Phase K — engagement-blank semantic on fresh installs ✅ (2026-04-29)**
+  - Templates committed at `harness_manager/templates/semantic/`
+  - `install.py:_apply_semantic_templates()` resets LESSONS / DOMAIN_KNOWLEDGE
+    / DECISIONS / lessons.jsonl on fresh install (inside not-exists guard,
+    so reinstalls preserve accumulated state)
+  - Smoke-tested on `/tmp/k-smoke-*`: clean
+  - HarnessX target reset; pre-state archived at
+    `<target>/.agent/memory/semantic/.archive/2026-04-29-phase-K-reset/`
+  - Closes the "fork's harness-dev semantic leaks into engagement
+    targets" issue surfaced in Phase 2 post-mortem
 - **Stage 5** — capture, gap log, fix loop ✅ (post-mortem 2026-04-29)
   - `snapshot_diff.py --diff` clean: 7 added, 0 modified, 0 removed.
     All 7 are `.claude/agent-memory/*.md` for `deck-builder` and

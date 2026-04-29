@@ -263,3 +263,24 @@ Final roster state after Step 8.2 (8.2.1 + 8.2.2 + 8.2.3 + 8.2.4):
 **Status:** active. Step 8.3 complete pending merge; Phase 3 of HarnessX engagement is a Pulkit-driven workstream, not a harness deliverable.
 
 **Operationalized:** Gap log updated (8 entries total — 5 original + Gap 8 closed-on-branch + Gaps 9/10/11 from post-mortem). WORKSPACE.md marks Stages 4 + 5 complete. Step 8.4 plan to address 9/10/11 paired with `harness-graduate.py` design.
+
+
+## 2026-04-29: Phase K — engagement-blank semantic memory on fresh installs
+
+**Decision:** Fresh installs reset `.agent/memory/semantic/{LESSONS.md, DOMAIN_KNOWLEDGE.md, DECISIONS.md, lessons.jsonl}` from install-time templates after the wholesale `.agent/` copytree. The four files now start as engagement-blank stubs (LESSONS keeps 5 harness-invariant seeds; DOMAIN_KNOWLEDGE + DECISIONS are header-only templates) instead of inheriting the upstream fork's lived-in harness-development semantic content.
+
+**Why this was a leak:** install.py's `shutil.copytree(stack_root / ".agent", target_agent)` shipped fork's 18-line LESSONS (including auto-promoted "serialize timestamps in UTC" — irrelevant for consulting engagements), 220-line DOMAIN_KNOWLEDGE (entirely about agentic-stack architecture), and 265-line DECISIONS (fork's historical ADRs from Step 6 / 8.0 / 8.1 / 8.2.x — engagement has no use for these). When the engagement session started, CLAUDE.md eager-loaded LESSONS.md and the agent read fork's harness-dev lessons as if they were engagement context. Verified empirically on the HarnessX target post-Phase-2: 3 of 4 semantic files byte-identical to fork; engagement had written zero entries.
+
+**Mechanism:** templates live at `harness_manager/templates/semantic/` (sibling to install.py) and are copied to target after the wholesale `.agent/` copytree, inside the existing `if not target_agent.exists()` guard. Reinstalls do NOT re-apply templates — accumulated engagement state (including engagement-graduated lessons) is preserved across reinstall. New helper `_apply_semantic_templates()` in install.py.
+
+**Rationale:** semantic memory is supposed to be where THIS install accumulates ITS lessons. Cross-install graduation (lessons going UP from engagement to fork) is the deferred `harness-graduate.py` flow (Step 8.4). Cross-install propagation DOWN from fork to other installs is the deferred `install.sh --upgrade` (Step 8.5). Neither flow exists yet — so the bootstrap-then-immutable behavior of install.py was effectively shipping fork's semantic state as a one-way leak.
+
+**Alternatives considered:** (a) Move fork's lived semantic to a different directory and put templates at `.agent/memory/semantic/` directly — rejected; touches fork's own brain, risky. (b) Have install.py read from `adapters/_brain/memory/semantic/` instead of fork's `.agent/memory/semantic/` — rejected; introduces a parallel brain root, breaks the single-brain invariant. (c) Leave install.py wholesale-copy and reset semantic in a post_install action — rejected; post_install runs AFTER the install.json is recorded, making the reset a separate auditable event when it's actually part of "what fresh install means." (d) Strip fork's `.agent/memory/semantic/` content to be engagement-blank too — rejected; fork IS doing harness-development, its lived semantic is real and valuable. The leak is the copy mechanism, not fork's content.
+
+**Operationalised:**
+- Templates committed at `harness_manager/templates/semantic/{LESSONS.md, DOMAIN_KNOWLEDGE.md, DECISIONS.md, lessons.jsonl}`
+- `install.py:_apply_semantic_templates()` overwrites the four files inside the fresh-install guard
+- Smoke-tested on `/tmp/k-smoke-*`: install logs "+ .agent/memory/semantic/ (reset to engagement-blank templates)"; verified all 4 files match templates; verified fork-leaked content (UTC-timestamps lesson, agentic-stack architecture treatise) absent from fresh install
+- HarnessX target reset manually (one-time): pre-state archived at `<target>/.agent/memory/semantic/.archive/2026-04-29-phase-K-reset/`; templates applied; verified all 4 files match
+
+**Status:** active. Pairs with Phase L (memory-write discipline so engagement-specific lessons accumulate into the now-blank files) and Phase M (graduate.py to clear the noise-only candidate queue). Phase J (sync-target.sh) will need to honour this reset — never overwrite target's semantic during sync.
