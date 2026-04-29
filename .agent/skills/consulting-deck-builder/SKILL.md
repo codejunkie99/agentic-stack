@@ -141,6 +141,54 @@ Steps:
 Phase 1 exit criterion: user explicitly approves the storyboard. The
 agent never proceeds to Phase 2 on its own.
 
+### Phase 1 — Iterating on an existing storyboard (delegated)
+
+When Phase 1 is run on an EXISTING storyboard (e.g., user says "redo
+Phase 1 on storyboard v2 with the team", or "iterate on the current
+spine"), the workflow's team is dispatched in parallel — this is
+distinct from cold-draft Phase 1 above.
+
+**Dispatch pattern** (per the matched workflow's team_structure):
+
+1. **framework-lead** orchestrates. Reads existing storyboard +
+   workflow `## Contents` (e.g., proposal-deck.md's 8-section
+   structure) + briefing.md. Identifies sections where v2 deviates
+   from the workflow's canonical structure or where structural
+   integrity is weak.
+
+2. **deck-builder** dispatched in parallel — audits action-voice
+   titles (every title a complete sentence stating a conclusion),
+   transitions across acts, MECE compliance across slides. Returns
+   structured findings: ✓ pass / ⚠ weak / ✗ fail per slide.
+
+3. **case-analyst (×N)** dispatched in parallel — one per
+   act-cluster. Each validates that the cluster's slides have
+   sufficient source-material in `summaries/` to draft content in
+   Phase 2. Returns: ✓ source-ready / ⚠ thin / ✗ missing per slide.
+   Surfaces gaps where additional research (web_search /
+   document-researcher on new uploads) is needed before Phase 2.
+
+4. **delivery-lead** dispatched if workflow has MVP / TOM /
+   workplan sections (e.g., proposal-deck does) — validates whether
+   the storyboard's MVP and TOM slides have measurable, sequenced,
+   ownership-bearing content available.
+
+5. **Optionally** dispatch ONE reviewer at end of Phase 1 to
+   challenge the spine before content drafting begins. Recommended
+   for proposal-deck (where positioning matters) and final-
+   recommendations-deck (where commercial credibility matters).
+   Default reviewer: partner-strategy.
+
+6. **Lead synthesises**, surfaces findings to user, proposes
+   storyboard v3 (or signs off v2 if findings are minor). Lead does
+   NOT redraft entire spine alone — uses the audit findings to
+   propose structural changes.
+
+7. **Stop and ask.** Present audit results + proposed v3 to user.
+
+Phase 1 iteration exit criterion: user explicitly approves the
+storyboard (v2 unchanged, or v3 produced from team audit).
+
 ## Phase 2 — Slide content (delegated, parallel, all slides at once)
 
 Goal: draft what every slide says, before any visualization choices.
