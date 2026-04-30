@@ -493,3 +493,26 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. Validated against test fixture; integration validation against real HarnessX 130-episode batch deferred until next dream cycle on a target.
 
+
+## 2026-04-30: Phase H — harness-graduate.py (cross-install lesson + DECISIONS promotion)
+
+**Decision:** Add `.agent/tools/harness-graduate.py` operating from fork side. Reads target install's `.agent/memory/semantic/{lessons.jsonl, DECISIONS.md}`. For lessons: diffs by `id`, surfaces target-only via interactive `y/n/skip` prompts, requires `--rationale` (>=20 chars) per graduation, appends to fork's `lessons.jsonl` with provenance fields (`graduated_from`, `graduated_on`, `graduation_rationale`). For DECISIONS: diffs by `(date, title)` heading, surfaces target-only via prompts, appends to fork's DECISIONS.md with provenance blockquote line. Recommends (does not force) running `/regenerate-decisions` on fork after DECISIONS appends. CLI: `--dry-run`, `--lessons-only`, `--target-slug`. Hash-dedup + engagement-specificity heuristic (scans for `client/<slug>/` directory names mentioned in lesson text).
+
+**Rationale:** Phase K (2026-04-29) deferred this work explicitly: *"Cross-install graduation (lessons going UP from engagement to fork) is the deferred `harness-graduate.py` flow (Step 8.4)."* The fork's existing within-install `graduate.py` provides the contract model (interactive, --rationale, dedup). The cross-install dimension is canonically uncovered (article assumes single-user, single-install) and is labeled fork extension. The DECISIONS append path threads canonical's regenerated-not-edited rule (article line 168) by recommending `/regenerate-decisions` after — direct append is for high-value entries; bulk additions warrant re-derivation. Phase K's engagement-blank semantic substrate makes target-side accumulation the right starting point for graduation.
+
+**Alternatives considered:**
+- Auto-merge based on salience threshold — rejected; canonical pattern (article 168 prompt) puts a human in the loop for decisions; cross-install promotion is higher-stakes than within-install (touches fork's own brain).
+- DECISIONS rebuild via `/regenerate-decisions` only (no direct append) — rejected; some target-side decisions are genuinely high-value singletons (e.g., a target-only ADR about engagement-specific architecture choice) and don't need full re-derivation. Hybrid via interactive append + recommendation gives operator the choice.
+- Bidirectional sync (fork → target included) — rejected for this branch; that's `install.sh --upgrade` territory (Step 8.5). Phase H is target → fork only.
+- Engagement-specificity auto-skip — rejected; flag-and-prompt is more conservative; some "engagement-specific"-looking lessons turn out to be portable on review.
+
+**Operationalised:**
+- `.agent/tools/harness-graduate.py` (new); fork-side execution; target path required arg
+- 3 unit tests pass against fixture target install at `tests/fixtures/harness_graduate_target/`: dry-run produces diff without writes, lessons-only skips DECISIONS, dedup auto-skips duplicate id
+- Provenance fields: lessons.jsonl gets `graduated_from`/`graduated_on`/`graduation_rationale`; DECISIONS gets `> Graduated from <slug> on YYYY-MM-DD.` blockquote
+- Engagement-specificity heuristic: scans target's `.agent/memory/client/<slug>/` directories; if a slug appears in the lesson text (claim or conditions), the lesson is flagged as `[engagement-specific?]` in the prompt
+- Recommendation message printed after DECISIONS appends pointing operator to `/regenerate-decisions`
+- `--dry-run` outputs full diff without writes; `--lessons-only` skips DECISIONS section; `--target-slug` overrides default basename for provenance
+
+**Status:** active. First real test against HarnessX target deferred until Step 8.4 branch lands and a graduation pass is performed.
+
