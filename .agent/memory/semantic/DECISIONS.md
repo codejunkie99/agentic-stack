@@ -450,3 +450,25 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. Future budget changes follow the same pattern: justify in DECISIONS, document delta, keep conservative.
 
+
+## 2026-04-30: Gap 11 — capture wiring (3-part fix)
+
+**Decision:** Close Gap 11 (HARNESS_FEEDBACK.md empty after 130 episodes despite multiple frictions in HarnessX engagement) with three coordinated changes: (A) explicit trigger contract at `.agent/protocols/harness-fix-triggers.md` referenced from `adapters/claude-code/CLAUDE.md` "Proposing a harness fix" section (progressive-disclosure: pointer in CLAUDE.md, content in protocols dir); (B) SessionStart/SessionEnd observability hooks (`init_session_state.py` snapshots HARNESS_FEEDBACK line count + start timestamp; `check_friction_capture.py` emits operator-console warning when `tool_calls > 30 AND feedback_delta == 0`); (C) skillforge self-rewrite-hook template guidance updated to require the harness-friction trigger in every new skill's hook, propagating the discipline by convention. No auto-detection hook for friction patterns themselves — that path was rejected as conflating mechanical (canonical hook territory, article 169-204) with judgment (canonical agent-prompted-reflection territory, article 752-768).
+
+**Rationale:** Canonical splits enforcement into hooks-for-mechanical and prompts-for-judgment. Friction-recognition is judgment work; trigger lists are the right surface. Part A places the trigger contract at the operational-contract level (cross-skill). Part B catches the mechanical signal — long session with no captures — without trying to detect friction itself. Part C propagates the trigger pattern via skillforge so new skills inherit the discipline. The 3-part design preserves canonical posture: prompts where judgment matters (CLAUDE.md + skillforge), hooks where the signal is mechanical (SessionStart/SessionEnd).
+
+**Alternatives considered:**
+- Auto-detector hook for harness-shape friction patterns — rejected; would need to detect things like "workflow audit produced ≥3 structural fixes after deliverable was drafted," which is judgment-bound. Building that as a hook risks false positives that defeat the discipline.
+- Inline 6-trigger list directly in CLAUDE.md — rejected during implementation; pushed eager-load over budget. Progressive-disclosure (pointer + protocol file) is the canonical-aligned pattern (article 343-356 on context budget).
+- Stop hook that blocks turn-end if no propose_harness_fix.py invocation in session — rejected; over-correction. Many sessions legitimately have no harness friction.
+- Per-skill explicit trigger prompts in all 26 skills — rejected; scatters discipline across files + creates linter churn. Skillforge as the template-setter is the canonical compounding pattern (article 711: "self-rewrite hook on skillforge itself is updating the template based on what worked").
+
+**Operationalised:**
+- 3 commits: Part A (`.agent/protocols/harness-fix-triggers.md` + CLAUDE.md pointer + budget bump), Part B (2 hooks + 4 unit tests + settings wiring), Part C (skillforge update + this DECISIONS entry)
+- 4 unit tests cover the SessionEnd warning matrix
+- Settings wiring: SessionStart + SessionEnd hooks added to both `.claude/settings.json` (project) and `adapters/claude-code/settings.json` (install template)
+- Skill linter: 27/27 conformant after Part C edit
+- Conformance audit clean post-budget-bump
+
+**Status:** active. Open follow-up: propagate Phase L's importance/pain tuning pattern to other long-session skills (planner, document-researcher, etc.) so memory_reflect events reliably win cluster canonical races there too. This is per-skill self-rewrite work, batches with future skill-update cycles.
+

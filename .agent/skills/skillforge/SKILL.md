@@ -29,10 +29,20 @@ When a new capability is needed:
 - Include 2–3 examples of correct behavior when it clarifies intent.
 - Include 1 example of a failure and what was learned from it.
 - Keep the whole file under 100 lines.
+- End with a self-rewrite hook that includes the harness-friction trigger
+  (see `.agent/protocols/harness-fix-triggers.md`): on any failed
+  invocation OR every N uses, in addition to the skill's own pattern
+  scan, also check whether harness-shape friction was encountered (skill
+  step missing, workflow timing wrong, agent dispatch mismatch,
+  agent-memory sparse) and invoke `propose_harness_fix.py` if so.
 
 ## Self-rewrite hook
 After every 5 skills created, or on any failed creation:
 1. Read the last 5 skillforge entries from episodic memory.
 2. If better trigger patterns or constraint structures have emerged,
    update this file and the template it implies.
-3. Commit: `skill-update: skillforge, <one-line reason>`.
+3. If harness-shape friction surfaced (see
+   `.agent/protocols/harness-fix-triggers.md`), invoke
+   `propose_harness_fix.py` BEFORE updating skillforge — separating
+   harness fixes from skill self-evolution keeps the audit trail clean.
+4. Commit: `skill-update: skillforge, <one-line reason>`.
