@@ -6,10 +6,35 @@
 
 ## Current step
 
-**Step 8.3 — real-case dry-run (in progress, 2026-04-27)**
+**Step 8.4 — harness-learning loop (complete; awaiting merge to master, 2026-04-30)**
 
-Branch: `feature/step-8-3-real-case-dry-run`. Plan:
-`/Users/talwarpulkit/.claude/plans/before-we-go-into-foamy-mccarthy.md`.
+Branch: `feature/step-8.4-harness-learning-loop`.
+Spec: `docs/superpowers/specs/2026-04-30-step-8-4-harness-learning-loop-design.md`.
+Plan: `docs/superpowers/plans/2026-04-30-step-8-4-harness-learning-loop-plan.md`.
+
+### Step 8.4 stage plan (all complete)
+
+- **Step 8.4.5 — canonical-evidence gate ✅** (5 commits)
+  - Config files (keywords + paths) + cite_canonical.py tool + 3 hooks (Layer 1/2/4) + settings wiring + DECISIONS entry. 18 tests across 4 suites.
+- **Gap 11 — capture wiring (3 parts) ✅** (3 commits)
+  - Part A: trigger list as `.agent/protocols/harness-fix-triggers.md` referenced from CLAUDE.md (progressive disclosure, +budget bump 500→510 lean).
+  - Part B: SessionStart/SessionEnd observability hooks (mechanical signal: long session + zero captures = warn).
+  - Part C: skillforge template guidance updated so new skills inherit the harness-friction trigger.
+- **Gap 9 — auto_dream filter ✅** (1 commit)
+  - `collapse_file_writes()` runs pre-cluster; restores canonical prefix-grouping behavior lost in Jaccard migration. 6 tests + fixture.
+- **Phase H — harness-graduate.py ✅** (1 commit)
+  - Cross-install lesson + DECISIONS promotion (target → fork). Interactive gate per entry, hash dedup, engagement-specificity heuristic. 3 tests + target fixture.
+- **Phase O — harness_intent_audit.py ✅** (1 commit)
+  - 18-checkpoint behavioral audit (5 install + 8 engagement + 4 drift + 1 anchor) made executable from `.agent/protocols/canonical-sources.md`. 5 tests + 2 fixture targets.
+- **Gap 10 — consulting-deck-builder Phase 1.5 ✅** (1 commit)
+  - Hand-coded workflow-contract reconciliation gate; future similar fixes route via Phase O finding → propose_harness_fix → harness-graduate.
+
+Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + branch-end smoke). All tests green (36 pass); conformance audit 35/35; skill linter 27/27. Gate smoke-tested end-to-end: Layer 2 blocks/allows on citation freshness; Layer 1 keyword detection + context injection works; Layer 4 Evidence-block check works.
+
+**Open follow-ups (post-merge):**
+- Propagate Phase L's importance/pain tuning pattern to other long-session skills (planner, document-researcher).
+- Extend Phase O drift checks #14-16 once trace_check.py stabilizes.
+- Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection.
 
 ## Why now
 
