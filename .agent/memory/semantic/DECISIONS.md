@@ -406,3 +406,28 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. Open follow-up: extend `harness_conformance_audit.py` to detect ztk-hook drift (e.g., bare `ztk rewrite` in settings without sed wrapper).
 
+
+## 2026-04-30: Step 8.4.5 — canonical-evidence gate (4-layer hook + tool)
+
+**Decision:** Add a 4-layer canonical-evidence enforcement gate that hard-blocks harness-primitive Edit/Write actions and assistant turn-ends without a cited canonical evidence block. Layer 1 (`canonical_gate_prompt.py`, UserPromptSubmit) detects harness-territory keywords in user prompts and writes `.harness-mode.json` flag + injects context reminder. Layer 2 (`canonical_gate_write.py`, PreToolUse Edit|Write|MultiEdit) blocks file writes to harness-territory globs unless `.canonical-citation.json` exists with mtime <30 min. Layer 3 (`cite_canonical.py` tool) is the satisfaction gesture — requires `--source --reference --quote --justification` and validates each non-`none-applies` source by substring-checking the quote against the cited canonical text. Layer 4 (`canonical_gate_stop.py`, Stop) blocks the assistant turn-end when `.harness-mode.json` is set unless the response contains a structured `**Evidence:**` block.
+
+**Rationale:** Step 8.3 surfaced silent drift between intended and actual behavior of harness primitives. The brainstorm for Step 8.4 itself replicated the failure mode — Sections 1, 2, 3 each had to be revised after canonical re-checks. Memory-based reminders (`canonical-sources.md` protocol, auto-memory entries) had not produced the discipline; mechanical enforcement was the missing layer. Canonical pattern (article lines 849-850): "Hooks are the enforcement mechanism. They run before and after agent actions and implement the constraints defined in permissions and tool schemas." Each layer follows that pattern; the assembly as a "harness-evolution discipline gate" is canonically uncovered (canonical assumes single-user not actively evolving the harness from inside) and is labeled as fork extension.
+
+**Alternatives considered:**
+- Stronger memory entries / protocol updates only — rejected; that's what canonical-sources.md already was, and it didn't move the needle (Step 8.3 surfaced 3 gaps directly traceable to skipped canonical checks).
+- Auto-detector hook for harness friction patterns — initially proposed and rejected mid-brainstorm; canonical posture is "hooks for mechanical signals, agent-prompted reflection for judgment signals" (article lines 169-204 vs 746-768). Friction recognition is judgment work; a detector would conflate the two.
+- Single PreToolUse hook only (Layer 2) — rejected; brainstorm/design phase has no tool calls, so text-only output (Layer 4) needed independent enforcement.
+- Soft warning instead of hard block on Layer 2 — rejected; the user explicitly asked for hard fail on three trigger conditions (harness primitives, agentic-stack components, answer/insight assumptions).
+
+**Operationalised:**
+- 4 new files: `.agent/harness/canonical_gate_{prompt,write,stop}.py`, `.agent/tools/cite_canonical.py`
+- 2 config files: `.agent/protocols/harness-territory-{keywords.txt,paths.json}`
+- Wired into `.claude/settings.json` (project) + `adapters/claude-code/settings.json` (install template); install template's existing PostToolUse + auto_dream.py Stop preserved (canonical_gate_stop runs alongside)
+- 18 unit tests across 4 test files (`tests/test_cite_canonical.py`, `tests/test_canonical_gate_{prompt,write,stop}.py`); tests gitignored per fork convention but pytest-runnable locally
+- `.gitignore` updated for runtime artifacts (`.canonical-citation.json`, `.harness-mode.json`, `.session-state.json`, `.hook-errors.log`)
+- All hooks fail-OPEN on error so a hook crash never locks out the session
+- Bootstrapped under `--source none-applies` citation justified as "fork-extension because: bootstrapping the gate itself"
+- Smoke-tested end-to-end: harness-territory write blocked without citation, allowed after running `cite_canonical.py`, non-harness paths always allow
+
+**Status:** active. First commits landing under the new discipline begin with this DECISIONS entry itself (citation written before this Edit). Open follow-up: extend `harness_conformance_audit.py` to detect drift in the gate's config (keyword list, path globs) and to spot-check recent citation files' quotes against the actual canonical text (gaming detection).
+
