@@ -1,0 +1,17 @@
+{
+  "globs": [
+    ".agent/skills/**",
+    ".agent/protocols/**",
+    ".agent/harness/**",
+    ".agent/AGENTS.md",
+    ".agent/memory/semantic/**",
+    "adapters/*/agents/**",
+    "adapters/*/skills/**",
+    "adapters/*/commands/**",
+    "harness_manager/**",
+    ".claude/agents/**",
+    ".claude/settings.json",
+    "CLAUDE.md",
+    "adapters/claude-code/CLAUDE.md"
+  ]
+}

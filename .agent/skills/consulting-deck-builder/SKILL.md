@@ -1,7 +1,7 @@
 ---
 name: consulting-deck-builder
 description: Use proactively when work involves building or iterating on a deck with MBB structure. Triggers on "build a deck", "storyboard", "iterate on slides", "structure the storyline", "vertical horizontal logic check". Three-phase methodology: Storyboard (spine + MECE check) → Content (per-slide draft with stickies, all slides at once) → Format. Never skips a phase. Phase 2 dispatches per-act subagents in parallel via the matching workflow contract.
-version: 2026-04-29
+version: 2026-04-30
 triggers: ["build a deck", "build pitch deck", "storyboard", "iterate on slides", "structure the storyline", "scrape these resources for the deck", "vertical horizontal logic check", "slide-by-slide build", "what should each slide say"]
 tools: [bash, memory_reflect, web_search, web_fetch]
 preconditions: ["active_client is set OR engagement scope is otherwise resolved", "raw material exists in client/<active>/raw-uploads or summaries"]
@@ -190,6 +190,19 @@ distinct from cold-draft Phase 1 above.
 
 Phase 1 iteration exit criterion: user explicitly approves the
 storyboard (v2 unchanged, or v3 produced from team audit).
+
+## Phase 1.5 — Workflow-contract gate (Step 8.4 Gap 10)
+
+Before Phase 2, run an 8-section coverage check against the seeding
+workflow file (e.g. `.agent/workflows/final-recommendations-deck.md`).
+Each missing or mis-framed section is a fix surfaced BEFORE sign-off,
+not after — closes Gap 10 (framework-lead audit firing too late).
+
+8 canonical sections: situation, complication, question, value-gap,
+options, recommendation, risks, investment+next-steps. For each: covered?
+framed action-voice + value-explicit + From-To? Revise BEFORE Phase 2.
+
+Stops, asks: 8-section reconciliation report; explicit y per gap.
 
 ## Phase 2 — Slide content (delegated, parallel, all slides at once)
 

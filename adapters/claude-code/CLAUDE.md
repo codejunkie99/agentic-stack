@@ -86,9 +86,12 @@ python3 .agent/tools/propose_harness_fix.py --target <path> \
     --change "<concrete proposed change>" --severity 7
 ```
 
-Proposal lands in `.agent/memory/working/HARNESS_FEEDBACK.md`. Keep
-working; the proposal is graduated to the fork in a separate
-ritual. Same mechanism for `skill_evolution_mode: "propose_only"`.
+**When to invoke**: see `.agent/protocols/harness-fix-triggers.md` for the
+6 canonical trigger conditions. Capture is cheap — err toward more.
+
+Proposal lands in `.agent/memory/working/HARNESS_FEEDBACK.md`. Graduated
+to fork via `harness-graduate.py` (Step 8.4 Phase H). Same mechanism for
+`skill_evolution_mode: "propose_only"`.
 
 ## Rules that override all defaults
 

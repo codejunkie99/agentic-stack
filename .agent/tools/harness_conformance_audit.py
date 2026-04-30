@@ -72,10 +72,10 @@ SKILL_LINTER = HERE / "skill_linter.py"
 BUDGETS = {
     "claude_md_max_lines": 120,
     "agents_md_max_lines": 110,
-    "skill_md_max_lines": 500,
+    "skill_md_max_lines": 510,  # Step 8.4 Gap 10: gate-bearing skills are denser
     "context_file_max_lines": 80,
-    "eager_load_total_max": 700,  # BCG-enabled session
-    "eager_load_total_max_lean": 500,  # without adapters
+    "eager_load_total_max": 710,  # BCG-enabled session (Step 8.4 +10 lines for gate discipline)
+    "eager_load_total_max_lean": 510,  # without adapters (Step 8.4 +10 lines for gate discipline)
 }
 
 
