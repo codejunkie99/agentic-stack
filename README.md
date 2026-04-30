@@ -2,7 +2,7 @@
 
 **Keep one portable memory-and-skills layer across coding-agent harnesses, so switching tools doesn't reset how your agent works.**
 
-A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
+A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, GitHub Copilot CLI, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
 
 It also includes a local data layer so you can monitor the whole suite of
 agents from one place: harness activity, cron runs, active agents, token/cost
@@ -97,7 +97,7 @@ brew install agentic-stack
 # drop the brain into any project — the onboarding wizard runs automatically
 cd your-project
 agentic-stack claude-code
-# or: cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
+# or: cursor | windsurf | opencode | openclaw | copilot-cli | hermes | pi | codex | standalone-python | antigravity
 ```
 
 ### Windows (PowerShell)
@@ -121,7 +121,7 @@ brew update && brew upgrade agentic-stack
 git clone https://github.com/codejunkie99/agentic-stack.git
 cd agentic-stack && ./install.sh claude-code         # mac / linux / git-bash
 # or on Windows PowerShell: .\install.ps1 claude-code
-# adapters: claude-code | cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
+# adapters: claude-code | cursor | windsurf | opencode | openclaw | copilot-cli | hermes | pi | codex | standalone-python | antigravity
 ```
 
 ### Once installed: manage what's wired
@@ -152,7 +152,7 @@ orphan the prior installs.
 ## Onboarding wizard
 
 If you ran bare `./install.sh` (no adapter name), the wizard starts
-with a **multi-select harness step**: it lists all 10 adapters, pre-
+with a **multi-select harness step**: it lists all 11 adapters, pre-
 checks any it detects on disk, and installs each one you confirm with
 space + enter. After the install(s), the preferences flow runs.
 
@@ -305,6 +305,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 
 adapters/                       # one small shim per harness, each with adapter.json manifest
 ├── claude-code/   (CLAUDE.md + settings.json hooks — $CLAUDE_PROJECT_DIR wired, closes #18)
+├── copilot-cli/   (AGENTS.md + .github/instructions/ + .github/hooks/ + .github/skills/ mirror)
 ├── cursor/        (.cursor/rules/*.mdc)
 ├── windsurf/      (.windsurfrules)
 ├── opencode/      (AGENTS.md + opencode.json)
@@ -349,6 +350,7 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 | Harness | Config file it reads | Hook support |
 |---|---|---|
 | **Claude Code** | `CLAUDE.md` + `.claude/settings.json` | yes (PostToolUse, Stop) |
+| **GitHub Copilot CLI** | `AGENTS.md` + `.github/instructions/*.instructions.md` | yes (postToolUse, sessionEnd) |
 | **Cursor** | `.cursor/rules/*.mdc` | no (manual reflect calls) |
 | **Windsurf** | `.windsurfrules` | no (manual reflect calls) |
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |

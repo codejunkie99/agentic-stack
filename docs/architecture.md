@@ -55,9 +55,9 @@ telemetry, and reusable artifacts are in local files.
 
 ## Why the separation matters
 
-You can swap the harness for any of the adapters (Claude Code, Cursor,
-Windsurf, OpenCode, OpenClaw, Hermes, Pi, Codex, standalone Python,
-Antigravity) and lose nothing. The brain is portable; only the glue
+You can swap the harness for any of the adapters (Claude Code,
+Cursor, Windsurf, OpenCode, OpenClaw, Copilot CLI, Hermes, Pi, Codex, standalone Python,
+Antigravity) and lose nothing.The brain is portable; only the glue
 changes. The dashboard and flywheel work for the same reason: every harness can
 write to the same local `.agent/` event stream.
 
