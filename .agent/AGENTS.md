@@ -58,6 +58,7 @@ are the exact failure mode this layer prevents.
 - `protocols/permissions.md` — read before any tool call
 - `protocols/tool_schemas/` — typed interfaces for external tools
 - `protocols/delegation.md` — rules for sub-agent handoff
+- `protocols/canonical-sources.md` — consult canonical agentic-stack before harness-primitive edits
 
 ## Config (`config.json`)
 Toggle file read at session start. Fields:

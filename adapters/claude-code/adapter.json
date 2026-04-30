@@ -40,6 +40,51 @@
       "merge_policy": "overwrite"
     },
     {
+      "src": "agents/product-designer.md",
+      "dst": ".claude/agents/product-designer.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/frontend-engineer.md",
+      "dst": ".claude/agents/frontend-engineer.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/backend-engineer.md",
+      "dst": ".claude/agents/backend-engineer.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/prototype-engineer.md",
+      "dst": ".claude/agents/prototype-engineer.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/integration-engineer.md",
+      "dst": ".claude/agents/integration-engineer.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/qa-runner.md",
+      "dst": ".claude/agents/qa-runner.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/security-reviewer.md",
+      "dst": ".claude/agents/security-reviewer.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/performance-reviewer.md",
+      "dst": ".claude/agents/performance-reviewer.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "agents/type-design-reviewer.md",
+      "dst": ".claude/agents/type-design-reviewer.md",
+      "merge_policy": "overwrite"
+    },
+    {
       "src": "commands/regenerate-decisions.md",
       "dst": ".claude/commands/regenerate-decisions.md",
       "merge_policy": "overwrite"
