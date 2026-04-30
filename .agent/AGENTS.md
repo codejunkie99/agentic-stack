@@ -58,7 +58,7 @@ are the exact failure mode this layer prevents.
 - `protocols/permissions.md` — read before any tool call
 - `protocols/tool_schemas/` — typed interfaces for external tools
 - `protocols/delegation.md` — rules for sub-agent handoff
-- `protocols/canonical-sources.md` — consult canonical agentic-stack before harness-primitive edits
+- `protocols/canonical-sources.md` (canonical-default for harness edits) and `protocols/ztk-bypass.md` (Read/Glob/Grep for context-critical reads — ztk compresses Bash)
 
 ## Config (`config.json`)
 Toggle file read at session start. Fields:
