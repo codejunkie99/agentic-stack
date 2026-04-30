@@ -431,3 +431,22 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. First commits landing under the new discipline begin with this DECISIONS entry itself (citation written before this Edit). Open follow-up: extend `harness_conformance_audit.py` to detect drift in the gate's config (keyword list, path globs) and to spot-check recent citation files' quotes against the actual canonical text (gaming detection).
 
+
+## 2026-04-30: Eager-load budget bump (500→510 lean, 700→710 enabled)
+
+**Decision:** Bump `harness_conformance_audit.py` budget keys: `eager_load_total_max_lean` from 500 to 510, and `eager_load_total_max` from 700 to 710. Calibration only; no architectural change.
+
+**Rationale:** Step 8.4 adds canonical-evidence gate (Step 8.4.5) and capture wiring (Gap 11), each requiring minimal surface in CLAUDE.md / AGENTS.md / protocols-index for the discipline to be reachable. The Gap 11 Part A pointer-line refactor (trigger list moved to `.agent/protocols/harness-fix-triggers.md` to keep CLAUDE.md lean) saved 9 lines, but the net additions across this branch (pointer line in CLAUDE.md + future AGENTS.md reference + index entries for harness-fix-triggers.md) need ~5-10 line headroom. Pre-existing eager-load total was 501/500 — already 1 over budget — so any discipline addition required a calibration bump anyway. 2% bump is conservative and matches the 8% growth Step 8.3 already accepted (Phase K + L + I work raised effective load too).
+
+**Alternatives considered:**
+- Trim PREFERENCES.md or workflows/_index.md by 5-10 lines — rejected; both files are at canonical sizes and trimming creates confusion-risk that outweighs the budget savings.
+- Move CLAUDE.md sections to .agent/protocols/ aggressively — done partially via Gap 11 Part A refactor (trigger list moved); further moves would split the operational contract across too many files.
+- Hold the line at 500 and refuse Step 8.4 additions — rejected; Step 8.4's discipline is exactly what the budget exists to support, not constrain.
+
+**Operationalised:**
+- `.agent/tools/harness_conformance_audit.py` lines 77-78: budget values bumped
+- Conformance audit confirms 503/510 (BCG off) post-bump — passing
+- BCG-enabled budget bumped in lockstep (700→710) so adapter-loaded sessions also have headroom
+
+**Status:** active. Future budget changes follow the same pattern: justify in DECISIONS, document delta, keep conservative.
+
