@@ -472,3 +472,24 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. Open follow-up: propagate Phase L's importance/pain tuning pattern to other long-session skills (planner, document-researcher, etc.) so memory_reflect events reliably win cluster canonical races there too. This is per-skill self-rewrite work, batches with future skill-update cycles.
 
+
+## 2026-04-30: Gap 9 — auto_dream pre-cluster file-write collapse
+
+**Decision:** Add `collapse_file_writes(entries)` as a pre-clustering filter in `.agent/memory/auto_dream.py:run_dream_cycle()`. Detects file-write episodes via regex `^(Wrote|Edited|Created|Updated)\s+(\S+\.\S+)`, groups by `(source.run_id, action_kind, target_path)`, collapses groups of size ≥2 that contain no episodes with substantive `reflection` text into a single synthesized representative with `recurrence_count = N`. Episodes with non-empty `reflection` are NEVER collapsed (those are explicit memory_reflect events). REJECTED in design phase: `reflection_bonus` multiplier on salience formula — would have violated canonical's "the simple weighted formula won" stance (article line 365); Phase L's importance/pain tuning is sufficient.
+
+**Rationale:** Canonical (article 469-482) clusters episodes by `skill::action[:50]` prefix-grouping, which auto-collapses same-action episodes. Fork's Jaccard migration (per `cluster.py` docstring "Phase 3's replacement for action-prefix clustering") gained semantic-similarity matching across paraphrases but lost the auto-collapse. On HarnessX Phase 2 (130 episodes, 13 candidates), the cluster claim collapsed to "Wrote storyboard.md (781 lines)" because 30+ Write events on the same file dominated the cluster. Re-introducing the collapse pre-cluster restores the canonical guarantee while preserving Jaccard's paraphrase coverage. Phase L's per-phase-exit importance=8-10, pain=5-8 already produces salience scores that beat default file-write events (8.0 vs ~3.0 with min(recurrence,3) saturation), so a `reflection_bonus` formula factor is unnecessary AND would violate canonical's simple-formula posture.
+
+**Alternatives considered:**
+- `reflection_bonus = 1.5x` multiplier in `salience_score` for episodes with substantive reflection — rejected; canonical (article 365) explicitly values simple formula. Phase L tuning of inputs already wins canonical races.
+- Roll back Jaccard, return to prefix-grouping — rejected; loses paraphrase-similarity coverage that Jaccard gained.
+- Group by `(run_id, target_path)` ignoring `action_kind` — rejected; conflates "wrote 4 times" with "wrote 2 + edited 2"; the kind distinction carries information about churn pattern.
+- Out-of-branch follow-up (NOT this commit): propagate Phase L's input-tuning pattern to other long-session skills (planner, document-researcher) so they too win cluster canonical races. Land via skill self-rewrite + propose_harness_fix.
+
+**Operationalised:**
+- `collapse_file_writes()` added to `.agent/memory/auto_dream.py`; called in `run_dream_cycle()` before `cluster_and_extract`
+- 6 unit tests pass: pure-tool-use collapse, mixed-with-reflection preserved, single Write untouched, no-extension non-match, different run_id non-merge, fixture integration
+- Fixture at `tests/fixtures/episodic_collapse_input.jsonl` (7 representative entries from HarnessX-shape pattern: 2 Wrote + 2 Edited on storyboard.md collapse to 2 representatives ×2 each; 1 reflect preserved; 1 single Created preserved; 1 no-extension preserved → 5 outputs from 7 inputs)
+- Citation: article 469-482 (canonical prefix-grouping pattern) via cite_canonical.py
+
+**Status:** active. Validated against test fixture; integration validation against real HarnessX 130-episode batch deferred until next dream cycle on a target.
+

@@ -13,7 +13,7 @@ Never:
   - promotion to LESSONS.md (graduate.py does that)
   - git commit (unattended repo writes are dangerous on a host hook)
 """
-import contextlib, json, os
+import contextlib, json, os, re
 from promote import cluster_and_extract, write_candidates
 from validate import heuristic_check
 from review_state import mark_rejected, write_review_queue_summary
@@ -34,6 +34,66 @@ CANDIDATES = os.path.join(ROOT, "candidates")
 SEMANTIC = os.path.join(ROOT, "semantic")
 REVIEW_QUEUE = os.path.join(ROOT, "working/REVIEW_QUEUE.md")
 PROMOTION_THRESHOLD = 7.0
+
+# Step 8.4 Gap 9: pre-cluster collapse of same-file Write/Edit episodes.
+# Restores canonical-article prefix-grouping behavior (article 469-482)
+# that fork's Jaccard migration replaced. On long content sessions, 30+
+# Write events on the same file would otherwise dominate the cluster
+# claim ("Wrote storyboard.md (781 lines)" canonical) and drown out
+# real lessons. Collapsing them pre-cluster makes the cluster claim
+# reflect insight, not file activity.
+_FILE_WRITE_RE = re.compile(r"^(Wrote|Edited|Created|Updated)\s+(\S+\.\S+)")
+
+
+def collapse_file_writes(entries):
+    """Collapse same-file Write/Edit episodes within a session.
+
+    Detects file-write episodes via action regex (verb + path-with-extension),
+    groups by (source.run_id, action_kind, target_path), and replaces groups
+    of size N>=2 with one synthesized representative carrying recurrence_count=N.
+    Episodes with substantive `reflection` text are NEVER collapsed — those
+    are explicit memory_reflect events (signal, not noise).
+
+    Returns a new list; input entries are not mutated. Pass-through for
+    episodes that don't match the file-write regex.
+    """
+    groups = {}
+    others = []
+    for e in entries:
+        action = e.get("action", "")
+        m = _FILE_WRITE_RE.match(action)
+        if not m:
+            others.append(e)
+            continue
+        kind = m.group(1)
+        path = m.group(2)
+        run_id = (e.get("source") or {}).get("run_id", "")
+        key = (run_id, kind, path)
+        groups.setdefault(key, []).append(e)
+
+    collapsed = []
+    for (run_id, kind, path), members in groups.items():
+        if any((m.get("reflection") or "").strip() for m in members):
+            collapsed.extend(members)  # preserve all if any has reflection
+            continue
+        if len(members) < 2:
+            collapsed.extend(members)
+            continue
+        sorted_members = sorted(members, key=lambda x: x.get("timestamp", ""))
+        first = sorted_members[0]
+        last = sorted_members[-1]
+        rep = dict(last)
+        rep["action"] = f"{kind} {path} ×{len(members)} in session"
+        rep["detail"] = (
+            f"first: {(first.get('detail','') or '')[:80]} ... "
+            f"last: {(last.get('detail','') or '')[:80]}"
+        )
+        rep["pain_score"] = max(m.get("pain_score", 5) for m in members)
+        rep["importance"] = max(m.get("importance", 5) for m in members)
+        rep["recurrence_count"] = len(members)
+        collapsed.append(rep)
+
+    return others + collapsed
 CLUSTER_SIMILARITY = 0.3
 
 
@@ -178,7 +238,11 @@ def run_dream_cycle():
             print(f"dream cycle: no entries (queue has {pending} pending)")
             return
 
-        patterns = cluster_and_extract(entries, threshold=CLUSTER_SIMILARITY)
+        # Gap 9: collapse same-file Write/Edit episodes before clustering
+        # so the cluster claim isn't dominated by file-write noise on long
+        # content sessions. See _FILE_WRITE_RE / collapse_file_writes above.
+        filtered = collapse_file_writes(entries)
+        patterns = cluster_and_extract(filtered, threshold=CLUSTER_SIMILARITY)
         promotable = {k: p for k, p in patterns.items()
                       if p.get("canonical_salience", 0) >= PROMOTION_THRESHOLD}
 
