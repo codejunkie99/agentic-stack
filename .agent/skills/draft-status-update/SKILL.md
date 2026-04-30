@@ -35,3 +35,13 @@ Generate a draft weekly status update by reading the action tracker, RAID log, a
 - The executive summary should be partner-readable in 30 seconds
 - Lead with wins, then flag risks and blockers immediately after
 - Be specific: names, dates, numbers — not vague statements
+
+## Self-rewrite hook
+
+After every 5 status drafts produced, or the first time a partner /
+MDP pushes back on the draft format (section ordering, executive-
+summary length, risk framing, win-vs-risk balance), read the last 5
+draft-status-update entries from episodic memory. If better section
+structures, win-vs-risk heuristics, or specificity rules have
+emerged, update this file. Commit:
+`skill-update: draft-status-update, <one-line reason>`.

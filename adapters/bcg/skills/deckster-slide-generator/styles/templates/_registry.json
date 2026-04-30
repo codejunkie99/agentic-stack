@@ -1,0 +1,14 @@
+{
+  "default": "bcg_default",
+  "templates": {
+    "bcg_default": {
+      "name": "BCG Default",
+      "description": "Standard BCG Grid 16:9",
+      "font": "Trebuchet MS",
+      "primary_color": "#29BA74",
+      "installed": "2026-03-30",
+      "source": "built-in",
+      "has_config": true
+    }
+  }
+}

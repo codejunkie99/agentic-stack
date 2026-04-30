@@ -1,0 +1,14 @@
+{
+  "pattern": "vertical_stack",
+  "description": "Vertically stacked rows with numbered badges and content",
+  "default_variant": "ranked_rows",
+  "variants": {
+    "ranked_rows": {
+      "file": "ranked_rows.py",
+      "description": "Numbered vertical rows with badge, header, description, and separator lines",
+      "inputs": ["items"],
+      "min_items": 2,
+      "max_items": 8
+    }
+  }
+}

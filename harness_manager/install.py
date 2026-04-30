@@ -17,6 +17,43 @@ from . import state as state_mod
 from . import __version__
 
 
+# ---- semantic-memory install templates --------------------------------
+
+def _apply_semantic_templates(
+    target_agent: Path,
+    log: Callable[[str], None],
+) -> None:
+    """Overwrite target's semantic memory files with install templates.
+
+    Called only on fresh install (inside the `if not target_agent.exists()`
+    guard in install_adapter). The wholesale `.agent/` copytree above just
+    inherited the upstream fork's lived-in semantic memory; this resets the
+    four files an engagement should start fresh with:
+
+      LESSONS.md          — keep harness-invariant seed lessons; strip auto-
+                            promoted entries that are upstream-specific.
+      DOMAIN_KNOWLEDGE.md — engagement-blank stub.
+      DECISIONS.md        — engagement-blank stub (engagement ADRs only).
+      lessons.jsonl       — empty.
+
+    Templates live in `harness_manager/templates/semantic/` and are bundled
+    with the installer rather than under `.agent/` so they don't get copied
+    into target as visible scaffolding.
+    """
+    template_root = Path(__file__).parent / "templates" / "semantic"
+    semantic_dir = target_agent / "memory" / "semantic"
+    if not template_root.is_dir() or not semantic_dir.is_dir():
+        # Defensive: if either side is missing, leave wholesale-copied
+        # content in place rather than silently dropping the reset.
+        return
+    for template in sorted(template_root.iterdir()):
+        if not template.is_file():
+            continue
+        dst = semantic_dir / template.name
+        shutil.copy2(template, dst)
+    log("  + .agent/memory/semantic/ (reset to engagement-blank templates)")
+
+
 # ---- merge policies ---------------------------------------------------
 
 def _apply_file(
@@ -189,6 +226,13 @@ def install(
     if not target_agent.exists():
         shutil.copytree(stack_root / ".agent", target_agent)
         log("  + .agent/ (portable brain)")
+        # Reset semantic memory from install templates so the new install
+        # starts with engagement-blank LESSONS / DOMAIN_KNOWLEDGE / DECISIONS
+        # rather than inheriting the upstream fork's harness-development
+        # semantic content. Only fires on fresh install (inside the
+        # not-exists guard above) — reinstalls preserve accumulated
+        # engagement state.
+        _apply_semantic_templates(target_agent, log)
 
     files_written: list[str] = []        # we created — safe for remove to delete
     files_overwritten: list[str] = []    # we modified but file pre-existed — DO NOT delete on remove

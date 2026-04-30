@@ -1,0 +1,21 @@
+{
+  "pattern": "flywheel",
+  "description": "Reinforcing cycle showing how stages feed each other",
+  "default_variant": "circular_orbit",
+  "variants": {
+    "circular_orbit": {
+      "file": "circular_orbit.py",
+      "description": "Nodes orbiting a center value proposition with connecting arcs and directional arrows",
+      "inputs": ["stages", "center_message"],
+      "min_stages": 3,
+      "max_stages": 7
+    },
+    "concentric_rings": {
+      "file": "concentric_rings.py",
+      "description": "Rings radiating outward from a center core, each ring representing a stage layer",
+      "inputs": ["stages", "center_message"],
+      "min_stages": 3,
+      "max_stages": 6
+    }
+  }
+}

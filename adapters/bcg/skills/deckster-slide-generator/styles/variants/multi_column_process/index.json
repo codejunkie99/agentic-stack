@@ -1,0 +1,14 @@
+{
+  "pattern": "multi_column_process",
+  "description": "N-column workstream overview with numbered badges, accent bars, and detail cards",
+  "default_variant": "workstream_cards",
+  "variants": {
+    "workstream_cards": {
+      "file": "workstream_cards.py",
+      "description": "Numbered oval at top, accent bar, card with bullet details, connected by horizontal line",
+      "inputs": ["stages"],
+      "min_stages": 2,
+      "max_stages": 6
+    }
+  }
+}

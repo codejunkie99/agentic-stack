@@ -64,3 +64,12 @@ If required context is not found:
 - Context is read-only — never modify context files
 - Prefer specific citations over paraphrases
 - If context is contradictory, flag both versions and ask for clarification
+
+## Self-rewrite hook
+
+After every 10 retrievals, or the first time a `[CONTEXT GAP]` flag
+turns out to have been wrong (the context existed but wasn't found),
+read the last 10 context-search entries from episodic memory. If
+better retrieval strategies, citation conventions, or gap-detection
+patterns have emerged, update this file. Commit:
+`skill-update: context-search, <one-line reason>`.

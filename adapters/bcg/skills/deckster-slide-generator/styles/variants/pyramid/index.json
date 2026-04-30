@@ -1,0 +1,14 @@
+{
+  "pattern": "pyramid",
+  "description": "Stacked horizontal bars decreasing in width from bottom to top with annotations",
+  "default_variant": "hierarchy_layers",
+  "variants": {
+    "hierarchy_layers": {
+      "file": "hierarchy_layers.py",
+      "description": "Stacked bars narrowing from bottom to top with right-side annotations per layer",
+      "inputs": ["layers"],
+      "min_stages": 3,
+      "max_stages": 6
+    }
+  }
+}

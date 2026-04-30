@@ -1,0 +1,14 @@
+{
+  "pattern": "grid_layout",
+  "description": "Equal-sized cards arranged in a grid with number badges and content",
+  "default_variant": "two_by_three",
+  "variants": {
+    "two_by_three": {
+      "file": "two_by_three.py",
+      "description": "2 rows x 3 columns of equal cards with number badges, header, and description",
+      "inputs": ["items"],
+      "min_items": 1,
+      "max_items": 6
+    }
+  }
+}

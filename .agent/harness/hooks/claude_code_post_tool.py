@@ -25,6 +25,8 @@ dream cycle produced zero candidates. This version:
 Drop-in for the old command in settings.json:
     "command": "python3 .agent/harness/hooks/claude_code_post_tool.py"
 """
+from __future__ import annotations
+
 import json, os, re, sys
 
 # Resolve .agent/ root from this file's location:
@@ -408,6 +410,11 @@ def _action_label(tool_name: str, tool_input: dict) -> str:
     if tool_name == "Task":
         desc = (tool_input.get("description") or "")[:60]
         return f"task: {desc}"
+
+    if tool_name == "Agent":
+        stype = tool_input.get("subagent_type") or tool_input.get("agent") or "?"
+        desc = (tool_input.get("description") or tool_input.get("prompt", "")[:40] or "")[:60]
+        return f"agent: {stype} — {desc}".rstrip(" —")
 
     if tool_name == "WebFetch":
         url = (tool_input.get("url") or "")[:60]

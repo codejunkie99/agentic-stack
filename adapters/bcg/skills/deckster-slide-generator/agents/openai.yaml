@@ -1,0 +1,7 @@
+interface:
+  display_name: "Deckster Slide Generator"
+  short_description: "Plans, builds, and QA's deck-ready slides"
+  default_prompt: "Use $deckster-slide-generator to plan, build, and QA a new consulting deck."
+
+policy:
+  allow_implicit_invocation: true

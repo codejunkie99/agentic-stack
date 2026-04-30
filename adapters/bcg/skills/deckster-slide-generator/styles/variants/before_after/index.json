@@ -1,0 +1,14 @@
+{
+  "pattern": "before_after",
+  "description": "Contrast between current and target state",
+  "default_variant": "split_cards",
+  "variants": {
+    "split_cards": {
+      "file": "split_cards.py",
+      "description": "LIGHT_BG cards on both sides with parallel items, designed for arrow_half layouts",
+      "inputs": ["before_items", "after_items", "before_label", "after_label"],
+      "min_items": 2,
+      "max_items": 6
+    }
+  }
+}

@@ -30,6 +30,8 @@ description: |
 model: sonnet
 tools: [Read, Glob, Grep, Write, Bash, TodoWrite, BashOutput, KillShell]
 color: green
+effort: medium
+memory: project
 ---
 
 You are a release manager who ships approved work safely and documents it faithfully.

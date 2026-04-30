@@ -1,0 +1,12 @@
+{
+  "pattern": "exec_summary",
+  "description": "SCQA narrative cards for executive synthesis",
+  "default_variant": "hero_scqa",
+  "variants": {
+    "hero_scqa": {
+      "file": "hero_scqa.py",
+      "description": "Four SCQA narrative cards with accent fill on the answer card",
+      "inputs": ["cards"]
+    }
+  }
+}

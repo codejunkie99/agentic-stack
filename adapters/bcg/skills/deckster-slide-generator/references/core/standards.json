@@ -1,0 +1,55 @@
+{
+  "source_line": {
+    "y_in": 6.74,
+    "size_pt": 10,
+    "color_hex": "6E6F73"
+  },
+  "body_text": {
+    "default_pt": 14,
+    "minimum_pt": 12
+  },
+  "title": {
+    "default_pt": 24,
+    "max_lines": 2,
+    "target_characters": 90,
+    "narrow_panel_characters": 25
+  },
+  "workflow": {
+    "default_content_detail": true,
+    "key_message_slide_max": 3,
+    "user_checkpoints": [
+      "plan",
+      "qa"
+    ]
+  },
+  "required_core_docs": [
+    "references/core/dynamic-styles.md"
+  ],
+  "required_runtime_docs": [
+    "references/runtime/plan.md",
+    "references/runtime/orchestration.md",
+    "references/runtime/build.md",
+    "references/runtime/qa.md"
+  ],
+  "required_indexes": [
+    "references/layouts/index.md",
+    "references/charts/index.md",
+    "references/frameworks/index.md",
+    "references/process/index.md"
+  ],
+  "required_golden_scenarios": [
+    "executive_summary",
+    "chart_led_finding",
+    "decision_ask",
+    "roadmap",
+    "framework_matrix",
+    "image_led",
+    "ee4p_template",
+    "dynamic_style_override",
+    "qa_only_review"
+  ],
+  "forbidden_phrases": [
+    "scripts and assets were copied to the working directory",
+    "Source line spec: 7-8pt"
+  ]
+}

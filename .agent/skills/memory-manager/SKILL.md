@@ -1,5 +1,6 @@
 ---
 name: memory-manager
+description: Use proactively when work involves reading, scoring, or consolidating memory; running reflection cycles; or compressing episodic into lessons. Triggers on "reflect", "what did I learn", "compress memory", "memory cycle", "graduate this lesson".
 version: 2026-01-01
 triggers: ["reflect", "remember", "distill", "what did I learn", "update memory", "compress memory"]
 tools: [memory_reflect, bash, git]

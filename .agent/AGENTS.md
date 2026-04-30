@@ -69,6 +69,13 @@ Toggle file read at session start. Fields:
   `memory/client/<id>/` directory. When set, scopes
   client-sensitive context to that engagement. Resolved per
   `protocols/permissions.md` lookup order (env var > parent dir > config).
+- `skill_evolution_mode` — `"in_place"` (default) or `"propose_only"`.
+  In_place lets per-skill self-rewrite hooks + `skillforge` write
+  directly to `.agent/skills/`. Propose_only routes those edits
+  through `propose_harness_fix.py` instead. See
+  `tools/propose_harness_fix.py --help` for full behavior.
+  Cross-install snapshot capture (`snapshot_diff.py`) runs in either
+  mode.
 
 ## Host-agent CLI tools (in `tools/`)
 Daily driver, highest-leverage first:

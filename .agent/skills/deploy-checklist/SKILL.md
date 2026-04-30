@@ -1,5 +1,6 @@
 ---
 name: deploy-checklist
+description: Use proactively before deploying, shipping, or releasing. Triggers on "deploy", "ship", "release", "go live", "ready to ship". Verifies all tests passing, no unresolved TODOs in diff, requires human approval for production.
 version: 2026-01-01
 triggers: ["deploy", "ship", "release", "go live"]
 tools: [bash]

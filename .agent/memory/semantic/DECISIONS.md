@@ -221,3 +221,128 @@ Final roster state after Step 8.2 (8.2.1 + 8.2.2 + 8.2.3 + 8.2.4):
 **Status:** active
 
 **Operationalized:** weekly upstream-sync cadence (Mon 9:13 local, durable cron `ba87d58c` + auto-memory `upstream_sync_cadence.md`) so this drift doesn't recur. Plan + per-tag classification doc checked into `docs/superpowers/plans/`. Test file at top-level (`test_bcg_conditional_propagate.py`) matching upstream pattern (test_data_flywheel_export.py); `tests/` is gitignored as of upstream's v0.9.1 (f1c362d).
+
+## 2026-04-28: Eager-load surface trim + permissions.md BCG rules justification
+
+**Decision:** Trim CLAUDE.md from 189 → 92 lines by moving `memory_reflect.py` examples + importance guide to `docs/memory-reflection.md`, compressing the conditional-mount section to pointer-style, and tightening BCG/active_client text. Trim AGENTS.md from 114 → 109 lines by compressing the `skill_evolution_mode` description (full behavior moved to `propose_harness_fix.py --help`). Justify the +19-line growth of `protocols/permissions.md` vs upstream — that growth came from Step 8.0 adding "BCG engagement rules" (cross-client write isolation, push-target safety, AGENT_CLIENT env var resolution order). The rules ARE essential — they prevent BCG-client repos from accidentally pushing to personal remotes — so the additions stay.
+
+**Rationale:** First run of `harness_conformance_audit.py` (Step 8.3 slice 1) showed CLAUDE.md 189/120, AGENTS.md 114/110, eager-load total 839/500 — clear violations of the <100-line CLAUDE.md best practice (Effloow / HumanLayer / Anthropic guidance). Pulkit's prompt: "everything should have progressive disclosure — adopt the same thinking here in this repo." The trim re-establishes upstream parity (108-line CLAUDE.md as baseline) while preserving the legitimate BCG additions, with all moved content addressable on-demand via `docs/memory-reflection.md` and `propose_harness_fix.py --help`.
+
+**Alternatives considered:** (a) Leave the bloat and document it — rejected; violates the same progressive-disclosure principle we enforce on installed projects. (b) Move everything to docs/ including BCG conditional-mount rules — rejected; conditional-mount logic IS load-bearing at session-start (the agent must know when to read which files), but the prose explanation can compress. (c) Strip permissions.md back to upstream parity — rejected; the BCG cross-client write rules are non-negotiable safety constraints.
+
+**Status:** active.
+
+**Operationalized:** `harness_conformance_audit.py` wired to detect any future regression. permissions.md mentioned in this entry so the audit's "justified-in-DECISIONS" heuristic stops flagging it.
+
+
+## 2026-04-29: Step 8.3 Phase 2 dry-run outcome — three new harness gaps surfaced
+
+**Decision:** Conclude Step 8.3 Stage 4 (consulting workflow dry-run) with Phase 2 deck-content build complete and Phase 3 (format production) deferred behind 4 explicit entry preconditions. Capture three new harness-shaped gaps from the post-mortem (Gaps 9/10/11) and route them to Step 8.4 instead of fixing on this branch.
+
+**Outcome of the dry-run:**
+- HarnessX engagement (Tier-1 APAC bank C-suite pitch deck on agentic SDLC) ran end-to-end through the BCG pipeline: storyboard v1 → v2 → v3 (framework-lead 8-section audit) → 5 case-analysts in parallel (one per act-cluster) → deck-builder consolidation + delivery-lead review → 3-reviewer partner panel (strategy / analytics / delivery) all returning GO-WITH-FIXES → Pulkit panel decisions applied → Phase 2 final-fix pass.
+- Output artefacts: `output/storyboard.md` (v3 + Phase 2 decisions), `output/content-draft.md` (20 main + 8 appendix), `output/phase-2-complete.md` (status note + Phase 3 entry preconditions). 5 cluster files + 5 review files preserved as audit trail.
+- Snapshot/diff confirms `in_place` evolution worked as designed: 7 added agent-memory files, 0 modified, 0 removed. No skill self-rewrites during the engagement; no agent file edits. Lock set held — none of the 6 read-only paths were touched.
+
+**Three new gaps (all open, deferred to 8.4):**
+1. **Gap 9 — Auto-dream noise on long content sessions.** 13 candidates staged after Phase 2; all are file-write tool-use claims ("Wrote storyboard.md (781 lines)"). None graduate-worthy. Root cause: `auto_dream.py` clusters by token overlap of action text; on long sessions the dominant signal is filename + tool, not insight. Fix: collapse Write/Edit on the same file within a session before clustering, OR weight `memory_reflect.py` reflections higher than tool-use episodes.
+2. **Gap 10 — Workflow contract reconciliation runs too late.** `consulting-deck-builder` Phase 1 (Storyboard) had no workflow-contract gate. Framework-lead 8-section audit fired *after* storyboard v2 was complete; identified 3 critical missing/mis-framed sections; v3 then required 6 structural moves. Fix: add Phase 1.5 gate to `consulting-deck-builder` SKILL.md — 8-section coverage check against source workflow file before Phase 2 entry.
+3. **Gap 11 — `propose_harness_fix.py` invisible to agents.** HARNESS_FEEDBACK.md empty after 130 episodes despite multiple harness-shaped frictions surfaced during the run. Tool exists and is documented; no skill/protocol names the trigger for invocation. Fix: two-part — (a) explicit trigger list in CLAUDE.md "When to use"; (b) session-end hook prompts "any harness friction to capture?".
+
+**What did NOT regress (validates earlier 8.x decisions):**
+- Lock set: 0 attempted writes to any of the 6 read-only paths.
+- `in_place` skill evolution: held; `consulting-deck-builder` did not self-rewrite during use, even when its own 3-phase methodology hit edge cases (cold transitions; positioning split). Skill self-rewrite hooks are present but agents preferred surfacing as findings to the user, not auto-editing.
+- Lazy-load: 14 indexed briefing files; INDEX.md the only eager surface; raw-uploads loaded on-demand only by `document-researcher`.
+- Agent-memory: 4 files for `deck-builder`, 3 for `delivery-lead`. Both correctly used the per-agent memory pattern (project + feedback + user types). The other 5 active agents (case-analysts, framework-lead, 3 partner-panel reviewers) did NOT persist agent-memory — Gap 11 root cause overlap (no rule names when to capture).
+
+**Rationale for deferring 9/10/11 to 8.4:**
+- All three are skill/tool-tuning issues, not blockers for Step 8.3's scope (which was "exercise the stack against a real consulting workflow and surface gaps"). 8.3 succeeded at surfacing.
+- Step 8.4 was already scoped as `harness-graduate.py` + dream-cycle improvements informed by 8.3 data. Gaps 9/10/11 are exactly that data.
+- Fixing 9/10/11 on this branch would expand 8.3 scope beyond the stated capture-and-surface objective and delay merge.
+
+**Status:** active. Step 8.3 complete pending merge; Phase 3 of HarnessX engagement is a Pulkit-driven workstream, not a harness deliverable.
+
+**Operationalized:** Gap log updated (8 entries total — 5 original + Gap 8 closed-on-branch + Gaps 9/10/11 from post-mortem). WORKSPACE.md marks Stages 4 + 5 complete. Step 8.4 plan to address 9/10/11 paired with `harness-graduate.py` design.
+
+
+## 2026-04-29: Phase K — engagement-blank semantic memory on fresh installs
+
+**Decision:** Fresh installs reset `.agent/memory/semantic/{LESSONS.md, DOMAIN_KNOWLEDGE.md, DECISIONS.md, lessons.jsonl}` from install-time templates after the wholesale `.agent/` copytree. The four files now start as engagement-blank stubs (LESSONS keeps 5 harness-invariant seeds; DOMAIN_KNOWLEDGE + DECISIONS are header-only templates) instead of inheriting the upstream fork's lived-in harness-development semantic content.
+
+**Why this was a leak:** install.py's `shutil.copytree(stack_root / ".agent", target_agent)` shipped fork's 18-line LESSONS (including auto-promoted "serialize timestamps in UTC" — irrelevant for consulting engagements), 220-line DOMAIN_KNOWLEDGE (entirely about agentic-stack architecture), and 265-line DECISIONS (fork's historical ADRs from Step 6 / 8.0 / 8.1 / 8.2.x — engagement has no use for these). When the engagement session started, CLAUDE.md eager-loaded LESSONS.md and the agent read fork's harness-dev lessons as if they were engagement context. Verified empirically on the HarnessX target post-Phase-2: 3 of 4 semantic files byte-identical to fork; engagement had written zero entries.
+
+**Mechanism:** templates live at `harness_manager/templates/semantic/` (sibling to install.py) and are copied to target after the wholesale `.agent/` copytree, inside the existing `if not target_agent.exists()` guard. Reinstalls do NOT re-apply templates — accumulated engagement state (including engagement-graduated lessons) is preserved across reinstall. New helper `_apply_semantic_templates()` in install.py.
+
+**Rationale:** semantic memory is supposed to be where THIS install accumulates ITS lessons. Cross-install graduation (lessons going UP from engagement to fork) is the deferred `harness-graduate.py` flow (Step 8.4). Cross-install propagation DOWN from fork to other installs is the deferred `install.sh --upgrade` (Step 8.5). Neither flow exists yet — so the bootstrap-then-immutable behavior of install.py was effectively shipping fork's semantic state as a one-way leak.
+
+**Alternatives considered:** (a) Move fork's lived semantic to a different directory and put templates at `.agent/memory/semantic/` directly — rejected; touches fork's own brain, risky. (b) Have install.py read from `adapters/_brain/memory/semantic/` instead of fork's `.agent/memory/semantic/` — rejected; introduces a parallel brain root, breaks the single-brain invariant. (c) Leave install.py wholesale-copy and reset semantic in a post_install action — rejected; post_install runs AFTER the install.json is recorded, making the reset a separate auditable event when it's actually part of "what fresh install means." (d) Strip fork's `.agent/memory/semantic/` content to be engagement-blank too — rejected; fork IS doing harness-development, its lived semantic is real and valuable. The leak is the copy mechanism, not fork's content.
+
+**Operationalised:**
+- Templates committed at `harness_manager/templates/semantic/{LESSONS.md, DOMAIN_KNOWLEDGE.md, DECISIONS.md, lessons.jsonl}`
+- `install.py:_apply_semantic_templates()` overwrites the four files inside the fresh-install guard
+- Smoke-tested on `/tmp/k-smoke-*`: install logs "+ .agent/memory/semantic/ (reset to engagement-blank templates)"; verified all 4 files match templates; verified fork-leaked content (UTC-timestamps lesson, agentic-stack architecture treatise) absent from fresh install
+- HarnessX target reset manually (one-time): pre-state archived at `<target>/.agent/memory/semantic/.archive/2026-04-29-phase-K-reset/`; templates applied; verified all 4 files match
+
+**Status:** active. Pairs with Phase L (memory-write discipline so engagement-specific lessons accumulate into the now-blank files) and Phase M (graduate.py to clear the noise-only candidate queue). Phase J (sync-target.sh) will need to honour this reset — never overwrite target's semantic during sync.
+
+
+## 2026-04-29: Phase L — memory-write discipline in consulting-deck-builder
+
+**Decision:** Replace the single `--importance 6 --pain default(2)` memory_reflect call at phase exit with three structured per-phase blocks at importance 8-10 + pain 5-8, with required durable-lesson reflection text. Phase 2 exit is set to graduate alone (importance × pain = 80 → salience 8.0, above the 7.0 threshold); Phase 1 + Phase 3 exits are set to dominate their cluster as canonical (so the cluster claim becomes the lesson, not a file-write).
+
+**Why:** Phase 2 of the HarnessX run produced 130 episodes and 13 dream candidates — but all 13 candidates had file-write claims ("Wrote storyboard.md (781 lines)") because the lone memory_reflect call at importance 6 + default pain 2 scored salience 1.2, well below file-write episodes whose pain default and cluster recurrence pushed them above 7.0. The `cluster.py:max(cluster, key=salience_score)` rule means the highest-salience episode within a cluster wins as canonical claim. To make a phase-exit reflection win that race, `importance × pain ≥ 70` is the rule of thumb (max 100). Salience formula: `recency × (pain/10) × (importance/10) × min(recurrence, 3)`.
+
+**Mechanism:** SKILL.md "Logging discipline" section now specifies three explicit phase-exit memory_reflect templates:
+- Phase 1 storyboard sign-off: importance 8, pain 5 (importance×pain=40 — dominates cluster as canonical, does not auto-graduate)
+- Phase 2 panel-verdict applied: importance 10, pain 8 (importance×pain=80 — auto-graduates as standalone candidate)
+- Phase 3 deck production: importance 9, pain 7 (importance×pain=63 — dominates cluster as canonical)
+
+Each template requires the agent to write a DURABLE LESSON sentence (transferable rule, not activity description) plus structured fields (binding decisions, patterns observed, gates that fired). The rationale and salience math are documented inline in the skill so the agent or future maintainers understand why these numbers, not arbitrary picks.
+
+**Rationale:** memory_reflect.py already supports `--pain` (line 36-38: 2=routine, 5=significant success, 8=failure, 10=incident); the skill just never used it. Phase exits are not "routine" — they encode binding decisions on engagement direction. Treating them as pain=5-8 ("significant" to "failure-grade attention") matches the salience system's intent. Bumping importance into 8-10 for the same events makes the math work without distorting the importance scale (which is meant to range 1-10).
+
+**Alternatives considered:** (a) Lower the PROMOTION_THRESHOLD from 7.0 to ~3.0 in auto_dream.py — rejected; would graduate file-write noise (Gap 9) globally instead of fixing the specific case. (b) Add a "milestone" episode type that bypasses salience scoring — rejected; introduces a parallel episodic primitive when the existing `pain_score` arg already encodes "this matters." (c) Auto-call memory_reflect from the skill on every "Stops, asks" gate — rejected; over-captures, creates more noise. The fix is to capture LESS but at higher salience.
+
+**Operationalised:**
+- `.agent/skills/consulting-deck-builder/SKILL.md` updated; version bumped to 2026-04-29
+- `_manifest.jsonl` version bumped
+- Skill linter passes 26/26
+- Skill + manifest + index synced to HarnessX target (manual until Phase J ships sync-target.sh)
+- Existing target REVIEW_QUEUE retains 10 noise candidates from pre-fix run; clearing happens in Phase M
+
+**Status:** active. Pairs with Phase K (which made target's semantic engagement-blank so these new high-salience reflections accumulate against a clean substrate) and Phase M (clears the pre-fix noisy candidates). Next time consulting-deck-builder runs through a phase exit, the reflection will be the cluster canonical and the dream cycle will stage a lesson-shaped candidate, not a file-write claim.
+
+
+## 2026-04-29: Phase I — vendored deckster-slide-generator + content-faithful Phase 3 contract
+
+**Decision:** Install the BCG-internal `deckster-slide-generator` skill (v1.0, sourced from `~/Downloads/deckster-slide-generator.skill`) at `adapters/bcg/skills/deckster-slide-generator/` as a vendored skill. Wire it into `consulting-deck-builder` Phase 3 as the rendering engine under a content-faithful contract that forbids deckster from regenerating titles, reordering slides, dropping/adding slides, or rewriting body content. Document the contract in a sidecar `INTEGRATION.md` so the vendored SKILL.md stays unmodified and can be re-synced from upstream without losing our integration. Add a vendored-skill convention to `skill_linter.py`: skill directories containing `INTEGRATION.md` are exempt from conformance checks.
+
+**Why this matters now:** HarnessX engagement Phase 3 (deck format production) is imminent. The Phase 3 deliverable was the missing methodology layer in `consulting-deck-builder` (Phase I task). Building a BCG-quality format-pass skill from scratch would have taken hours and produced something inferior to deckster — which already encodes BCG's color palette, font hierarchy (TITLE 24, SUBHEADER 16, BODY 14, LABEL 12), layout templates (`references/frameworks/`, `references/layouts/`), chart rendering (`references/charts/`), and QA pass (`check_deck()` + per-slide PNG inspection). Deckster is the right tool; the only adaptation needed is the content-faithful constraint.
+
+**The content-faithful problem and its solution:** Deckster's stock scope is "create new deck from scratch" — it expects to plan storyline, draft titles, generate body content. But Phase 3 is downstream of Phase 2's panel-approved `content-draft.md` (20 main + 8 appendix slides, action-voice titles verbatim, body content locked, sticky annotations preserved as render hints, binding decisions logged). Re-running deckster's planning pass against locked content would discard the entire Phase 1 + Phase 2 arc and regress on titles, positioning, and panel decisions — unacceptable.
+
+The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` enforces:
+1. `content-draft.md` is read-only authoritative input — titles, body, slide order locked
+2. 8 sticky types translate to render-time hints, not regeneration triggers (LAYOUT, CONTENT, TODO, TRANSITION, GATE, WAIVER, BRAND_STRIP, SCOPE)
+3. The 4 Phase 3 entry preconditions (Slide 6 metric verify, SC brand-strip, Slide 3 rubric spot-check, Slide 7 demo binary) fire as hard render gates BEFORE deckster invocation
+4. Speaker-note pass happens IN `consulting-deck-builder` Phase 3 (text-content task); deckster receives finalised notes
+5. `mode="content_faithful"` flag at invocation signals the host agent to revert any deckster operation that wasn't a sticky translation
+6. Deckster's mandatory disclaimer applies to every .pptx delivery
+
+**Vendored-skill convention added to linter:** Skill dirs containing `INTEGRATION.md` are excluded from conformance checks (frontmatter shape, self-rewrite hook presence, manifest match, index match). Vendored skills don't need our self-rewrite hook because they're not ours to evolve — they sync from upstream. The `INTEGRATION.md` sidecar IS the harness-side wrapper. Linter output now reads "ok: all 26 skill(s) pass conformance checks (1 vendored skipped: deckster-slide-generator)" on the target.
+
+**Rationale:** Build vs buy for a 17MB methodology-rich vendored skill was an obvious buy. The skill is BCG-internal, contributed by Jan Wulff / Justin Grosz / Marc Puig, and represents organisational knowledge we cannot reproduce in a session. The risk was content regression; the contract closes that. Sidecar pattern (vs modifying SKILL.md) preserves upstream sync. Vendored-skill linter convention generalises beyond deckster — future BCG-internal skills (e.g., the `bcg-slide-generator-6.2.0.skill` also in Downloads) install the same way.
+
+**Alternatives considered:** (a) Build `bcg-slide-format` from scratch — rejected; would take hours, produce inferior output, and miss BCG-specific layout primitives. (b) Modify deckster's SKILL.md to add the content-faithful constraint inline — rejected; pollutes vendored content, breaks upstream resync. (c) Wrap deckster in a new harness-side skill that calls it — rejected; introduces a third skill layer and double-dispatches. (d) Place deckster at `.agent/skills/` directly — rejected; would conflate generic skills with BCG-vendored, and the existing `confluence-access` precedent puts BCG skills under `adapters/bcg/skills/`. (e) Add `vendored: true` frontmatter marker instead of sidecar file — rejected; modifies the vendored file, and a frontmatter-only marker doesn't carry the integration contract.
+
+**Operationalised:**
+- Vendored skill installed: `adapters/bcg/skills/deckster-slide-generator/` (17MB, 23 Python scripts, references/ methodology, assets/, agents/, styles/)
+- Sidecar contract: `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md`
+- `consulting-deck-builder/SKILL.md` Phase 3 section rewritten to dispatch deckster under `mode="content_faithful"` with INTEGRATION.md as the binding contract
+- `skill_linter.py` updated with vendored-skill exemption (INTEGRATION.md sidecar = skip)
+- Manually synced to HarnessX target at `<target>/.agent/skills/deckster-slide-generator/` (until Phase J / sync-target.sh)
+- Skill linter passes 26/26 on fork, 26/26 on target with 1 vendored skipped
+
+**Open propagation gap (deferred):** `bcg_conditional_propagate` in `harness_manager/post_install.py` propagates `adapters/bcg/{agents,commands,agent-memory-templates}/` to target's `.claude/`, but does NOT propagate `adapters/bcg/skills/` to target's `.agent/skills/`. So fresh installs with `bcg_adapter=enabled` will get the BCG agents but NOT the BCG skills. Phase J (sync-target.sh) should cover skill propagation; longer-term `bcg_conditional_propagate` itself should be extended. Logged here so the gap doesn't fall through.
+
+**Status:** active. Phase 3 of HarnessX is now unblocked — `consulting-deck-builder` Phase 3 dispatches deckster against the locked content-draft.md once the 4 entry preconditions are cleared.

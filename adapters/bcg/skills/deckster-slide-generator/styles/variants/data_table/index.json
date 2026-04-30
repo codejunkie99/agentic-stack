@@ -1,0 +1,12 @@
+{
+  "pattern": "data_table",
+  "description": "Native PowerPoint table with structured data and BCG styling",
+  "default_variant": "native_table",
+  "variants": {
+    "native_table": {
+      "file": "native_table.py",
+      "description": "Wraps add_table() with structured header, row, column width, and alignment data",
+      "inputs": ["headers", "rows", "col_widths", "col_align"]
+    }
+  }
+}

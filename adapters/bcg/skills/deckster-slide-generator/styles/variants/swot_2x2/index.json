@@ -1,0 +1,12 @@
+{
+  "pattern": "swot_2x2",
+  "description": "2x2 grid with colored borders, axis labels, and bullet content per quadrant",
+  "default_variant": "quadrant_grid",
+  "variants": {
+    "quadrant_grid": {
+      "file": "quadrant_grid.py",
+      "description": "Four rounded-rectangle quadrants with colored borders, axis labels, and bulleted items",
+      "inputs": ["quadrants", "x_axis", "y_axis"]
+    }
+  }
+}

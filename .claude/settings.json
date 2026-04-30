@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(python3 .agent/tools/show.py)",
+      "Bash(python3 .agent/tools/skill_linter.py)",
+      "Bash(python3 .agent/tools/skill_linter.py --staged)",
+      "mcp__claude_ai_Microsoft_365__sharepoint_search",
+      "mcp__claude_ai_Microsoft_365__sharepoint_folder_search",
+      "mcp__claude_ai_Microsoft_365__read_resource",
+      "mcp__claude_ai_Microsoft_365__outlook_email_search",
+      "mcp__claude_ai_Microsoft_365__chat_message_search"
+    ]
+  }
+}

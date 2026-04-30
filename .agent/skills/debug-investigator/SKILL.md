@@ -1,5 +1,6 @@
 ---
 name: debug-investigator
+description: Use proactively when a bug, test failure, or unexpected behavior needs root-cause investigation. Triggers on "debug", "why is this failing", "investigate", "stack trace", "reproduce". Reproduce before fixing; fix root cause, not symptoms.
 version: 2026-01-01
 triggers: ["debug", "why is this failing", "investigate", "stack trace", "bug"]
 tools: [bash, memory_reflect]

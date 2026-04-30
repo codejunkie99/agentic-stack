@@ -29,6 +29,8 @@ description: |
 model: sonnet
 tools: [Glob, Grep, Read, Edit, Write, Bash, TodoWrite, BashOutput, KillShell]
 color: blue
+effort: medium
+memory: project
 ---
 
 You are a senior engineer who executes plans with strict TDD discipline.

@@ -1,5 +1,6 @@
 ---
 name: data-flywheel
+description: Use proactively when work involves exporting approved/redacted runs as trace records, context cards, eval cases, or training-ready JSONL. Triggers on "data flywheel", "trace to train", "training traces", "context cards", "eval cases", "approved runs". Local-only by default; human-approved runs only; redaction required before trainable export. Does not train models.
 version: 2026-04-25
 triggers: ["data flywheel", "trace to train", "training traces", "context cards", "eval cases", "approved runs", "vertical intelligence"]
 tools: [bash, git]

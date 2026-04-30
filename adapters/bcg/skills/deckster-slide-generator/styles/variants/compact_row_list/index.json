@@ -1,0 +1,12 @@
+{
+  "pattern": "compact_row_list",
+  "description": "Stacked rows with left accent bar, icon, title, description, and optional right label",
+  "default_variant": "icon_rows",
+  "variants": {
+    "icon_rows": {
+      "file": "icon_rows.py",
+      "description": "Repeated card rows with left accent bar, icon, title, description, and optional label badge",
+      "inputs": ["items"]
+    }
+  }
+}

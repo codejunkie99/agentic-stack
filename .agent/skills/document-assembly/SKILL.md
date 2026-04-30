@@ -63,3 +63,13 @@ Produce the final document:
 - Assembly is mechanical — do not add new content
 - Flag all gaps as [PLACEHOLDER: <what is needed>]
 - Track which source drafts were used in a comment block at the end
+
+## Self-rewrite hook
+
+After every 5 documents assembled, or the first time a
+`[PLACEHOLDER]` turns into a real gap that should have been caught
+earlier in the source drafts, read the last 5 document-assembly
+entries from episodic memory. If better assembly templates,
+source-drift detection patterns, or gap-flagging conventions have
+emerged, update this file. Commit:
+`skill-update: document-assembly, <one-line reason>`.

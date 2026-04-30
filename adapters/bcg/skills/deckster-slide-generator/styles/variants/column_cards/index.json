@@ -1,0 +1,28 @@
+{
+  "pattern": "column_cards",
+  "description": "Parallel equal-weight items in columns or rows",
+  "default_variant": "pillar_cards",
+  "variants": {
+    "pillar_cards": {
+      "file": "pillar_cards.py",
+      "description": "Icon circle + colored header bar + bullet list per column",
+      "inputs": ["items"],
+      "min_items": 2,
+      "max_items": 5
+    },
+    "icon_row": {
+      "file": "icon_row.py",
+      "description": "Horizontal rows with icon circle on left, title, and description text",
+      "inputs": ["items"],
+      "min_items": 2,
+      "max_items": 6
+    },
+    "flat_tiles": {
+      "file": "flat_tiles.py",
+      "description": "Clean flat cards with thin top accent line, no icons or filled headers",
+      "inputs": ["items"],
+      "min_items": 2,
+      "max_items": 5
+    }
+  }
+}
