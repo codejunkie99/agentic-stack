@@ -50,9 +50,17 @@ tests/
 # install_snapshot.json: captured by post_install.take_install_snapshot
 # HARNESS_DIFF.md: written by snapshot_diff.py --diff
 # HARNESS_FEEDBACK.md: appended by propose_harness_fix.py
+# .canonical-citation.json: written by cite_canonical.py (Step 8.4.5 Layer 3)
+# .harness-mode.json: written by canonical_gate_prompt.py (Step 8.4.5 Layer 1)
+# .session-state.json: written by init_session_state.py (Gap 11 Part B)
+# .hook-errors.log: hook fail-open log
 .agent/memory/working/install_snapshot.json
 .agent/memory/working/HARNESS_DIFF.md
 .agent/memory/working/HARNESS_FEEDBACK.md
+.agent/memory/working/.canonical-citation.json
+.agent/memory/working/.harness-mode.json
+.agent/memory/working/.session-state.json
+.agent/memory/working/.hook-errors.log
 
 # Client-scoped memory — gitignored to prevent cross-client leakage.
 # Each engagement lives in .agent/memory/client/<client-id>/ and never
