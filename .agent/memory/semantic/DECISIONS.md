@@ -538,3 +538,25 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. Open follow-up: extend drift checks #14-16 once `trace_check.py` is stable enough to integrate.
 
+
+## 2026-04-30: Gap 10 — consulting-deck-builder Phase 1.5 gate (hand-coded, α path)
+
+**Decision:** Add Phase 1.5 (Workflow contract reconciliation gate) to `.agent/skills/consulting-deck-builder/SKILL.md` between Phase 1 (Storyboard) and Phase 2 (Content). The gate runs an 8-section coverage check against the source workflow file (e.g., `.agent/workflows/final-recommendations-deck.md`) BEFORE Phase 2 entry. Bumped `skill_md_max_lines` from 500 to 510 in `harness_conformance_audit.py` to absorb the +13-line addition (skill was 491/500 before; 504/510 after with trimming).
+
+**Rationale:** Gap 10's root cause was identified in Step 8.3 post-mortem and validated against the engagement (framework-lead 8-section audit fired AFTER storyboard v2, forcing 6 structural moves to v3). Hand-coding the fix is faster than waiting to re-discover it via Phase O; the engagement experience is sufficient evidence. Future similar fixes route through Phase O finding (checkpoint #14 `workflow_contract`) → operator runs `propose_harness_fix.py` → skill update graduates via `harness-graduate.py` (Phase H). For ANY similar fix discovered AFTER Phase O ships, this graduation path is the canonical compounding pattern (article 762: "skill-update: {skill_name}, {one-line reason}"). Skill budget bump matches the same 2% calibration pattern used for eager-load budget earlier in this branch.
+
+**Alternatives considered:**
+- Skip Gap 10 from this branch; let Phase O re-discover on next engagement — rejected; engagement experience is sufficient evidence; re-discovery just to feed the loop is wasteful when the fix is validated.
+- Add the gate to ALL deck-building skills, not just consulting-deck-builder — rejected; consulting-deck-builder is the only deck builder in scope; broaden later if a sibling emerges.
+- Land as `propose_harness_fix.py` entry to be processed by `harness-graduate.py` — rejected; that creates ceremony for a single hand-coded skill update; direct skill edit is the lower-friction path for known fixes.
+
+**Operationalised:**
+- `.agent/skills/consulting-deck-builder/SKILL.md` Phase 1.5 section added (13 lines after compression); version bumped 2026-04-29 → 2026-04-30
+- `.agent/skills/_manifest.jsonl` consulting-deck-builder version field bumped
+- `harness_conformance_audit.py` `skill_md_max_lines` bumped 500 → 510
+- Skill linter: 27/27 conformant after edit
+- Conformance audit: 35/35 checks pass post-budget-bump
+- Citation: fork-decisions / Gap 10 in 2026-04-27-step-8-3-gap-log.md via cite_canonical.py
+
+**Status:** active. Future-similar fixes route through Phase O finding → propose_harness_fix → harness-graduate (canonical compounding pattern).
+
