@@ -52,6 +52,33 @@ scaffolding that was missing.
   content-draft 20 main + 8 appendices + 3-reviewer panel GO-WITH-FIXES;
   Phase 3 deferred — gated on Slide 6 metric verify, SC brand-strip,
   Slide 3 rubric spot-check, Slide 7 demo binary)
+- **Stage 9 — Phase J + N1-N6 — canonical alignment + sync infra ✅ (2026-04-30)**
+  - **N1**: 20 BCG agent prompts gained `## Agent-memory write discipline`
+    section (per-engagement project/feedback/user typed memory files,
+    matching the deck-builder dir-pattern that emerged in HarnessX run)
+  - **N2**: `/regenerate-decisions` slash command at adapters/claude-
+    code/commands/ — runs the canonical bootstrap prompt from source
+    article line 168 (LESSONS + episodic → 3-5 significant decisions).
+    adapter.json updated; smoke-tested via fresh /tmp install.
+  - **N3**: consulting-deck-builder Phase 1/2/3 exit criteria now make
+    `memory_reflect` a HARD GATE (was soft "REQUIRED"). Closes the
+    Phase 3 reflection skip seen in HarnessX yesterday.
+  - **N4**: agent-memory-templates README rewritten — dir-pattern is
+    canonical; flat-file pattern is legacy/deprecated; `.claude/agent-
+    memory/` correctly framed as adapter convention not canonical
+    agentic-stack.
+  - **N6**: 13 file-write-noise candidates in HarnessX REVIEW_QUEUE
+    batch-rejected with rationale. Queue clean for tomorrow.
+  - **Phase J**: `sync-target.sh` shipped. Pushes fork-side improvements
+    to existing target (skills, tools, protocols, harness, context,
+    workflows, AGENTS.md, claude-code commands; if bcg_adapter=enabled
+    also BCG agents/commands/skills) without touching memory/agent-
+    memory/output/git. Smoke-tested against HarnessX target — 11 paths
+    copied, lint clean post-sync.
+  - **Re-audit confirmed**: AGENT_LEARNINGS.jsonl IS the comprehensive
+    activity log we needed. 188 entries, captures every tool call.
+    Git-tracked memory history via dream-cycle commits. Episodic
+    snapshots/ for archived entries. We HAD logs.
 - **Stage 8 — Phase I — vendored deckster + content-faithful Phase 3 ✅ (2026-04-29)**
   - Vendored deckster-slide-generator (BCG-internal, 17MB) installed
     at `adapters/bcg/skills/deckster-slide-generator/` per existing
