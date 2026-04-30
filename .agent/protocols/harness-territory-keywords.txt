@@ -1,0 +1,17 @@
+\bskill\b
+\bprotocol\b
+\bharness\b
+\bprimitive\b
+\bagent prompt\b
+\bworkflow\b
+\bsalience\b
+\bdream\b
+\bmemory layer\b
+propose_harness_fix
+graduate\.py
+conductor\.py
+\bhook\b
+\.agent/
+adapters/.*/agents/
+adapters/.*/skills/
+harness_manager/
