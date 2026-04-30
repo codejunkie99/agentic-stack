@@ -58,39 +58,115 @@ That's the 90%. Sections 3-9 below cover the 10%.
 
 ## 3. Starting a new project — full sequence
 
-Two flavors: **consulting engagement** (BCG case) or **product build**
-(SDLC/PDLC). The setup is similar; the workflows differ.
+**FIRST decide which scenario you're in.** This determines everything that
+follows. They are different workflows with different commands.
 
-### 3a. Setup (both flavors)
+### Scenario A — Fork dev (extending the harness itself)
+
+You're editing harness primitives in this repo: skills, agent prompts,
+workflows, protocols, harness tooling, install logic, vendored skills. The
+fork IS the harness; you edit it directly. **No install step.**
 
 ```bash
-# 1. Pick a slug for the new project
-ENGAGEMENT_SLUG=acme-pricing-2026q2  # or whatever
-
-# 2. Create the target dir + git
-mkdir -p ~/code/${ENGAGEMENT_SLUG}-internal
-cd ~/code/${ENGAGEMENT_SLUG}-internal
-git init
-echo "node_modules/\noutput/\n.claude/agent-memory/\n.agent/memory/client/" > .gitignore
-git add . && git commit -m "init: ${ENGAGEMENT_SLUG} project"
-
-# 3. Install the harness from fork
+# 1. Make sure fork is current
 cd ~/code/agent-stack
-./install.sh claude-code ~/code/${ENGAGEMENT_SLUG}-internal --yes
+git checkout master
+git pull origin master
 
-# 4. Configure adapter for consulting (skip for pure product work)
-cd ~/code/${ENGAGEMENT_SLUG}-internal
-# edit .agent/config.json to set "bcg_adapter": "enabled"
-# (or leave disabled if pure product/PDLC build)
+# 2. Branch off master
+git checkout -b feature/step-X.Y-<short-name>
 
-# 5. Re-run install to propagate BCG agents (only if you set bcg_adapter=enabled)
-cd ~/code/agent-stack
-./install.sh claude-code ~/code/${ENGAGEMENT_SLUG}-internal --yes
-
-# 6. Open Claude Code in the new dir
-cd ~/code/${ENGAGEMENT_SLUG}-internal
-claude  # starts a new session
+# 3. Open Claude in the fork dir
+claude
 ```
+
+The agent reads the FORK's brain — fork's `.agent/memory/`, fork's
+CLAUDE.md (which lives at `adapters/claude-code/CLAUDE.md` and gets
+installed-as-CLAUDE.md only at install time). Fork's semantic memory
+already has the harness-development DECISIONS, LESSONS, DOMAIN_KNOWLEDGE
+treatise — that's intentional; this brain is FOR developing the harness.
+
+**When you'd use this:** building a new agent team (like the SDLC team
+extension for prototype-app work), authoring a new skill, fixing a
+harness bug, adding a new workflow contract, vendoring an upstream skill,
+extending `harness_manager` Python code.
+
+**Test in `examples/pdlc-sandbox/`** — the throwaway target that lives
+inside the fork. Or run `./install.sh claude-code /tmp/<slug> --yes`
+into a temp dir for an isolated smoke test.
+
+When you're done: PR feature → master, then `./sync-target.sh` propagates
+the changes to your live engagement targets.
+
+### Scenario B — Target use (using the harness on a real project)
+
+You're building a deliverable (deck, analysis, prototype, product feature)
+using the harness's existing capabilities. **The harness gets installed
+into a NEW dir; you work there.**
+
+```bash
+# 1. Set up the new project dir
+PROJECT=<your-slug>           # e.g. acme-pricing-2026q2
+mkdir -p ~/code/${PROJECT}-internal
+cd ~/code/${PROJECT}-internal
+git init
+cat > .gitignore <<'EOF'
+output/
+.claude/agent-memory/
+.agent/memory/client/
+.agent/memory/episodic/
+.agent/memory/working/
+.agent/memory/candidates/
+node_modules/
+.DS_Store
+EOF
+git add . && git commit -m "init: ${PROJECT}"
+
+# 2. Install harness from fork (drops .agent/ + .claude/ into target)
+cd ~/code/agent-stack
+./install.sh claude-code ~/code/${PROJECT}-internal --yes
+
+# 3. (Optional) Enable BCG adapter for consulting work
+# Edit ~/code/${PROJECT}-internal/.agent/config.json — set "bcg_adapter": "enabled"
+./install.sh claude-code ~/code/${PROJECT}-internal --yes  # re-run to propagate BCG content
+
+# 4. Open Claude in the target dir
+cd ~/code/${PROJECT}-internal
+claude
+```
+
+The agent reads the TARGET's brain — target's `.agent/memory/`
+(engagement-blank from Phase K templates, accumulates engagement-specific
+lessons), target's CLAUDE.md, target's `.claude/agents/` (5 SDLC agents +
+20 BCG agents if `bcg_adapter` enabled). **Fork's harness-development
+memory is NOT loaded** — that's intentional; engagement work shouldn't
+see harness-dev lessons.
+
+**When you'd use this:** building a deck for a real client, sizing a
+market, building a product feature, anything that produces a deliverable
+the engagement OWNS (not the harness).
+
+**No new branch on the fork.** The target has its own git repo with its
+own history. Fork stays on master.
+
+### Scenario A → B (sequenced — extend harness, then use it)
+
+For tomorrow's BCG/PDLC project (extend SDLC team for prototype-app
+work, then use it on a real project):
+
+1. **Scenario A first** — branch off fork master, build the new SDLC
+   agents + workflow contracts + protocol extensions, test in /tmp,
+   merge to master.
+2. **Scenario B second** — install the now-extended fork into a new
+   target, work there.
+
+Use `./sync-target.sh <existing-target>` if a Scenario-A change needs
+to propagate to a target you've already installed into.
+
+### 3a. Detailed Scenario B — consulting engagement onboarding
+
+The Scenario B setup steps above get you to "Claude is open in the
+target." The next steps below are specific to consulting engagements.
 
 ### 3b. Consulting engagement — onboard the client
 

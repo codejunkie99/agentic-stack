@@ -30,6 +30,9 @@ on match.
 - **deploy-checklist** — pre-deploy verification gate. Triggers:
   "deploy", "ship", "release", "go live". Constraints: tests pass, no
   unresolved TODOs in diff, human approval for production.
+- **demo-prep** — package a prototype for stakeholder showcase.
+  Triggers: "prep this for demo", "package the prototype", "make this
+  demoable", "showcase prep", "demo script", "live demo of".
 
 ## Memory + harness meta
 
