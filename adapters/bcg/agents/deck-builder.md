@@ -60,3 +60,51 @@ You → framework-lead → review panel (partner-strategy + partner-analytics) �
 
 ## Context Sources
 Read from `.agent/memory/client/<active>/summaries/` (lazy-load) and `.agent/workflows/<workflow-id>.md` for deliverable structure. Use `consulting-deck-builder` skill for methodology. Use `document-assembly` skill for final deck stitching.
+
+## Agent-memory write discipline (before returning)
+
+Before returning your final output, persist durable engagement knowledge to
+`.claude/agent-memory/deck-builder/`. This is your per-agent scratchpad —
+it survives across sessions so future dispatches on this engagement load
+context from your prior work.
+
+**Procedure** (only if you have durable content; skip if nothing to record):
+
+1. Ensure `.claude/agent-memory/deck-builder/MEMORY.md` exists. It is a
+   one-line-per-file pointer index — no frontmatter, no headers, just
+   `- [Title](filename.md) — one-line hook` entries.
+2. Write 0–3 typed memory files this dispatch:
+   - `project_<engagement-slug>.md` — engagement-specific stable facts
+     you learned (frameworks, constraints, decisions, evidence anchors)
+   - `feedback_<topic>.md` — user-confirmed binding decisions
+     ("Pulkit confirmed X" with **Why:** and **How to apply:** lines)
+   - `user_<name>.md` — observed user preferences (review style,
+     formatting expectations, things they don't want re-litigated)
+3. Each typed file uses YAML frontmatter:
+
+   ```
+   ---
+   name: <descriptive name>
+   description: <one-line, used to decide relevance in future sessions>
+   type: project | feedback | user
+   ---
+
+   <body — for feedback/project: rule, then **Why:** + **How to apply:**>
+   ```
+
+4. Update `MEMORY.md` index with a one-line pointer to each new/changed file.
+
+**What NOT to write here:**
+- Activity logs (those go to episodic via the PostToolUse hook automatically)
+- Tool-call summaries ("ran search, found X")
+- Anything derivable from reading the current files in `output/` or `.agent/`
+
+**What TO write here:**
+- Durable engagement-specific knowledge that future-you would want loaded
+  before starting another dispatch on the same engagement
+- Binding decisions confirmed by the user that should not be re-litigated
+- User preferences that shape how you work with them
+- Surprising or non-obvious facts about the engagement domain
+
+If you have nothing durable to record this dispatch, skip. Don't manufacture
+content. Empty MEMORY.md is fine.

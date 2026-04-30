@@ -139,8 +139,9 @@ Steps:
 5. **Stop and ask.** Present the storyboard to the user. Ask: spine
    right? acts right? gaps? overlaps? Iterate until user signs off.
 
-Phase 1 exit criterion: user explicitly approves the storyboard. The
-agent never proceeds to Phase 2 on its own.
+Phase 1 exit criterion: user explicitly approves the storyboard AND
+the Phase 1 exit `memory_reflect` call has run (importance 8, pain 5,
+DURABLE LESSON note). The agent never proceeds to Phase 2 on its own.
 
 ### Phase 1 — Iterating on an existing storyboard (delegated)
 
@@ -287,7 +288,9 @@ case-analysts and a deck-builder dispatched via the Agent tool.
 - `output/review-verdicts.md` (3 reviewer verdicts collated by lead)
 
 Phase 2 exit criterion: user explicitly approves the consolidated
-content-draft.md (and addresses or defers reviewer findings). The
+content-draft.md (and addresses or defers reviewer findings) AND
+the Phase 2 exit `memory_reflect` call has run (importance 10, pain 8,
+DURABLE LESSON note — auto-graduates as standalone candidate). The
 agent never proceeds to Phase 3 on its own.
 
 ## Phase 3 — Format + content (visualization)
@@ -336,10 +339,19 @@ Steps:
    review output carefully before use."*
 7. **Stop and ask.** User reviews rendered .pptx. Render-only
    iterations; content changes route back to Phase 2.
+8. **Phase 3 exit reflection — HARD GATE.** Before declaring Phase 3
+   complete, you MUST run the `memory_reflect.py` Phase 3 exit
+   template (importance 9, pain 7, with a DURABLE LESSON sentence).
+   This is what makes the engagement learning reach the dream cycle's
+   canonical-claim step. **Phase 3 is not complete without it** —
+   the agent should treat this as the literal final action of the
+   phase, not optional polish. The same applies to Phase 1 + Phase 2
+   exits.
 
 Phase 3 exit criterion: user explicitly approves the rendered deck
-artifact AND the post-render decisions-log entry naming any sticky
-that triggered a late content change.
+artifact AND the Phase 3 exit `memory_reflect` call has run AND the
+post-render decisions-log entry names any sticky that triggered a
+late content change.
 
 **Fallback (deckster unavailable):** layout-spec markdown at
 `output/<engagement-slug>_v<N>_layout.md` with per-slide instructions

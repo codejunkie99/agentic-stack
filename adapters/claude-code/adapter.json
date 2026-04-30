@@ -38,6 +38,11 @@
       "src": "agents/reviewer.md",
       "dst": ".claude/agents/reviewer.md",
       "merge_policy": "overwrite"
+    },
+    {
+      "src": "commands/regenerate-decisions.md",
+      "dst": ".claude/commands/regenerate-decisions.md",
+      "merge_policy": "overwrite"
     }
   ],
   "post_install": ["bcg_conditional_propagate", "take_install_snapshot"]
