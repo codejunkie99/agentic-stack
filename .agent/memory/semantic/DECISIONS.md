@@ -516,3 +516,25 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. First real test against HarnessX target deferred until Step 8.4 branch lands and a graduation pass is performed.
 
+
+## 2026-04-30: Phase O — harness_intent_audit.py (target-side behavioral verify)
+
+**Decision:** Add `.agent/tools/harness_intent_audit.py` codifying the 18-checkpoint audit from `.agent/protocols/canonical-sources.md:75-105` as runnable assertions. Categories: install_state (5), engagement_behavior (8), drift_detection (4), plus anchor (1) for audit-report-written. Each checkpoint is a small function returning `{id, category, name, status, detail, rationale}`. Output: JSON + markdown to `<target>/.agent/memory/working/intent-audit-<YYYY-MM-DD>.{json,md}`. Exit codes: 0 all PASS; 1 any FAIL; 2 any WARN with no FAIL. `--strict` promotes WARN to FAIL.
+
+**Rationale:** Step 8.3 missed an entire engagement on intended-vs-actual drift detection because `harness_conformance_audit.py` covered only structural drift (line counts, parity), not behavioral. Canonical-sources protocol (2026-04-30) documented the 18-checkpoint behavioral checklist as text; Phase O makes it runnable. Tool form is fork extension; content is the canonical-sources protocol made executable. Drift checkpoints (4) are intentionally minimal in v1 — full `trace_check.py` integration deferred until trace_check itself stabilizes.
+
+**Alternatives considered:**
+- Inline checks into `harness_conformance_audit.py` — rejected; conformance_audit is structural (eager-load budget, parity vs upstream); behavioral checks are a separate concern that warrant a separate tool. The two are complementary (conformance covers "is the install correct?", intent_audit covers "is the install BEHAVING correctly?").
+- LLM-based behavioral judgment — rejected; canonical's posture is hooks-for-mechanical (article 169-204); each checkpoint is a small mechanical assertion, not a judgment task.
+- Skip drift checkpoints entirely in v1 — rejected; even SKIP entries in the report surface that drift checks exist as future work.
+
+**Operationalised:**
+- `.agent/tools/harness_intent_audit.py` (new, ~340 LOC)
+- 5 unit tests pass against 2 fixture target installs (`audit_target_passing/`, `audit_target_behavior_fail/`)
+- 17 active checkpoints + 1 anchor; smoke_install marked SKIP for now (runs in CI), 3 of 4 drift checks marked SKIP (deferred to v2)
+- Heavy reuse of `skill_linter.py`, `harness_conformance_audit.py` (subprocess); `trace_check.py` integration deferred
+- Output mirrors canonical-sources protocol checklist text — audit checklist made executable
+- Citation: fork-decisions / canonical-sources.md:75-105 via cite_canonical.py
+
+**Status:** active. Open follow-up: extend drift checks #14-16 once `trace_check.py` is stable enough to integrate.
+
