@@ -170,9 +170,12 @@ for entry in "${PLAN[@]}"; do
     # Directory: rsync if available (preserves attributes, skips identical),
     # cp -r as fallback. Either way, do NOT delete files in target that
     # don't exist in fork — that would clobber engagement-evolved state.
+    # Both src_abs and dst_abs end in `/` (PLAN convention). Rsync with
+    # trailing slash on src copies CONTENTS of src into dst — correct
+    # only when dst is the destination dir itself, not its parent.
     mkdir -p "$dst_abs"
     if command -v rsync >/dev/null 2>&1; then
-      rsync -a --no-perms --no-owner --no-group "$src_abs" "$(dirname "$dst_abs")/"
+      rsync -a --no-perms --no-owner --no-group "$src_abs" "$dst_abs"
     else
       cp -R "$src_abs/." "$dst_abs/"
     fi
