@@ -57,7 +57,7 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 | 3 | Stabilize `trace_check.py` then extend Phase O drift checks #14-16 | Step 8.4 follow-up; tool exists (526 LOC) but unstable | open — own session |
 | 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.4 follow-up | open — own session |
 | 5 | `bcg_conditional_propagate` skill-propagation gap (doesn't propagate skills; Phase J should cover) | Step 8.3 / Phase I DECISIONS | open — own session |
-| 6 | Upstream PRs to codejunkie99: cli.py future-import fix, claude-code adapter.json SDLC entries | Step 8.2.5 sync | open — external |
+| 6 | ~~Upstream PRs to codejunkie99~~ — DROPPED 2026-05-02. codejunkie99 upstream = sync source only; never PR back. Local fork is the trunk. | n/a | dropped |
 | 7 | Step 8.6 — `install.sh --upgrade` (bidirectional fork↔target sync) | Locked decision (Step 8.4 spec) | deferred |
 | 8 | Delete merged local branches | git hygiene | ✅ done (8.4 + 8.3 deleted) |
 
