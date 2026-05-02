@@ -590,6 +590,45 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 **Status:** active. Sibling proposal in HARNESS_FEEDBACK for Layer 2c (DECISIONS.md provenance gate via `/regenerate-decisions` only); deferred — direct DECISIONS append is currently a documented ritual, not a leak surface.
 
 
+## 2026-05-02: Step 8.5c — SDLC workflow set (PDLC parity with BCG)
+
+**Decision:** Author 8 new SDLC workflow contracts in `.agent/workflows/` so the SDLC team has BCG-parity coverage of the full PDLC arc. Workflows authored: `product-discovery-arc`, `spec-to-design`, `feature-end-to-end`, `bugfix-arc`, `refactor-arc`, `production-incident`, `release-arc`, `project-onboarding`. Plus 3 pre-existing SDLC workflows (`prototype-app`, `feature-prototype`, `tech-spike`) and 1 mixed-use (`demo-prep`) → 12 SDLC + 8 BCG = 20 workflows total. Bumped `eager_load_total_max` 710→720 and `eager_load_total_max_lean` 510→520 in `harness_conformance_audit.py` to absorb 8 new index rows (+12 lines in `_index.md`); 2-line headroom matches Step 8.4 calibration precedent.
+
+**Rationale:** Memory `workflows-over-skills` recorded the gap: "the SDLC side currently has none — that's a gap." 3 SDLC workflows existed pre this branch, but they covered only spike/prototype work, not the production PDLC arc. User asked: "complete PDLC-SDLC team like BCG, install it in a project folder, test there." For that to work, every recurring SDLC intent needs a canonical workflow contract that names agents + dispatch shape + quality gates — not ad-hoc agent dispatches.
+
+Canonical patterns sourced from:
+- **superpowers** skills (5.0.7): brainstorming, writing-plans, test-driven-development, systematic-debugging, requesting-code-review, receiving-code-review, finishing-a-development-branch, verification-before-completion, executing-plans, subagent-driven-development, using-git-worktrees, dispatching-parallel-agents. Each new workflow names the relevant superpowers skill at the right phase.
+- **gstack** slash-command-personas pattern → already absorbed into our agent dispatch (ADR + Plan + Build + Review = same shape, just split into agents not single-file commands).
+- **cavekit** bug-to-invariant protocol → already shipped; `bugfix-arc` and `production-incident` route to it for systemic findings.
+
+**Workflows + their canonical phase coverage:**
+
+| Workflow | superpowers skills referenced | Stop-phase |
+|----------|-------------------------------|------------|
+| `product-discovery-arc` | `superpowers:brainstorming` | PRD signed off |
+| `spec-to-design` | `spec-reviewer` skill (existing) | ADR + design pack signed |
+| `feature-end-to-end` | `test-driven-development`, `verification-before-completion` | release-manager logged |
+| `bugfix-arc` | `systematic-debugging`, `test-driven-development` | regression test + reviewer pass |
+| `refactor-arc` | `test-driven-development` | type-design-reviewer verdict |
+| `production-incident` | `systematic-debugging`, `verification-before-completion` | TTR confirmed + retro logged |
+| `release-arc` | `verification-before-completion`, `deploy-checklist` skill | DECISIONS entry + tag |
+| `project-onboarding` | (none — pre-PDLC discovery) | gates verified + WORKSPACE seeded |
+
+**Alternatives considered:**
+- **Embed superpowers skill names in agent prompts instead of workflows** — rejected; workflows-over-skills memory is explicit (multi-agent orchestration belongs in workflow files; agent prompts are role descriptions). Skills inside workflow phases is the right composition.
+- **Author one big `pdlc.md` workflow covering every shape** — rejected; shape divergence between feature/bugfix/refactor is fundamental (different gate sets, different reviewer panels, different release paths). Forcing them into one workflow obscures the dispatch decision.
+- **Skip `project-onboarding` and rely on install.sh + sync-target.sh alone** — rejected; install path is mechanical (file copy), but discovery + smoke-test + first-PRD-seed are agent-mediated and warrant a contract. Mirrors `client-onboarding` BCG-side asymmetry the user flagged.
+- **Set `team_structure: full` on more workflows for thoroughness** — rejected; `flat` is correct when 2-3 agents work without orchestration. Only `feature-end-to-end` + `production-incident` justify orchestrator dispatch (5+ agents, multi-phase).
+
+**Operationalised:**
+- 8 new files: `.agent/workflows/{product-discovery-arc, spec-to-design, feature-end-to-end, bugfix-arc, refactor-arc, production-incident, release-arc, project-onboarding}.md`. Each ~80-130 lines, mirroring BCG `proposal-deck.md` structure (frontmatter + Purpose + Contents + Team Structure + Quality Gates + Output Format + Iteration Discipline w/ Phase L `memory_reflect` call).
+- `.agent/workflows/_index.md` updated: 8 new SDLC rows added in deliverables table.
+- `harness_conformance_audit.py` `eager_load_total_max{,_lean}` bumped +10 each.
+- Lint/audit/test: skill linter 28/28; conformance audit 39/39; pytest 72/72 unchanged (no new tests required for documentation-shaped artefacts).
+
+**Status:** active. SDLC team now BCG-parity. Harness primitive is fully deploy-ready for either adapter mode. Next dispatch path for new project: `project-onboarding` workflow → `product-discovery-arc` → `spec-to-design` → `feature-end-to-end`.
+
+
 ## 2026-05-02: Step 8.5b — deploy-readiness backlog burndown (items 4, 5, 7, 9, 10)
 
 **Decision:** Single branch ships five backlog items that together close the gap from "8.4 features merged" to "harness ready to deploy to a new target + build a team + harvest learnings".
