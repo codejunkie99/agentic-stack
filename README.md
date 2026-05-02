@@ -203,11 +203,13 @@ or a terminal-only project with the onboarding-style TUI:
 ```
 
 The wizard turns a plain-language intent into a transfer plan, lets you
-review target harnesses and memory scopes, redacts risky content by default,
-and emits a one-line curl command the next environment can run. The importer
+review target harnesses and memory scopes, blocks secret-like content before
+export, and emits a one-line curl command the next environment can run.
+For `move my memory`, it includes preferences, accepted lessons, skills,
+working memory, episodic/history logs, and candidate lessons. The importer
 unpacks the bundle, verifies its SHA-256 digest, merges preferences and
-accepted lessons, copies selected skills, and installs the matching adapter
-files.
+accepted lessons, copies selected skills, restores selected memory files,
+and installs the matching adapter files.
 
 For scripted handoff:
 

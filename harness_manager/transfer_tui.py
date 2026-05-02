@@ -193,6 +193,7 @@ def run_wizard(target_root: Path, stack_root: Path) -> int:
         "skills",
         "working",
         "episodic",
+        "candidates",
     ]
     scope_defaults = [scope_choices.index(s) for s in DEFAULT_SCOPES]
     chosen_scopes = widgets.ask_multiselect(

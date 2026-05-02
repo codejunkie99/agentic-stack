@@ -19,8 +19,11 @@ class TransferPlanTest(unittest.TestCase):
 
         self.assertEqual(plan.targets, ("codex",))
         self.assertEqual(plan.operation, "generate-curl")
-        self.assertEqual(plan.scopes, tuple(DEFAULT_SCOPES))
-        self.assertFalse(plan.sensitive_scopes)
+        self.assertEqual(
+            plan.scopes,
+            ("preferences", "accepted_lessons", "skills", "working", "episodic", "candidates"),
+        )
+        self.assertEqual(plan.sensitive_scopes, ("working", "episodic", "candidates"))
         self.assertIn("AGENTS.md", [a.dst for a in plan.adapter_actions])
         self.assertIn(".agents/skills", [a.dst for a in plan.adapter_actions])
 
@@ -56,6 +59,13 @@ class TransferPlanTest(unittest.TestCase):
         self.assertEqual(plan.targets, ("terminal",))
         self.assertEqual([a.dst for a in plan.adapter_actions], ["AGENTS.md"])
         self.assertEqual(plan.adapter_actions[0].merge_policy, "merge_or_alert")
+
+    def test_history_alias_selects_episodic_scope(self):
+        plan = build_plan("move history into codex", ROOT)
+
+        self.assertEqual(plan.targets, ("codex",))
+        self.assertIn("episodic", plan.scopes)
+        self.assertEqual(plan.sensitive_scopes, ("episodic",))
 
 
 if __name__ == "__main__":

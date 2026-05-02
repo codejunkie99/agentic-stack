@@ -32,7 +32,7 @@ Primary sources checked:
 2. Let users describe the transfer in natural language, then confirm or edit the parsed target and scope.
 3. Export a portable, signed memory bundle that can be imported through a generated curl command.
 4. Apply the transfer locally when requested, using the existing harness manager adapter installation path.
-5. Preserve privacy by default: accepted lessons and preferences transfer; episodic logs, working memory, rejected candidates, and raw traces stay out unless explicitly selected.
+5. Treat `move my memory` as the full portable memory set: preferences, accepted lessons, skills, working memory, episodic/history logs, and candidate lessons. Preserve privacy with preview, explicit confirmation for sensitive scopes, and secret blocking.
 6. Keep merge behavior transparent and reversible through preview, checksums, and existing git workflows.
 
 ## Non-Goals
@@ -74,7 +74,7 @@ The parser detects:
 
 - targets: `codex`, `cursor`, `windsurf`, `terminal`, `all`
 - operation: `apply-here`, `generate-curl`, `both`
-- scope hints: `preferences`, `lessons`, `skills`, `working`, `episodic`
+- scope hints: `preferences`, `lessons`, `skills`, `working`, `episodic`, `history`, `candidates`
 
 If parsing is uncertain, the wizard defaults to `all` targets only after showing a warning and requiring confirmation.
 
@@ -91,18 +91,18 @@ The user edits detected targets through a multi-select list:
 
 ### Step 3: Scope
 
-Default selected:
+Default selected for `move my memory`:
 
 - `.agent/memory/personal/PREFERENCES.md`
 - accepted rows from `.agent/memory/semantic/lessons.jsonl`
 - rendered semantic fallback from `.agent/memory/semantic/LESSONS.md` only when `lessons.jsonl` is missing
 - `.agent/skills/` metadata and skill folders, excluding runtime stores
-
-Default unselected:
-
 - `.agent/memory/working/WORKSPACE.md`
 - `.agent/memory/episodic/AGENT_LEARNINGS.jsonl`
 - staged/rejected candidates
+
+Default unselected:
+
 - `.agent/data-layer/`
 - `.agent/flywheel/`
 - `.agent/memory/.index/`

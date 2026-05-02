@@ -78,11 +78,16 @@ def export_bundle(
 
     if "skills" in scopes:
         skills_root = agent_root / "skills"
-        if skills_root.is_dir():
-            for path in sorted(p for p in skills_root.rglob("*") if p.is_file()):
-                if _is_runtime_path(path.relative_to(agent_root)):
-                    continue
-                _add_file(bundle, agent_root, path)
+        _add_tree(bundle, agent_root, skills_root)
+
+    if "working" in scopes:
+        _add_tree(bundle, agent_root, agent_root / "memory" / "working")
+
+    if "episodic" in scopes:
+        _add_tree(bundle, agent_root, agent_root / "memory" / "episodic")
+
+    if "candidates" in scopes:
+        _add_tree(bundle, agent_root, agent_root / "memory" / "candidates")
 
     return bundle
 
@@ -166,6 +171,15 @@ def _add_file(bundle: dict[str, Any], agent_root: Path, path: Path) -> None:
             "content_b64": base64.b64encode(text.encode("utf-8")).decode("ascii"),
         }
     )
+
+
+def _add_tree(bundle: dict[str, Any], agent_root: Path, root: Path) -> None:
+    if not root.is_dir():
+        return
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        if _is_runtime_path(path.relative_to(agent_root)):
+            continue
+        _add_file(bundle, agent_root, path)
 
 
 def _ensure_allowed(path: Path) -> None:

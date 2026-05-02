@@ -8,9 +8,10 @@ from typing import Iterable
 
 
 VALID_TARGETS = ("codex", "cursor", "windsurf", "terminal")
-DEFAULT_SCOPES = ("preferences", "accepted_lessons", "skills")
+CORE_SCOPES = ("preferences", "accepted_lessons", "skills")
+DEFAULT_SCOPES = CORE_SCOPES + ("working", "episodic", "candidates")
 SENSITIVE_SCOPES = ("working", "episodic", "candidates", "data_layer", "flywheel")
-VALID_SCOPES = DEFAULT_SCOPES + SENSITIVE_SCOPES
+VALID_SCOPES = CORE_SCOPES + SENSITIVE_SCOPES
 
 TARGET_ALIASES = {
     "codex": "codex",
@@ -35,8 +36,8 @@ SCOPE_ALIASES = {
     "lesson": "accepted_lessons",
     "lessons": "accepted_lessons",
     "semantic": "accepted_lessons",
-    "memory": "accepted_lessons",
-    "memories": "accepted_lessons",
+    "memory": "full_memory",
+    "memories": "full_memory",
     "skill": "skills",
     "skills": "skills",
     "working": "working",
@@ -124,6 +125,9 @@ def normalize_scopes(values: Iterable[str] | None) -> tuple[str, ...]:
     for value in values:
         key = value.casefold().strip().replace("-", "_")
         scope = SCOPE_ALIASES.get(key, key)
+        if scope == "full_memory":
+            selected.update(DEFAULT_SCOPES)
+            continue
         if scope not in VALID_SCOPES:
             continue
         selected.add(scope)
@@ -133,8 +137,7 @@ def normalize_scopes(values: Iterable[str] | None) -> tuple[str, ...]:
 
 
 def detect_scopes(intent: str) -> tuple[str, ...]:
-    selected = normalize_scopes(_tokens(intent))
-    return selected if selected != ("accepted_lessons",) else DEFAULT_SCOPES
+    return normalize_scopes(_tokens(intent))
 
 
 def detect_operation(intent: str) -> str:

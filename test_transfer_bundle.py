@@ -18,6 +18,9 @@ class TransferBundleTest(unittest.TestCase):
         agent = root / ".agent"
         (agent / "memory" / "personal").mkdir(parents=True)
         (agent / "memory" / "semantic").mkdir(parents=True)
+        (agent / "memory" / "working").mkdir(parents=True)
+        (agent / "memory" / "episodic").mkdir(parents=True)
+        (agent / "memory" / "candidates" / "pending").mkdir(parents=True)
         (agent / "skills" / "deploy-checklist").mkdir(parents=True)
         (agent / "memory" / "personal" / "PREFERENCES.md").write_text(
             "# Preferences\n\n- Use concise explanations.\n",
@@ -36,6 +39,18 @@ class TransferBundleTest(unittest.TestCase):
         (agent / "skills" / "_index.md").write_text("# Skills\n", encoding="utf-8")
         (agent / "skills" / "deploy-checklist" / "SKILL.md").write_text(
             "---\nname: deploy-checklist\n---\nCheck deploys.\n",
+            encoding="utf-8",
+        )
+        (agent / "memory" / "working" / "WORKSPACE.md").write_text(
+            "# Workspace\n\nCurrent task context.\n",
+            encoding="utf-8",
+        )
+        (agent / "memory" / "episodic" / "AGENT_LEARNINGS.jsonl").write_text(
+            json.dumps({"event": "debugged importer", "ts": "2026-05-02T00:00:00Z"}) + "\n",
+            encoding="utf-8",
+        )
+        (agent / "memory" / "candidates" / "pending" / "candidate.json").write_text(
+            json.dumps({"id": "candidate_keep", "claim": "Review before accepting."}) + "\n",
             encoding="utf-8",
         )
         return agent
@@ -107,6 +122,28 @@ class TransferBundleTest(unittest.TestCase):
 
             with self.assertRaises(BundleSecurityError):
                 export_bundle(agent, targets=["codex"], scopes=["preferences"])
+
+    def test_export_and_import_full_memory_scopes(self):
+        with tempfile.TemporaryDirectory() as src_tmp, tempfile.TemporaryDirectory() as dst_tmp:
+            src_agent = self.make_agent(Path(src_tmp))
+            dst = Path(dst_tmp)
+
+            bundle = export_bundle(
+                src_agent,
+                targets=["codex"],
+                scopes=["working", "episodic", "candidates"],
+            )
+            paths = {entry["path"] for entry in bundle["files"]}
+
+            self.assertIn(".agent/memory/working/WORKSPACE.md", paths)
+            self.assertIn(".agent/memory/episodic/AGENT_LEARNINGS.jsonl", paths)
+            self.assertIn(".agent/memory/candidates/pending/candidate.json", paths)
+
+            import_bundle(bundle, dst)
+
+            self.assertTrue((dst / ".agent" / "memory" / "working" / "WORKSPACE.md").exists())
+            self.assertTrue((dst / ".agent" / "memory" / "episodic" / "AGENT_LEARNINGS.jsonl").exists())
+            self.assertTrue((dst / ".agent" / "memory" / "candidates" / "pending" / "candidate.json").exists())
 
 
 if __name__ == "__main__":
