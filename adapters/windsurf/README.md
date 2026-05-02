@@ -2,6 +2,8 @@
 
 ## Install
 ```bash
+mkdir -p .windsurf/rules
+cp adapters/windsurf/.windsurf/rules/agentic-stack.md ./.windsurf/rules/agentic-stack.md
 cp adapters/windsurf/.windsurfrules ./.windsurfrules
 ```
 
@@ -11,8 +13,9 @@ Or:
 ```
 
 ## What it wires up
-Windsurf's Cascade reads `.windsurfrules` from the project root on every
-session and prepends it to the system prompt.
+Windsurf's Cascade reads workspace rules from `.windsurf/rules/*.md`.
+The adapter also writes legacy `.windsurfrules` for users on older
+Windsurf builds.
 
 ## Verify
 Ask Cascade "What's in your lessons file?" — it should read

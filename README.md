@@ -134,6 +134,7 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 ./install.sh status              # one-screen view: which adapters, brain stats
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
 ./install.sh manage              # interactive TUI: header pane + menu loop for add/remove/audit
+./install.sh transfer            # onboarding-style wizard: export/import memory as a curl bridge
 ./install.sh remove cursor       # confirm prompt + delete; no quarantine, no undo
 ```
 
@@ -191,6 +192,29 @@ agentic-stack claude-code --reconfigure  # re-run the wizard on an existing proj
 
 Edit `.agent/memory/personal/PREFERENCES.md` any time to refine your
 conventions, or `.agent/memory/.features.json` to flip feature toggles.
+
+## Transfer wizard
+
+Move the portable parts of one project brain into Codex, Cursor, Windsurf,
+or a terminal-only project with the onboarding-style TUI:
+
+```bash
+./install.sh transfer
+```
+
+The wizard turns a plain-language intent into a transfer plan, lets you
+review target harnesses and memory scopes, redacts risky content by default,
+and emits a one-line curl command the next environment can run. The importer
+unpacks the bundle, verifies its SHA-256 digest, merges preferences and
+accepted lessons, copies selected skills, and installs the matching adapter
+files.
+
+For scripted handoff:
+
+```bash
+./install.sh transfer export --intent "move my preferences and lessons into Codex" --print-curl
+./install.sh transfer import --payload-file transfer.txt --sha256 <digest> --target codex
+```
 
 ## Review protocol (host-agent CLI)
 
@@ -306,7 +330,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 adapters/                       # one small shim per harness, each with adapter.json manifest
 ├── claude-code/   (CLAUDE.md + settings.json hooks — $CLAUDE_PROJECT_DIR wired, closes #18)
 ├── cursor/        (.cursor/rules/*.mdc)
-├── windsurf/      (.windsurfrules)
+├── windsurf/      (.windsurf/rules/*.md + legacy .windsurfrules)
 ├── opencode/      (AGENTS.md + opencode.json)
 ├── openclaw/      (AGENTS.md + system-prompt include; auto-registers per-project agent)
 ├── hermes/        (AGENTS.md)
@@ -323,6 +347,9 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── remove.py                   # safe uninstall with shared-file detection + ownership handoff
 ├── post_install.py             # named built-ins (openclaw_register_workspace)
 ├── manage_tui.py               # interactive menu loop for add/remove/audit
+├── transfer_tui.py             # onboarding-style memory transfer wizard
+├── transfer_plan.py            # natural-language target/scope planning
+├── transfer_bundle.py          # export/import bundle codec + merge logic
 └── cli.py                      # argparse dispatcher for install.sh / install.ps1
 
 docs/                           # architecture, getting-started, per-harness
