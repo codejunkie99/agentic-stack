@@ -58,10 +58,24 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 | 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.4 follow-up | open — own session |
 | 5 | `bcg_conditional_propagate` skill-propagation gap (doesn't propagate skills; Phase J should cover) | Step 8.3 / Phase I DECISIONS | open — own session |
 | 6 | ~~Upstream PRs to codejunkie99~~ — DROPPED 2026-05-02. codejunkie99 upstream = sync source only; never PR back. Local fork is the trunk. | n/a | dropped |
-| 7 | Step 8.6 — `install.sh --upgrade` (bidirectional fork↔target sync) | Locked decision (Step 8.4 spec) | deferred |
+| 7 | Step 8.6 — `install.sh --upgrade` (bidirectional fork↔target sync) | Locked decision (Step 8.4 spec) | open — required for ongoing fork→target |
 | 8 | Delete merged local branches | git hygiene | ✅ done (8.4 + 8.3 deleted) |
+| 9 | **`team-builder` skill** (recall-gap-recovered 2026-05-02) — meta-skill that walks user through assembling a workflow contract: agent selection from 5+16 roster, dispatch shape (flat/coordinated/full), deliverable artefacts, quality gates. Produces `.agent/workflows/<name>.md`. **REQUIRED for "deploy to new target + build team" loop.** | Step 8.4 spec line 36 (out-of-scope deferred); user-named in 2026-05-02 session | open — own session |
+| 10 | **Spec-out-of-scope auto-promote rule** — `harness_conformance_audit.py` extension that diffs WORKSPACE backlog table against 'Out of scope' bullets in latest spec under `docs/superpowers/specs/`; warns when a spec bullet has no matching backlog row. Catches the recall-gap class observed today (item 9 was lost for 2 sessions). | HARNESS_FEEDBACK 2026-05-02 (severity 5/10) | open — folds into item 4 |
 
-**Why split**: items 3-5 each warrant their own focused branch + DECISIONS entry. Piling on this branch risks too-large PR. Items 6-7 are external/deferred.
+**Deploy-readiness (for: deploy to new target → build team → run work → harvest learnings)**:
+- ✅ Install path works (Phase K engagement-blank substrate)
+- ✅ Cross-install graduation works (Phase H `harness-graduate.py`, target → fork)
+- ✅ 4 active gates (canonical-evidence, lessons-pipeline, workspace-git reconcile, friction-capture)
+- ❌ **BLOCKER**: item 9 (team-builder skill) — no way to assemble new team without ad-hoc work
+- ❌ **BLOCKER if BCG target**: item 5 (bcg_conditional_propagate skill propagation) — adapter is half-broken
+- ⚠️ degraded: item 7 (no fork→target update path; fresh install only)
+- ⚠️ partial: item 3 (drift detection v1 only) — user deferred
+- ⚠️ nice: item 4 (audit self-monitoring) — folds in item 10
+
+**Tackle order this branch**: 10 (cheap, prevents recurrence) → 9 (biggest impact, deploy unblocker) → 5 (BCG adapter fix) → 4 (audit extension w/ item 10 baked in) → 7 (8.6 install.sh --upgrade).
+
+**Why split (revised)**: items 9, 5, 4, 7 are independent enough to land on this branch as one squashed PR or split per-item. Decision per branch length.
 
 **Trace / monitoring system status**: `.agent/tools/trace_check.py` shipped 2026-04-XX (commits `eac3e34` + `402010a`). Reads `episodic/AGENT_LEARNINGS.jsonl`, applies expected-event matchers per (skill, phase). Currently wired into Phase O `harness_intent_audit.py` for drift checkpoint #14 (workflow-contract followed) but checkpoints #14-16 marked SKIP pending stabilization. Sibling: `.agent/skills/data-layer/` (cross-harness dashboard / cron monitoring / token analytics, separate concern from trace_check). Not stale — just incomplete on the Phase O integration side.
 
