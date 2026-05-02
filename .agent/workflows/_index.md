@@ -19,6 +19,14 @@ fan-out shape before reading the body.
 | `post-meeting-update.md` | Transcript → tracker / RAID / workstream updates | `flat` | "post-meeting update", "process this transcript" |
 | `daily-task-tracking.md` | Daily transcript → Jira task pipeline | `flat` | "daily task pipeline", "extract tasks from transcript" |
 | **SDLC / product deliverables** | | | |
+| `project-onboarding.md` | Fresh repo → harness installed + first-PRD seeded | `flat` | "onboard this project", "set up the harness here", "new project setup", "initialize repo" |
+| `product-discovery-arc.md` | Idea → validated PRD with acceptance criteria + story decomposition | `flat` | "I want to build X", "PRD for", "scope this idea", "should we build this?" |
+| `spec-to-design.md` | PRD → ADR + design pack (no code) | `flat` | "design this feature", "ADR for", "wireframe the UI", "architect this" |
+| `feature-end-to-end.md` | Full PDLC: PRD → ADR → plan → FE+BE TDD → integrate → reviewer panel → release | `full` | "build the [feature]", "ship the [feature]", "production [feature]", "implement [PRD-slug]" |
+| `bugfix-arc.md` | Confirmed bug: reproduce → isolate → fix + regression test → review → ship | `flat` | "fix bug X", "Y is broken", "investigate why Z fails", "users report W" |
+| `refactor-arc.md` | Internal restructure with mechanical behavior preservation | `flat` | "refactor X", "extract Y into Z", "rename W", "consolidate duplicate Q" |
+| `production-incident.md` | Live system degraded: observe → diagnose → hotfix or rollback → retro | `coordinated` | "production is down", "users can't <X>", "incident <ID>", "rollback the deploy", "hotfix needed" |
+| `release-arc.md` | Approved branch → deploy-checklist → ship → verify → release notes → DECISIONS log | `flat` | "ship it", "release v<X>", "deploy to production", "cut a release" |
 | `prototype-app.md` | Working prototype app (spike-mode or lite-PDLC) | `full` | "build a prototype", "build a working prototype", "MVP prototype", "proof-of-concept app", "demo-able prototype" |
 | `feature-prototype.md` | Single-feature spike inside an existing app | `flat` | "spike this feature", "prototype the [feature]", "throwaway prototype of" |
 | `tech-spike.md` | Technical research with recommendation + alternatives | `flat` | "tech spike", "research [tech approach]", "evaluate [library]", "should we use X or Y?" |

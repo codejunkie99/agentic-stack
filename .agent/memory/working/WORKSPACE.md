@@ -76,6 +76,8 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 
 **Backlog clear. Harness primitive deploy-ready.** All 10 backlog rows resolved (8 done + 2 dropped).
 
+**Step 8.5c (2026-05-02)**: SDLC workflow set authored — 8 new contracts (`product-discovery-arc`, `spec-to-design`, `feature-end-to-end`, `bugfix-arc`, `refactor-arc`, `production-incident`, `release-arc`, `project-onboarding`). Combined with 4 pre-existing SDLC workflows + 8 BCG = 20 workflows total. Full PDLC-SDLC team now BCG-parity. Branch `feature/sdlc-workflow-set`.
+
 **Trace / monitoring system status (final)**: `.agent/tools/trace_check.py` (526 LOC) kept as legacy/optional tool — invoke manually for ad-hoc per-(skill, phase) trace verification. Phase O drift checkpoints #14-16 stay SKIP permanently. Future drift findings route through bug-to-invariant protocol → new Phase O checkpoint or audit check, not new trace_check matcher. `.agent/skills/data-layer/` covers cross-harness dashboard / cron monitoring / token analytics (separate concern, active).
 
 **Dropped from scope (2026-05-02):**
