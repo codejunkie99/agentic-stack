@@ -46,6 +46,14 @@ No migration required. Existing installs keep working. Run
 `agentic-stack transfer` from a project that already has `.agent/` to create or
 import a transfer bundle.
 
+### Release
+- Tag `v0.13.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.13.0>
+- `Formula/agentic-stack.rb` bumped to v0.13.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `83f71bab05bd607f3590571b5422a0cc74650d69ff5d818b6682d0f877e16514`.
+
 ## [0.12.0] — 2026-04-27
 
 Minor release. Adds the opt-in `tldraw` seed skill for live canvas diagrams
