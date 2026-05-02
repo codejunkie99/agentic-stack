@@ -364,8 +364,91 @@ def _print_check(check: dict) -> bool:
             for line in check["stdout"].splitlines():
                 print(f"      {line}")
         return False
+    if status == "untracked_out_of_scope":
+        print(
+            f"  ✗ {name}: {len(check['missing'])}/{check['total_bullets']} "
+            f"'Out of scope' bullet(s) in {check['spec']} missing from "
+            f"WORKSPACE backlog:"
+        )
+        for m in check["missing"]:
+            print(f"      - {m}")
+        return False
     print(f"  ? {name}: status={status}")
     return False
+
+
+_OUT_OF_SCOPE_HEADER_RE = re.compile(r"^##\s+Out of scope\s*$", re.MULTILINE)
+_BULLET_RE = re.compile(r"^-\s+\*\*([^*]+)\*\*", re.MULTILINE)
+_WORKSPACE_TABLE_ROW_RE = re.compile(r"^\|\s*\d+[a-z]?\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+
+
+def _latest_spec(repo_root: Path) -> Path | None:
+    spec_dir = repo_root / "docs" / "superpowers" / "specs"
+    if not spec_dir.is_dir():
+        return None
+    specs = sorted(spec_dir.glob("*.md"))
+    return specs[-1] if specs else None
+
+
+def _extract_out_of_scope_bullets(spec: Path) -> list[str]:
+    """Return list of bolded-bullet labels under '## Out of scope'."""
+    text = spec.read_text(encoding="utf-8", errors="replace")
+    m = _OUT_OF_SCOPE_HEADER_RE.search(text)
+    if not m:
+        return []
+    section = text[m.end():]
+    next_h = re.search(r"^##\s+", section, re.MULTILINE)
+    if next_h:
+        section = section[: next_h.start()]
+    return [b.strip() for b in _BULLET_RE.findall(section)]
+
+
+def _workspace_backlog_text(repo_root: Path) -> str:
+    ws = repo_root / ".agent" / "memory" / "working" / "WORKSPACE.md"
+    if not ws.is_file():
+        return ""
+    return ws.read_text(encoding="utf-8", errors="replace")
+
+
+def _bullet_in_backlog(bullet: str, backlog_text: str) -> bool:
+    """Loose match: tokenize on word boundaries (incl. hyphens), require >=2 matches."""
+    tokens = [t for t in re.findall(r"[A-Za-z][A-Za-z0-9]{3,}", bullet) if len(t) >= 4]
+    stop = {"custom", "skill", "step", "this", "that", "with", "from", "into"}
+    tokens = [t for t in tokens if t.lower() not in stop]
+    backlog_lower = backlog_text.lower()
+    matched = sum(1 for t in tokens if t.lower() in backlog_lower)
+    return matched >= 2 or (len(tokens) <= 2 and matched == len(tokens))
+
+
+def _check_spec_out_of_scope_in_backlog(repo_root: Path) -> dict:
+    """Diff latest spec 'Out of scope' bullets against WORKSPACE backlog.
+
+    Catches recall-gap class bugs (item named out-of-scope in spec is lost).
+    """
+    spec = _latest_spec(repo_root)
+    if spec is None:
+        return {"name": "spec_out_of_scope_in_backlog", "status": "ok",
+                "detail": "no specs found; skip"}
+    bullets = _extract_out_of_scope_bullets(spec)
+    if not bullets:
+        return {"name": "spec_out_of_scope_in_backlog", "status": "ok",
+                "detail": f"no 'Out of scope' bullets in {spec.name}"}
+    backlog = _workspace_backlog_text(repo_root)
+    missing = [b for b in bullets if not _bullet_in_backlog(b, backlog)]
+    if missing:
+        return {
+            "name": "spec_out_of_scope_in_backlog",
+            "status": "untracked_out_of_scope",
+            "spec": spec.name,
+            "missing": missing,
+            "total_bullets": len(bullets),
+        }
+    return {
+        "name": "spec_out_of_scope_in_backlog",
+        "status": "ok",
+        "spec": spec.name,
+        "tracked": len(bullets),
+    }
 
 
 def run_audit(repo_root: Path, staged: bool = False) -> tuple[list[dict], int]:
@@ -411,6 +494,9 @@ def run_audit(repo_root: Path, staged: bool = False) -> tuple[list[dict], int]:
 
     # 5. Delegate to skill_linter
     checks.append(_run_skill_linter(repo_root, staged=staged))
+
+    # 6. Spec out-of-scope bullets tracked in WORKSPACE backlog (recall-gap guard)
+    checks.append(_check_spec_out_of_scope_in_backlog(repo_root))
 
     fail_count = 0
     for c in checks:
