@@ -6,11 +6,13 @@
 
 ## Current step
 
-**Step 8.4 — harness-learning loop (complete; awaiting merge to master, 2026-04-30)**
+**Step 8.4 — harness-learning loop (MERGED to master, PR #3 commit `c29d6b1`, 2026-05-02 reconcile)**
 
-Branch: `feature/step-8.4-harness-learning-loop`.
+Branch: `feature/step-8.4-harness-learning-loop` (merged; safe to delete locally).
 Spec: `docs/superpowers/specs/2026-04-30-step-8-4-harness-learning-loop-design.md`.
 Plan: `docs/superpowers/plans/2026-04-30-step-8-4-harness-learning-loop-plan.md`.
+
+Post-merge commit on master: `35e234c feat(protocol): bug-to-invariant`.
 
 ### Step 8.4 stage plan (all complete)
 
@@ -31,10 +33,24 @@ Plan: `docs/superpowers/plans/2026-04-30-step-8-4-harness-learning-loop-plan.md`
 
 Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + branch-end smoke). All tests green (36 pass); conformance audit 35/35; skill linter 27/27. Gate smoke-tested end-to-end: Layer 2 blocks/allows on citation freshness; Layer 1 keyword detection + context injection works; Layer 4 Evidence-block check works.
 
-**Open follow-ups (post-merge):**
-- Propagate Phase L's importance/pain tuning pattern to other long-session skills (planner, document-researcher).
-- Extend Phase O drift checks #14-16 once trace_check.py stabilizes.
-- Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection.
+**Open follow-ups (post-merge, prioritized 2026-05-02):**
+
+| # | Item | Source | Status |
+|---|------|--------|--------|
+| 1 | SessionStart WORKSPACE↔git reconcile hook (diff branch state vs `git log master`; warn on drift) | HARNESS_FEEDBACK 2026-05-02T13:47 (severity 5/10) | open — proposed |
+| 1b | Layer 2b writer-provenance gate on `LESSONS.md` + `lessons.jsonl` — block direct edits, only allow `HARNESS_GRADUATION_WRITER=1` (graduate.py/auto-render). Block message routes to correct pipeline (`propose_harness_fix` / episodic / `graduate.py`). | HARNESS_FEEDBACK 2026-05-02 (severity 5/10) | open — proposed |
+| 2 | Propagate Phase L importance/pain tuning to long-session skills (planner, document-researcher) | Step 8.4 follow-up | open |
+| 3 | Stabilize `trace_check.py` then extend Phase O drift checks #14-16 | Step 8.4 follow-up; `.agent/tools/trace_check.py` exists (526 LOC, last touched `402010a`) but unstable | open |
+| 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.4 follow-up | open |
+| 5 | `bcg_conditional_propagate` skill-propagation gap (doesn't propagate skills; Phase J should cover) | Step 8.3 / Phase I DECISIONS | open |
+| 6 | Upstream PRs to codejunkie99: cli.py future-import fix, claude-code adapter.json SDLC entries | Step 8.2.5 sync | open |
+| 7 | Step 8.5 — `install.sh --upgrade` (bidirectional fork↔target sync) | Locked decision (Step 8.4 spec) | deferred |
+| 8 | Delete merged local branch `feature/step-8.4-harness-learning-loop` | git hygiene | open — trivial |
+
+**Trace / monitoring system status**: `.agent/tools/trace_check.py` shipped 2026-04-XX (commits `eac3e34` + `402010a`). Reads `episodic/AGENT_LEARNINGS.jsonl`, applies expected-event matchers per (skill, phase). Currently wired into Phase O `harness_intent_audit.py` for drift checkpoint #14 (workflow-contract followed) but checkpoints #14-16 marked SKIP pending stabilization. Sibling: `.agent/skills/data-layer/` (cross-harness dashboard / cron monitoring / token analytics, separate concern from trace_check). Not stale — just incomplete on the Phase O integration side.
+
+**Dropped from scope (2026-05-02):**
+- Step 8.3 Phase 3 deck-render (Slide 6 metric verify, SC brand-strip, Slide 3 rubric spot-check, Slide 7 demo binary) — engagement no longer needs it.
 
 ## Why now
 
@@ -75,8 +91,7 @@ scaffolding that was missing.
   - Closes Gap 8 ("no structural-conformance enforcement on skills")
 - **Stage 4** — run the dry-run case ✅ (Phase 1 storyboard v3 + Phase 2
   content-draft 20 main + 8 appendices + 3-reviewer panel GO-WITH-FIXES;
-  Phase 3 deferred — gated on Slide 6 metric verify, SC brand-strip,
-  Slide 3 rubric spot-check, Slide 7 demo binary)
+  Phase 3 deck-render dropped from scope 2026-05-02 — no longer needed)
 - **Stage 9 — Phase J + N1-N6 — canonical alignment + sync infra ✅ (2026-04-30)**
   - **N1**: 20 BCG agent prompts gained `## Agent-memory write discipline`
     section (per-engagement project/feedback/user typed memory files,
