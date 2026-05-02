@@ -10,6 +10,8 @@
 #                                                # remove an installed adapter
 #   ./install.sh doctor [target-dir]             # read-only audit
 #   ./install.sh status [target-dir]             # one-screen view
+#   ./install.sh manage [target-dir]             # interactive adapter TUI
+#   ./install.sh transfer                        # memory transfer wizard
 #   ./install.sh                                 # bare: list available adapters
 #                                                # (or, if install.json exists,
 #                                                # show what's installable)

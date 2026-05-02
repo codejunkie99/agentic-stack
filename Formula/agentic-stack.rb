@@ -8,7 +8,7 @@ class AgenticStack < Formula
 
   def install
     # install the brain + adapters alongside install.sh so relative paths hold
-    pkgshare.install ".agent", "adapters", "harness_manager", "install.sh",
+    pkgshare.install ".agent", "adapters", "harness_manager", "scripts", "install.sh",
                      "onboard.py", "onboard_ui.py", "onboard_widgets.py",
                      "onboard_render.py", "onboard_write.py",
                      "onboard_features.py"
@@ -23,6 +23,7 @@ class AgenticStack < Formula
   test do
     output = shell_output("#{bin}/agentic-stack 2>&1", 2)
     assert_match "usage", output
+    assert_match "agentic-stack transfer", shell_output("#{bin}/agentic-stack transfer --help")
     # Wizard --yes must write PREFERENCES.md AND .features.json into a temp project dir
     (testpath/".agent/memory/personal").mkpath
     system "#{bin}/agentic-stack", "claude-code", testpath.to_s, "--yes"

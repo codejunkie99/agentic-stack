@@ -29,7 +29,10 @@ DETECT_SIGNALS = {
         (".claude/settings.json", "strong"),
     ],
     "cursor": [(".cursor/rules/agentic-stack.mdc", "strong")],
-    "windsurf": [(".windsurfrules", "strong")],
+    "windsurf": [
+        (".windsurf/rules/agentic-stack.md", "strong"),
+        (".windsurfrules", "strong"),
+    ],
     "openclaw": [(".openclaw-system.md", "strong")],
     "pi": [(".pi/extensions/memory-hook.ts", "strong")],
     "codex": [(".agents/skills", "strong")],

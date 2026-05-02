@@ -1,6 +1,6 @@
 """Argparse dispatcher. install.sh and install.ps1 invoke this.
 
-Verbs (subcommands): add, remove, doctor, status.
+Verbs (subcommands): add, remove, doctor, status, manage, transfer.
 Anything else in first position → treated as an adapter name (existing
 `./install.sh <adapter>` UX preserved).
 """
@@ -19,7 +19,7 @@ from . import status as status_mod
 from . import __version__
 
 
-VERBS = {"add", "remove", "doctor", "status", "manage"}
+VERBS = {"add", "remove", "doctor", "status", "manage", "transfer"}
 
 
 def _stack_root() -> Path:
@@ -247,6 +247,11 @@ def cmd_manage(target: Path) -> int:
     return manage_tui.run(target_root=target, stack_root=_stack_root())
 
 
+def cmd_transfer(args: list[str], target: Path) -> int:
+    from . import transfer_tui
+    return transfer_tui.run(args, target_root=target, stack_root=_stack_root())
+
+
 def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     """`./install.sh` with no args.
 
@@ -319,7 +324,8 @@ def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     print("  ./install.sh status      # quick read-only view")
     print("  ./install.sh add <name>  # install another adapter")
     print("  ./install.sh remove <name>  # remove an adapter (with confirm)")
-    print("  ./install.sh manage      # interactive TUI for everything")
+    print("  ./install.sh manage      # interactive TUI for adapter management")
+    print("  ./install.sh transfer    # onboarding-style memory transfer wizard")
     return 2
 
 
@@ -450,6 +456,8 @@ def main(argv: list[str] | None = None) -> int:
         if verb == "manage":
             target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
             return cmd_manage(target)
+        if verb == "transfer":
+            return cmd_transfer(rest[1:], Path.cwd())
 
     # Treat as adapter name (existing UX)
     adapter = first

@@ -10,6 +10,8 @@
 #                                              # remove an installed adapter
 #   .\install.ps1 doctor [target-dir]          # read-only audit
 #   .\install.ps1 status [target-dir]          # one-screen view
+#   .\install.ps1 manage [target-dir]          # interactive adapter TUI
+#   .\install.ps1 transfer                     # memory transfer wizard
 #   .\install.ps1                              # bare: list adapters / what
 #                                              # to add
 #
