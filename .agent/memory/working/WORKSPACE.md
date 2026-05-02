@@ -54,7 +54,7 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 | 1 | SessionStart WORKSPACE↔git reconcile hook | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
 | 1b | Layer 2b writer-provenance gate on `LESSONS.md` + `lessons.jsonl` | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
 | 2 | Phase L importance/pain tuning → planner, document-researcher | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
-| 3 | Stabilize `trace_check.py` then extend Phase O drift checks #14-16 | Step 8.4 follow-up; tool exists (526 LOC) but unstable | open — user has plan |
+| 3 | ~~Stabilize `trace_check.py` + Phase O drift #14-16~~ — DROPPED 2026-05-02. Diminishing returns: per-skill-phase matchers brittle; Phase O 17/18 active checkpoints + auto_dream + bug-to-invariant + 39 audit checks already cover the class. trace_check.py kept as legacy/optional; #14-16 stay SKIP permanently. | post-merge decision 2026-05-02 | dropped |
 | 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.5b on `feature/step-8.5b-team-builder-and-deploy-prep` | ✅ done |
 | 5 | `bcg_conditional_propagate` skill-propagation gap | Step 8.5b on `feature/step-8.5b-team-builder-and-deploy-prep` | ✅ done |
 | 6 | ~~Upstream PRs to codejunkie99~~ — DROPPED 2026-05-02. codejunkie99 upstream = sync source only; never PR back. Local fork is the trunk. | n/a | dropped |
@@ -72,15 +72,11 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 - ✅ Item 7 (sync extension) — `merge_target_settings.py` + sync-target.sh wiring; fork hook updates reach existing targets
 - ✅ Item 4 (audit self-monitoring) — citation-quality + gate-config drift checks
 - ✅ Item 10 (spec-out-of-scope audit) — recall-gap class catcher
-- ⚠️ partial: item 3 (drift detection v1 only) — user has separate plan
+- ✅ Item 3 (trace_check stabilize) — DROPPED. Drift class covered by Phase O 17/18 active checkpoints + auto_dream pattern detection + bug-to-invariant escalation + 39 audit checks.
 
-**Deploy-ready.** Only open backlog row is item 3 (trace_check stabilization), which user explicitly deferred for their own plan.
+**Backlog clear. Harness primitive deploy-ready.** All 10 backlog rows resolved (8 done + 2 dropped).
 
-**Tackle order this branch**: 10 (cheap, prevents recurrence) → 9 (biggest impact, deploy unblocker) → 5 (BCG adapter fix) → 4 (audit extension w/ item 10 baked in) → 7 (8.6 install.sh --upgrade).
-
-**Why split (revised)**: items 9, 5, 4, 7 are independent enough to land on this branch as one squashed PR or split per-item. Decision per branch length.
-
-**Trace / monitoring system status**: `.agent/tools/trace_check.py` shipped 2026-04-XX (commits `eac3e34` + `402010a`). Reads `episodic/AGENT_LEARNINGS.jsonl`, applies expected-event matchers per (skill, phase). Currently wired into Phase O `harness_intent_audit.py` for drift checkpoint #14 (workflow-contract followed) but checkpoints #14-16 marked SKIP pending stabilization. Sibling: `.agent/skills/data-layer/` (cross-harness dashboard / cron monitoring / token analytics, separate concern from trace_check). Not stale — just incomplete on the Phase O integration side.
+**Trace / monitoring system status (final)**: `.agent/tools/trace_check.py` (526 LOC) kept as legacy/optional tool — invoke manually for ad-hoc per-(skill, phase) trace verification. Phase O drift checkpoints #14-16 stay SKIP permanently. Future drift findings route through bug-to-invariant protocol → new Phase O checkpoint or audit check, not new trace_check matcher. `.agent/skills/data-layer/` covers cross-harness dashboard / cron monitoring / token analytics (separate concern, active).
 
 **Dropped from scope (2026-05-02):**
 - Step 8.3 Phase 3 deck-render (Slide 6 metric verify, SC brand-strip, Slide 3 rubric spot-check, Slide 7 demo binary) — engagement no longer needs it.
