@@ -54,14 +54,31 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 | 1 | SessionStart WORKSPACE↔git reconcile hook | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
 | 1b | Layer 2b writer-provenance gate on `LESSONS.md` + `lessons.jsonl` | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
 | 2 | Phase L importance/pain tuning → planner, document-researcher | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
-| 3 | Stabilize `trace_check.py` then extend Phase O drift checks #14-16 | Step 8.4 follow-up; tool exists (526 LOC) but unstable | open — own session |
-| 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.4 follow-up | open — own session |
-| 5 | `bcg_conditional_propagate` skill-propagation gap (doesn't propagate skills; Phase J should cover) | Step 8.3 / Phase I DECISIONS | open — own session |
+| 3 | Stabilize `trace_check.py` then extend Phase O drift checks #14-16 | Step 8.4 follow-up; tool exists (526 LOC) but unstable | open — user has plan |
+| 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.5b on `feature/step-8.5b-team-builder-and-deploy-prep` | ✅ done |
+| 5 | `bcg_conditional_propagate` skill-propagation gap | Step 8.5b on `feature/step-8.5b-team-builder-and-deploy-prep` | ✅ done |
 | 6 | ~~Upstream PRs to codejunkie99~~ — DROPPED 2026-05-02. codejunkie99 upstream = sync source only; never PR back. Local fork is the trunk. | n/a | dropped |
-| 7 | Step 8.6 — `install.sh --upgrade` (bidirectional fork↔target sync) | Locked decision (Step 8.4 spec) | deferred |
+| 7 | Step 8.6 — `merge_target_settings.py` smart-merge tool wired into sync-target.sh (was: install.sh --upgrade scope) | Step 8.5b on `feature/step-8.5b-team-builder-and-deploy-prep` | ✅ done |
 | 8 | Delete merged local branches | git hygiene | ✅ done (8.4 + 8.3 deleted) |
+| 9 | `team-builder` skill — meta-skill assembling workflow contracts | Step 8.5b on `feature/step-8.5b-team-builder-and-deploy-prep` | ✅ done |
+| 10 | Spec-out-of-scope auto-promote audit rule | Step 8.5b (folded into item 4) | ✅ done |
 
-**Why split**: items 3-5 each warrant their own focused branch + DECISIONS entry. Piling on this branch risks too-large PR. Items 6-7 are external/deferred.
+**Deploy-readiness (for: deploy to new target → build team → run work → harvest learnings)** — post Step 8.5b:
+- ✅ Install path works (Phase K engagement-blank substrate)
+- ✅ Cross-install graduation works (Phase H `harness-graduate.py`, target → fork)
+- ✅ 4 active gates (canonical-evidence, lessons-pipeline, workspace-git reconcile, friction-capture)
+- ✅ Item 9 (team-builder skill) — workflow-contract producer shipped
+- ✅ Item 5 (BCG skill propagation) — vendored skills now copy to target on fresh install + sync
+- ✅ Item 7 (sync extension) — `merge_target_settings.py` + sync-target.sh wiring; fork hook updates reach existing targets
+- ✅ Item 4 (audit self-monitoring) — citation-quality + gate-config drift checks
+- ✅ Item 10 (spec-out-of-scope audit) — recall-gap class catcher
+- ⚠️ partial: item 3 (drift detection v1 only) — user has separate plan
+
+**Deploy-ready.** Only open backlog row is item 3 (trace_check stabilization), which user explicitly deferred for their own plan.
+
+**Tackle order this branch**: 10 (cheap, prevents recurrence) → 9 (biggest impact, deploy unblocker) → 5 (BCG adapter fix) → 4 (audit extension w/ item 10 baked in) → 7 (8.6 install.sh --upgrade).
+
+**Why split (revised)**: items 9, 5, 4, 7 are independent enough to land on this branch as one squashed PR or split per-item. Decision per branch length.
 
 **Trace / monitoring system status**: `.agent/tools/trace_check.py` shipped 2026-04-XX (commits `eac3e34` + `402010a`). Reads `episodic/AGENT_LEARNINGS.jsonl`, applies expected-event matchers per (skill, phase). Currently wired into Phase O `harness_intent_audit.py` for drift checkpoint #14 (workflow-contract followed) but checkpoints #14-16 marked SKIP pending stabilization. Sibling: `.agent/skills/data-layer/` (cross-harness dashboard / cron monitoring / token analytics, separate concern from trace_check). Not stale — just incomplete on the Phase O integration side.
 

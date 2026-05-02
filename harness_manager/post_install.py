@@ -275,7 +275,7 @@ def bcg_conditional_propagate(
     if not bcg_src.is_dir():
         return {"action": "bcg_conditional_propagate", "status": "no_bcg_dir"}
 
-    counts = {"agents": 0, "commands": 0, "agent_memory": 0}
+    counts = {"agents": 0, "commands": 0, "agent_memory": 0, "skills": 0}
 
     for kind in ("agents", "commands"):
         src_dir = bcg_src / kind
@@ -298,6 +298,20 @@ def bcg_conditional_propagate(
             if not target_file.exists():
                 shutil.copy2(f, target_file)
                 counts["agent_memory"] += 1
+
+    # BCG vendored skills → target's .agent/skills/<skill-name>/
+    # Skills are dirs (incl. vendored — INTEGRATION.md sidecar marks them
+    # as upstream-synced; skill_linter skips conformance per Step 8.4 Phase I).
+    skills_src = bcg_src / "skills"
+    if skills_src.is_dir():
+        skills_dst = target_root / ".agent" / "skills"
+        skills_dst.mkdir(parents=True, exist_ok=True)
+        for skill_dir in sorted(p for p in skills_src.iterdir() if p.is_dir()):
+            dst_skill = skills_dst / skill_dir.name
+            if dst_skill.exists():
+                shutil.rmtree(dst_skill)
+            shutil.copytree(skill_dir, dst_skill)
+            counts["skills"] += 1
 
     return {
         "action": "bcg_conditional_propagate",
@@ -337,6 +351,15 @@ def bcg_conditional_unpropagate(
             target_file = dst / f.name
             if target_file.exists():
                 target_file.unlink()
+                removed += 1
+
+    skills_src = bcg_src / "skills"
+    if skills_src.is_dir():
+        skills_dst = target_root / ".agent" / "skills"
+        for skill_dir in sorted(p for p in skills_src.iterdir() if p.is_dir()):
+            dst_skill = skills_dst / skill_dir.name
+            if dst_skill.exists() and dst_skill.is_dir():
+                shutil.rmtree(dst_skill)
                 removed += 1
 
     return {"action": "bcg_conditional_propagate", "status": "ok", "removed": removed}

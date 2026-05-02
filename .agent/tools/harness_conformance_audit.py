@@ -364,8 +364,182 @@ def _print_check(check: dict) -> bool:
             for line in check["stdout"].splitlines():
                 print(f"      {line}")
         return False
+    if status == "untracked_out_of_scope":
+        print(
+            f"  ✗ {name}: {len(check['missing'])}/{check['total_bullets']} "
+            f"'Out of scope' bullet(s) in {check['spec']} missing from "
+            f"WORKSPACE backlog:"
+        )
+        for m in check["missing"]:
+            print(f"      - {m}")
+        return False
     print(f"  ? {name}: status={status}")
     return False
+
+
+_OUT_OF_SCOPE_HEADER_RE = re.compile(r"^##\s+Out of scope\s*$", re.MULTILINE)
+_BULLET_RE = re.compile(r"^-\s+\*\*([^*]+)\*\*", re.MULTILINE)
+_WORKSPACE_TABLE_ROW_RE = re.compile(r"^\|\s*\d+[a-z]?\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+
+
+def _latest_spec(repo_root: Path) -> Path | None:
+    spec_dir = repo_root / "docs" / "superpowers" / "specs"
+    if not spec_dir.is_dir():
+        return None
+    specs = sorted(spec_dir.glob("*.md"))
+    return specs[-1] if specs else None
+
+
+def _extract_out_of_scope_bullets(spec: Path) -> list[str]:
+    """Return list of bolded-bullet labels under '## Out of scope'."""
+    text = spec.read_text(encoding="utf-8", errors="replace")
+    m = _OUT_OF_SCOPE_HEADER_RE.search(text)
+    if not m:
+        return []
+    section = text[m.end():]
+    next_h = re.search(r"^##\s+", section, re.MULTILINE)
+    if next_h:
+        section = section[: next_h.start()]
+    return [b.strip() for b in _BULLET_RE.findall(section)]
+
+
+def _workspace_backlog_text(repo_root: Path) -> str:
+    ws = repo_root / ".agent" / "memory" / "working" / "WORKSPACE.md"
+    if not ws.is_file():
+        return ""
+    return ws.read_text(encoding="utf-8", errors="replace")
+
+
+def _bullet_in_backlog(bullet: str, backlog_text: str) -> bool:
+    """Loose match: tokenize on word boundaries (incl. hyphens), require >=2 matches."""
+    tokens = [t for t in re.findall(r"[A-Za-z][A-Za-z0-9]{3,}", bullet) if len(t) >= 4]
+    stop = {"custom", "skill", "step", "this", "that", "with", "from", "into"}
+    tokens = [t for t in tokens if t.lower() not in stop]
+    backlog_lower = backlog_text.lower()
+    matched = sum(1 for t in tokens if t.lower() in backlog_lower)
+    return matched >= 2 or (len(tokens) <= 2 and matched == len(tokens))
+
+
+def _check_spec_out_of_scope_in_backlog(repo_root: Path) -> dict:
+    """Diff latest spec 'Out of scope' bullets against WORKSPACE backlog.
+
+    Catches recall-gap class bugs (item named out-of-scope in spec is lost).
+    """
+    spec = _latest_spec(repo_root)
+    if spec is None:
+        return {"name": "spec_out_of_scope_in_backlog", "status": "ok",
+                "detail": "no specs found; skip"}
+    bullets = _extract_out_of_scope_bullets(spec)
+    if not bullets:
+        return {"name": "spec_out_of_scope_in_backlog", "status": "ok",
+                "detail": f"no 'Out of scope' bullets in {spec.name}"}
+    backlog = _workspace_backlog_text(repo_root)
+    missing = [b for b in bullets if not _bullet_in_backlog(b, backlog)]
+    if missing:
+        return {
+            "name": "spec_out_of_scope_in_backlog",
+            "status": "untracked_out_of_scope",
+            "spec": spec.name,
+            "missing": missing,
+            "total_bullets": len(bullets),
+        }
+    return {
+        "name": "spec_out_of_scope_in_backlog",
+        "status": "ok",
+        "spec": spec.name,
+        "tracked": len(bullets),
+    }
+
+
+EXPECTED_GATE_HOOKS = {
+    "SessionStart": [
+        ".agent/harness/init_session_state.py",
+        ".agent/harness/workspace_git_reconcile.py",
+    ],
+    "UserPromptSubmit": [".agent/harness/canonical_gate_prompt.py"],
+    "PreToolUse": [".agent/harness/canonical_gate_write.py"],
+    "Stop": [".agent/harness/canonical_gate_stop.py"],
+    "SessionEnd": [".agent/harness/check_friction_capture.py"],
+}
+
+
+def _check_citation_quality(repo_root: Path) -> dict:
+    """Spot-check the latest .canonical-citation.json for gaming patterns.
+
+    Catches: empty justifications, missing reference/quote when source
+    requires them, unknown source values. Forward validation happens in
+    cite_canonical.py at write time; this is the audit-side check that
+    the existing citation isn't degenerate.
+    """
+    cite = repo_root / ".agent/memory/working/.canonical-citation.json"
+    if not cite.is_file():
+        return {"name": "citation_quality", "status": "ok",
+                "detail": "no citation file (none recently used)"}
+    try:
+        data = json.loads(cite.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return {"name": "citation_quality", "status": "fail",
+                "exit_code": 1, "stdout": f"unparseable: {e}"}
+    issues = []
+    src = data.get("source", "")
+    just = (data.get("justification") or "").strip()
+    ref = (data.get("reference") or "").strip()
+    quote = (data.get("quote") or "").strip()
+    valid_sources = {"article", "upstream", "gstack", "gbrain",
+                     "fork-decisions", "none-applies"}
+    if src not in valid_sources:
+        issues.append(f"unknown source '{src}'")
+    if len(just) < 20:
+        issues.append(f"justification too short ({len(just)} chars; need >=20)")
+    if src != "none-applies":
+        if not ref:
+            issues.append(f"source={src} requires non-empty reference")
+        if not quote:
+            issues.append(f"source={src} requires non-empty quote")
+    if issues:
+        return {"name": "citation_quality", "status": "fail",
+                "exit_code": 1, "stdout": "; ".join(issues)}
+    return {"name": "citation_quality", "status": "ok",
+            "detail": f"source={src}, just={len(just)}c, quote={len(quote)}c"}
+
+
+def _check_gate_config(repo_root: Path) -> dict:
+    """Diff .claude/settings.json hooks vs EXPECTED_GATE_HOOKS.
+
+    Catches drift where a gate hook is removed or reordered without a
+    DECISIONS entry, OR where a stale hook references a script that
+    no longer exists.
+    """
+    settings = repo_root / ".claude/settings.json"
+    if not settings.is_file():
+        return {"name": "gate_config_drift", "status": "missing",
+                "path": str(settings)}
+    try:
+        data = json.loads(settings.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return {"name": "gate_config_drift", "status": "fail",
+                "exit_code": 1, "stdout": f"unparseable: {e}"}
+    hooks = data.get("hooks", {})
+    issues = []
+    for trigger, expected in EXPECTED_GATE_HOOKS.items():
+        actual_entries = hooks.get(trigger, [])
+        actual_cmds = []
+        for entry in actual_entries:
+            for h in entry.get("hooks", []):
+                cmd = h.get("command", "")
+                m = re.search(r"\.agent/harness/[A-Za-z_]+\.py", cmd)
+                if m:
+                    actual_cmds.append(m.group(0))
+        for exp in expected:
+            if exp not in actual_cmds:
+                issues.append(f"{trigger}: expected hook {exp} missing")
+            elif not (repo_root / exp).is_file():
+                issues.append(f"{trigger}: hook script {exp} missing on disk")
+    if issues:
+        return {"name": "gate_config_drift", "status": "fail",
+                "exit_code": 1, "stdout": "; ".join(issues)}
+    return {"name": "gate_config_drift", "status": "ok",
+            "detail": f"{sum(len(v) for v in EXPECTED_GATE_HOOKS.values())} expected hooks present"}
 
 
 def run_audit(repo_root: Path, staged: bool = False) -> tuple[list[dict], int]:
@@ -411,6 +585,15 @@ def run_audit(repo_root: Path, staged: bool = False) -> tuple[list[dict], int]:
 
     # 5. Delegate to skill_linter
     checks.append(_run_skill_linter(repo_root, staged=staged))
+
+    # 6. Spec out-of-scope bullets tracked in WORKSPACE backlog (recall-gap guard)
+    checks.append(_check_spec_out_of_scope_in_backlog(repo_root))
+
+    # 7. Citation quality (gaming detection on latest .canonical-citation.json)
+    checks.append(_check_citation_quality(repo_root))
+
+    # 8. Gate-config drift (settings.json hooks vs expected gate set)
+    checks.append(_check_gate_config(repo_root))
 
     fail_count = 0
     for c in checks:

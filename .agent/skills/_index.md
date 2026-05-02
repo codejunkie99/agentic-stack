@@ -45,6 +45,9 @@ on match.
   force-push to main, tests-before-push.
 - **debug-investigator** — systematic reproduce → isolate → hypothesize.
   Triggers: "debug", "why is this failing", "investigate"
+- **team-builder** — assemble a new agent team into a workflow contract.
+  Triggers: "build a team", "assemble a team", "design a workflow", "new
+  workflow", "team for". Output: `.agent/workflows/<slug>.md`.
 
 ## Knowledge work + analysis
 
