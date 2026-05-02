@@ -6,13 +6,27 @@
 
 ## Current step
 
-**Step 8.4 — harness-learning loop (MERGED to master, PR #3 commit `c29d6b1`, 2026-05-02 reconcile)**
+**Step 8.5 — backlog burndown (in progress, branch `feature/step-8.5-backlog`, 2026-05-02)**
 
-Branch: `feature/step-8.4-harness-learning-loop` (merged; safe to delete locally).
-Spec: `docs/superpowers/specs/2026-04-30-step-8-4-harness-learning-loop-design.md`.
-Plan: `docs/superpowers/plans/2026-04-30-step-8-4-harness-learning-loop-plan.md`.
+Step 8.4 merged via PR #3 commit `c29d6b1` on 2026-04-30. 8.5 backlog branch
+spun up 2026-05-02 to address Step 8.4 follow-ups + drift fixes surfaced
+during the WORKSPACE↔git reconcile session.
 
-Post-merge commit on master: `35e234c feat(protocol): bug-to-invariant`.
+### Step 8.5 progress (this branch)
+
+- ✅ **Item 1b** — Layer 2b lessons-pipeline gate (`canonical_gate_write.py`).
+  Hard-block direct edits to `LESSONS.md` + `lessons.jsonl` regardless of
+  citation freshness; allow only `HARNESS_GRADUATION_WRITER=1`. Block
+  message routes to correct pipeline.
+- ✅ **Item 1** — SessionStart `workspace_git_reconcile.py` hook. Warns
+  on WORKSPACE drift from git reality (branch deleted, or 'awaiting merge'
+  status while merge commit already on master).
+- ✅ **Item 2** — Phase L importance/pain tuning propagated to `planner`
+  (added phase-exit reflection at 8×5=40) and `document-researcher`
+  (bumped 4→7×5=35).
+- ✅ **Item 8** — merged 8.4 + stale 8.3 branches deleted locally.
+
+Tests: 46/46 (10 new); skill linter 27/27; conformance audit 35/35.
 
 ### Step 8.4 stage plan (all complete)
 
@@ -37,15 +51,17 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 
 | # | Item | Source | Status |
 |---|------|--------|--------|
-| 1 | SessionStart WORKSPACE↔git reconcile hook (diff branch state vs `git log master`; warn on drift) | HARNESS_FEEDBACK 2026-05-02T13:47 (severity 5/10) | open — proposed |
-| 1b | Layer 2b writer-provenance gate on `LESSONS.md` + `lessons.jsonl` — block direct edits, only allow `HARNESS_GRADUATION_WRITER=1` (graduate.py/auto-render). Block message routes to correct pipeline (`propose_harness_fix` / episodic / `graduate.py`). | HARNESS_FEEDBACK 2026-05-02 (severity 5/10) | open — proposed |
-| 2 | Propagate Phase L importance/pain tuning to long-session skills (planner, document-researcher) | Step 8.4 follow-up | open |
-| 3 | Stabilize `trace_check.py` then extend Phase O drift checks #14-16 | Step 8.4 follow-up; `.agent/tools/trace_check.py` exists (526 LOC, last touched `402010a`) but unstable | open |
-| 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.4 follow-up | open |
-| 5 | `bcg_conditional_propagate` skill-propagation gap (doesn't propagate skills; Phase J should cover) | Step 8.3 / Phase I DECISIONS | open |
-| 6 | Upstream PRs to codejunkie99: cli.py future-import fix, claude-code adapter.json SDLC entries | Step 8.2.5 sync | open |
-| 7 | Step 8.5 — `install.sh --upgrade` (bidirectional fork↔target sync) | Locked decision (Step 8.4 spec) | deferred |
-| 8 | Delete merged local branch `feature/step-8.4-harness-learning-loop` | git hygiene | open — trivial |
+| 1 | SessionStart WORKSPACE↔git reconcile hook | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
+| 1b | Layer 2b writer-provenance gate on `LESSONS.md` + `lessons.jsonl` | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
+| 2 | Phase L importance/pain tuning → planner, document-researcher | Step 8.5 commit on `feature/step-8.5-backlog` | ✅ done |
+| 3 | Stabilize `trace_check.py` then extend Phase O drift checks #14-16 | Step 8.4 follow-up; tool exists (526 LOC) but unstable | open — own session |
+| 4 | Extend `harness_conformance_audit.py` with citation-quote spot-check (gaming detection) + gate-config drift detection | Step 8.4 follow-up | open — own session |
+| 5 | `bcg_conditional_propagate` skill-propagation gap (doesn't propagate skills; Phase J should cover) | Step 8.3 / Phase I DECISIONS | open — own session |
+| 6 | Upstream PRs to codejunkie99: cli.py future-import fix, claude-code adapter.json SDLC entries | Step 8.2.5 sync | open — external |
+| 7 | Step 8.6 — `install.sh --upgrade` (bidirectional fork↔target sync) | Locked decision (Step 8.4 spec) | deferred |
+| 8 | Delete merged local branches | git hygiene | ✅ done (8.4 + 8.3 deleted) |
+
+**Why split**: items 3-5 each warrant their own focused branch + DECISIONS entry. Piling on this branch risks too-large PR. Items 6-7 are external/deferred.
 
 **Trace / monitoring system status**: `.agent/tools/trace_check.py` shipped 2026-04-XX (commits `eac3e34` + `402010a`). Reads `episodic/AGENT_LEARNINGS.jsonl`, applies expected-event matchers per (skill, phase). Currently wired into Phase O `harness_intent_audit.py` for drift checkpoint #14 (workflow-contract followed) but checkpoints #14-16 marked SKIP pending stabilization. Sibling: `.agent/skills/data-layer/` (cross-harness dashboard / cron monitoring / token analytics, separate concern from trace_check). Not stale — just incomplete on the Phase O integration side.
 
