@@ -5,6 +5,47 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] — 2026-05-02
+
+Minor release. Adds an onboarding-style transfer wizard for moving a portable
+`.agent` brain into Codex, Cursor, Windsurf, or terminal-only projects with a
+generated curl/PowerShell import command.
+
+### Added
+- **`agentic-stack transfer` wizard.** Adds an onboarding-style TUI that parses
+  natural-language requests such as `move my memory into Codex`, previews the
+  target adapter files, asks for confirmation, and either generates an import
+  command, applies locally, or both.
+- **Portable transfer bundles.** Adds canonical JSON + gzip + base64url
+  bundles with SHA-256 verification. The importer merges preferences and
+  accepted lessons idempotently, restores selected memory files, copies skills,
+  records import metadata, and installs selected adapters through the existing
+  harness manager.
+- **Full memory intent.** `move my memory` now means preferences, accepted
+  lessons, skills, working memory, episodic/history logs, and candidate
+  lessons. Data-layer exports, flywheel traces, runtime indexes, and caches
+  stay out unless future scopes explicitly add them.
+- **Curl and PowerShell bootstraps.** Adds `scripts/import-transfer.sh` and
+  `scripts/import-transfer.ps1` so another terminal can import a transfer
+  bundle without manually cloning the repo first.
+
+### Changed
+- Windsurf installs a modern `.windsurf/rules/agentic-stack.md` workspace rule
+  and still writes legacy `.windsurfrules` for older Windsurf builds.
+- `agentic-stack transfer export` and `agentic-stack transfer import` provide
+  non-interactive surfaces for scripts and CI-style handoff flows.
+
+### Fixed
+- Transfer export blocks secret-like content, including private keys and common
+  API token patterns, before payload generation.
+- Fresh Codex imports now copy the full `.agent` brain before installing the
+  Codex `AGENTS.md` and `.agents/skills` adapter wiring.
+
+### Migration
+No migration required. Existing installs keep working. Run
+`agentic-stack transfer` from a project that already has `.agent/` to create or
+import a transfer bundle.
+
 ## [0.12.0] — 2026-04-27
 
 Minor release. Adds the opt-in `tldraw` seed skill for live canvas diagrams

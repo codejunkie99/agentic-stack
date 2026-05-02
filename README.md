@@ -25,7 +25,26 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.12.0 — tldraw visual canvas
+### New in v0.13.0 — transfer wizard
+
+Minor release. Adds an onboarding-style `agentic-stack transfer` wizard for
+moving a project brain into Codex, Cursor, Windsurf, or a terminal-only
+`AGENTS.md` setup.
+
+- **Natural-language transfer plans.** Say things like `move my memory into
+  Codex`; the wizard detects targets, memory scopes, and whether to generate a
+  curl command, apply locally, or both.
+- **Portable memory bundles.** Transfers preferences, accepted lessons,
+  skills, working memory, episodic/history logs, and candidate lessons, with
+  SHA-256 verification and secret-like content blocking.
+- **One-line import.** Generated curl/PowerShell bootstraps import the bundle
+  into another project and install the selected adapter files.
+- **Modern Windsurf rules.** Windsurf now gets `.windsurf/rules/agentic-stack.md`
+  while keeping legacy `.windsurfrules` compatibility.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.12.0 — tldraw visual canvas
 
 Minor release. Adds an opt-in `tldraw` seed skill for live canvas diagrams and
 a skill-local snapshot store. It is beta and off by default.
@@ -38,8 +57,6 @@ a skill-local snapshot store. It is beta and off by default.
 - **Opt-in beta.** Onboarding writes `tldraw.enabled: false` by default. After
   enabling it, users manually merge `adapters/_shared/tldraw-mcp.json` into
   their harness MCP config.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ### v0.11.0 — data layer + data flywheel
 
