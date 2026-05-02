@@ -1,7 +1,7 @@
 ---
 name: document-researcher
 description: Use proactively when a single document has been dropped into a client engagement's raw-uploads/ and needs a bounded summary + INDEX entry. Triggers on "summarize this document", "researcher", "index this upload", "process upload". Demands a one-line user description before summarizing; produces a ~300-word bounded summary at summaries/<filename>.md and appends a Documents-table row to client INDEX.md. One file per invocation — forces triage.
-version: 2026-04-27
+version: 2026-05-02
 triggers: ["summarize this document", "researcher", "index this upload", "process upload", "summarize file"]
 tools: [bash, memory_reflect]
 preconditions: ["active_client is set", "file lives under .agent/memory/client/<active>/raw-uploads/"]
@@ -90,13 +90,19 @@ on-demand via Read when a future task explicitly needs it.
    If the table doesn't exist, create it under a `## Documents`
    header.
 
-6. **Log to episodic.**
+6. **Log to episodic (Phase L tuning — MANDATORY).**
+
+   Default `importance=5, pain=2` reflections get buried in the dream cycle when surrounded by file-edit noise (Read/Write/append for the summary + INDEX update). Indexing reflections must score `importance × pain ≥ 35` to dominate their cluster:
+
    ```bash
    python3 .agent/tools/memory_reflect.py "document-researcher" \
-     "indexed <filename>" "summary written to summaries/; INDEX updated" \
-     --importance 4 \
-     --note "client=<active_client>; user_desc=<short>; topics=<list>"
+     "indexed <filename>" \
+     "client=<active>: <filename> summarized (<n_topics> topics); INDEX row appended" \
+     --importance 7 --pain 5 \
+     --note "DURABLE LESSON: <one sentence on what this doc tells us about the engagement that transfers — e.g. 'partner emphasizes <theme>' or 'pricing model is <shape>'. Skip if the doc is purely operational (an SOW template, a calendar invite).> | DOC TYPE: <PDF|DOCX|PPTX|MD|other>; user_desc=<short>; topics=<list>"
    ```
+
+   Importance 7 × pain 5 = 35 → salience 3.5. Won't auto-graduate alone but dominates the indexing cluster as canonical claim. When 5+ docs from the same engagement get indexed in one session, recurrence saturates `min(recurrence,3)` and the cluster crosses 7.0 to graduate — capturing engagement-level patterns rather than per-file noise.
 
 7. **Stop.** Do not continue reading more documents unless explicitly
    asked. Each invocation handles one file. If the user has 10 files,

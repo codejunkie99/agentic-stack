@@ -1,9 +1,9 @@
 ---
 name: planner
-version: 2026-04-23
+version: 2026-05-02
 description: Use whenever a spec, requirements doc, or feature brief exists and the next action is implementation — even if the user has not explicitly said "plan". Produces a task-by-task implementation plan an engineer with zero codebase context can execute end-to-end. Triggers on PDLC handoffs (from product-discovery, requirements-writer, story-decomposer, spec-reviewer) and on direct asks like "break this down", "plan this feature", or "how should I implement this".
 triggers: ["implementation plan", "break this down", "plan this feature", "task breakdown", "decompose into tasks"]
-tools: [recall, git, bash]
+tools: [recall, git, bash, memory_reflect]
 sources:
   superpowers: writing-plans (primary)
   gstack: autoplan (6 decision principles + decision classification)
@@ -130,6 +130,22 @@ Fix inline. No second review pass needed — just fix and move on.
 ## Save + handoff
 
 Plans land at `docs/plans/YYYY-MM-DD-<feature-slug>.md` unless the project dictates otherwise. Final line of the plan names execution mode per `.agent/protocols/delegation.md` — `subagent-driven` for fresh-context-per-task, or `inline` for same-session batch execution with checkpoints.
+
+## Phase-exit reflection (MANDATORY)
+
+A long planning session writes many file-edit episodes that share tokens with the spec text, so any reflection at default `importance=5, pain=2` gets buried in the dream cycle. Plan-completion reflections must score `importance × pain ≥ 70` to dominate their cluster as canonical claim. Salience formula: `recency × (pain/10) × (importance/10) × min(recurrence, 3)`.
+
+After saving the plan and naming handoff mode, you MUST run:
+
+```bash
+python3 .agent/tools/memory_reflect.py "planner" \
+  "plan complete" \
+  "<spec-slug>: plan v<N> saved to docs/plans/YYYY-MM-DD-<slug>.md — <n_tasks> tasks, handoff=<subagent-driven|inline>" \
+  --importance 8 --pain 5 \
+  --note "DURABLE LESSON: <one sentence — what about this decomposition transfers to future plans? E.g. 'when a spec touches more than 3 modules, lead with a file-structure-locked task before any code task.'> | DECISIONS LOG: <key planner decisions — taste calls, scope cuts, blast-radius judgments> | WHAT NEARLY FAILED: <if any — coverage gap caught in self-review, type-consistency miss, placeholder almost shipped>"
+```
+
+Importance 8 × pain 5 = 40 → salience 4.0. Won't auto-graduate alone (needs ≥7.0) but dominates its cluster so the surrounding file-edit noise of writing the plan doesn't claim canonical. When plan-write recurrence pushes `min(recurrence,3)` to saturation, salience reaches 12.0 and graduates naturally.
 
 ## Self-rewrite hook
 
