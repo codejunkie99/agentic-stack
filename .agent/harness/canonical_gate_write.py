@@ -24,6 +24,12 @@ DEFAULT_CITATION_DIR = AGENT_ROOT / "memory" / "working"
 CITATION_FILENAME = ".canonical-citation.json"
 TTL_MINUTES = 30
 
+LESSONS_PIPELINE_PATHS = (
+    ".agent/memory/semantic/LESSONS.md",
+    ".agent/memory/semantic/lessons.jsonl",
+)
+GRADUATION_WRITER_ENV = "HARNESS_GRADUATION_WRITER"
+
 
 def _citation_dir() -> Path:
     override = os.environ.get("CANONICAL_CITATION_DIR")
@@ -55,6 +61,26 @@ def _normalize_path(p: str) -> str:
 def _is_harness_territory(file_path: str, globs: list[str]) -> bool:
     norm = _normalize_path(file_path)
     return any(fnmatch.fnmatch(norm, g) for g in globs)
+
+
+def _is_lessons_pipeline_path(file_path: str) -> bool:
+    return _normalize_path(file_path) in LESSONS_PIPELINE_PATHS
+
+
+def _lessons_pipeline_block_reason(file_path: str) -> str:
+    return (
+        f"pipeline-discipline block: `{file_path}` is durable lesson storage. "
+        "Direct edits forbidden — graduation pipeline is the only legitimate writer. "
+        "Routing:\n"
+        "  • harness-shape fix (skill/agent/protocol/hook): "
+        "python3 .agent/tools/propose_harness_fix.py --target <file> --reason ... --change ...\n"
+        "  • behavioral lesson: emerges from episodic — log via tool calls, "
+        "let auto_dream cluster, then graduate.py promotes. Single observations "
+        "are not graduate-worthy.\n"
+        "  • graduate an existing candidate: python3 .agent/memory/graduate.py\n"
+        f"To bypass intentionally (graduate.py / auto-render only), set {GRADUATION_WRITER_ENV}=1. "
+        "See .agent/protocols/canonical-sources.md."
+    )
 
 
 def _is_citation_fresh(citation_path: Path) -> tuple[bool, str]:
@@ -93,6 +119,15 @@ def main() -> int:
     tool_input = payload.get("tool_input", {})
     file_path = tool_input.get("file_path", "")
     if not file_path:
+        return 0
+
+    if _is_lessons_pipeline_path(file_path):
+        if os.environ.get(GRADUATION_WRITER_ENV) == "1":
+            return 0  # allow — graduate.py / auto-render
+        print(json.dumps({
+            "decision": "block",
+            "reason": _lessons_pipeline_block_reason(file_path),
+        }))
         return 0
 
     globs = _load_globs()

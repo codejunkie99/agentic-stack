@@ -560,3 +560,32 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. Future-similar fixes route through Phase O finding → propose_harness_fix → harness-graduate (canonical compounding pattern).
 
+
+## 2026-05-02: Step 8.5 — Layer 2b lessons-pipeline gate + SessionStart workspace-git reconcile
+
+**Decision:** Add two new harness gates surfacing the discipline that Step 8.4.5's canonical-evidence gate alone does not enforce.
+
+1. **Layer 2b writer-provenance gate** in `.agent/harness/canonical_gate_write.py`. Two specific paths — `.agent/memory/semantic/LESSONS.md` and `.agent/memory/semantic/lessons.jsonl` — are hard-blocked on Edit/Write/MultiEdit regardless of citation freshness. Allowed only when env var `HARNESS_GRADUATION_WRITER=1` (set by `graduate.py` and the auto-render step). Block message routes the would-be writer to the correct pipeline: harness-shape fix → `propose_harness_fix.py`; behavioral lesson → episodic + `auto_dream`; existing candidate → `graduate.py`.
+
+2. **SessionStart workspace-git reconcile** at `.agent/harness/workspace_git_reconcile.py`. Parses `WORKSPACE.md` 'Current step' for branch + status. Warns to stderr (advisory, non-blocking) when (a) branch in WORKSPACE no longer exists locally or remotely, or (b) status text contains 'awaiting merge' while a merge commit referencing that branch is already on master. Wired as second SessionStart hook after `init_session_state.py`.
+
+**Rationale:** Two distinct drift classes observed 2026-05-02 in Step 8.4 reconcile session.
+
+- **Drift class 1 — pipeline bypass on durable lesson stores.** Layer 2 canonical-evidence gate enforces "cite before write" for the entire `.agent/memory/semantic/**` glob. The agent (this session) refreshed a citation token and wrote directly to LESSONS.md, bypassing the canonical graduation pipeline (episodic → cluster → candidates → REVIEW_QUEUE → `graduate.py` → `lessons.jsonl` → render). User flagged: citation system is necessary-but-insufficient for legitimate semantic/ writes; pipeline discipline is a separate orthogonal concern. The fix is a writer-provenance gate, not a stronger citation requirement. Block message itself trains the next agent on the correct pipeline (gate is pedagogical as well as enforcement).
+- **Drift class 2 — WORKSPACE.md vs git reality across session boundaries.** Step 8.4 merged via PR #3 commit `c29d6b1` on 2026-04-30; WORKSPACE.md still read 'awaiting merge' on 2026-05-02 (two sessions later). No mechanism reconciled WORKSPACE 'Current step' against `git log master`. SessionStart hook is the right point — runs once per new session, before any other work.
+
+**Alternatives considered:**
+- Block ALL semantic/ writes regardless of writer (no env-var bypass) — rejected; `graduate.py` and auto-render step are legitimate writers; some bypass mechanism is required. Env var keyed to a specific writer process is the lowest-friction option.
+- Process-ancestry check instead of env var (allow only when parent is `graduate.py`) — rejected; brittle across shells/wrappers and would block legitimate test writes. Env var is explicit and grep-able.
+- Make WORKSPACE reconcile a blocking gate (refuse to run further hooks until reconciled) — rejected; advisory warning is sufficient since reconcile action itself is small (edit one file). Hard-block punishes the user for harness-side drift.
+- Inline workspace reconcile into `init_session_state.py` — rejected; single-responsibility favors a sibling hook. `init_session_state` is friction-capture state; reconcile is git-vs-memory state. Keep separate.
+
+**Operationalised:**
+- `.agent/harness/canonical_gate_write.py` — added `LESSONS_PIPELINE_PATHS`, `GRADUATION_WRITER_ENV`, `_is_lessons_pipeline_path`, `_lessons_pipeline_block_reason`. Check fires before harness-territory glob check.
+- `.agent/harness/workspace_git_reconcile.py` (new, ~95 LOC). Parses `Branch:` line + `## Current step` block from `WORKSPACE.md`. `_branch_exists` checks `git branch -a`. `_merge_commit_on_master` scans `git log master --oneline -50` for "Merge" + branch name. Fail-OPEN.
+- `.claude/settings.json` — second `SessionStart` hook entry added after `init_session_state.py`.
+- Tests: `tests/test_lessons_provenance_gate.py` (5 cases), `tests/test_workspace_git_reconcile.py` (5 cases). Existing `tests/test_canonical_gate_write.py` had pre-existing time-bomb (hardcoded 2026-04-30 timestamp) — fixed to use `datetime.now()`.
+- Full suite: 46/46 pass; skill linter 27/27; conformance audit 35/35.
+
+**Status:** active. Sibling proposal in HARNESS_FEEDBACK for Layer 2c (DECISIONS.md provenance gate via `/regenerate-decisions` only); deferred — direct DECISIONS append is currently a documented ritual, not a leak surface.
+

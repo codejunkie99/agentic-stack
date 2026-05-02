@@ -8,6 +8,10 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.agent/harness/init_session_state.py\""
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.agent/harness/workspace_git_reconcile.py\""
           }
         ]
       }
