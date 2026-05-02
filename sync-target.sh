@@ -187,6 +187,17 @@ done
 echo ""
 echo "done. $WRITTEN copied, $SKIPPED skipped."
 echo ""
+
+# --- merge harness gate hooks into target's settings.json -----------------
+# settings.json itself is preserved (target-specific permissions matter), but
+# fork-side gate hook additions (new SessionStart/Stop scripts shipped in
+# this sync) need to reach the target or the gates won't fire.
+echo "Checking settings.json for missing harness gate hooks..."
+MERGE_FLAG=""
+$SKIP_CONFIRM && MERGE_FLAG="--yes"
+python3 "$FORK/.agent/tools/merge_target_settings.py" "$TARGET" $MERGE_FLAG || true
+
+echo ""
 echo "Next steps in target:"
 echo "  - Restart Claude Code session if running (eager-loaded files changed)"
 echo "  - Run: cd $TARGET && python3 .agent/tools/skill_linter.py"

@@ -589,3 +589,36 @@ The contract in `adapters/bcg/skills/deckster-slide-generator/INTEGRATION.md` en
 
 **Status:** active. Sibling proposal in HARNESS_FEEDBACK for Layer 2c (DECISIONS.md provenance gate via `/regenerate-decisions` only); deferred — direct DECISIONS append is currently a documented ritual, not a leak surface.
 
+
+## 2026-05-02: Step 8.5b — deploy-readiness backlog burndown (items 4, 5, 7, 9, 10)
+
+**Decision:** Single branch ships five backlog items that together close the gap from "8.4 features merged" to "harness ready to deploy to a new target + build a team + harvest learnings".
+
+1. **Item 9 — `team-builder` skill** at `.agent/skills/team-builder/SKILL.md`. Meta-skill that walks user through goal elicitation → roster selection (5 SDLC + 16 BCG agents) → dispatch shape (`flat | coordinated | full`) → testable quality gates → produces `.agent/workflows/<slug>.md` contract. Skill produces the contract; the workflow orchestrates the agents. Recall-gap recovery: spec-out-of-scope item (Step 8.4 spec line 36) lost from backlog for two sessions before user named it explicitly 2026-05-02.
+2. **Item 10 — spec-out-of-scope audit check** in `harness_conformance_audit.py`. Reads latest `docs/superpowers/specs/*.md` 'Out of scope' bullets, diffs against WORKSPACE backlog table, fails when a bullet has no matching backlog row. Loose token-match (4+-char alphanum, stop-words excluded, ≥2 token matches OR full match for short bullets). Closes the recall-gap class that surfaced item 9.
+3. **Item 4a — citation-quality audit check** in `harness_conformance_audit.py`. Spot-checks latest `.canonical-citation.json` for empty justifications (<20 chars), unknown sources, missing reference/quote when source ≠ none-applies. Catches gaming patterns where Layer 2 token gets refreshed with degenerate input.
+4. **Item 4b — gate-config drift audit check** in `harness_conformance_audit.py`. Constant `EXPECTED_GATE_HOOKS` lists the 5 fork-side gates; check diffs `.claude/settings.json` against this set. Catches removed/missing hooks AND hooks pointing to scripts that no longer exist on disk.
+5. **Item 5 — BCG skill propagation gap fix** in `harness_manager/post_install.py:bcg_conditional_propagate`. Existing function copied agents/commands/agent-memory but missed `adapters/bcg/skills/`; vendored skills (`confluence-access`, `deckster-slide-generator`) never reached BCG-enabled targets on fresh install. New block copies skill DIRS (recursive `copytree`) into target's `.agent/skills/`. `bcg_conditional_unpropagate` mirrored for adapter removal.
+6. **Item 7 — Step 8.6 harness sync extension**: `merge_target_settings.py` smart-merger + sync-target.sh wiring. sync-target.sh preserved settings.json wholesale (target permissions are local), but new fork-side gate hooks never reached existing targets — the four 8.4.5 + 8.5 gates were missing from HarnessX's settings.json (verified: target had only 2 of 6 hooks). Tool reads fork hooks pointing into `.agent/harness/`, diffs against target settings, adds missing entries to matching trigger while preserving target-only hooks + permissions block. Idempotent. sync-target.sh now invokes it as final post-sync step.
+
+**Rationale:** Branch is the deploy-readiness gate. User asked: "what's necessary so harness primitive is ready to deploy to a new target + build a team + harvest learnings". Items 9 and 5 were blockers (no team-assembly path; BCG adapter half-broken). Item 4 was harness self-monitoring (citation gaming + gate drift) — kept on this branch because both checks are <100 LOC each. Item 10 is recall-gap meta-fix (the bug that hid item 9) and naturally folds into item 4's audit-extension scope. Item 7 turned out to be a one-tool fix rather than the full bidirectional install.sh --upgrade originally scoped for Step 8.6 — sync-target.sh already covered the file-content side; only settings.json hook merging remained as the real gap. Item 3 (trace_check stabilization + Phase O drift #14-16) deferred at user request.
+
+**Alternatives considered:**
+- **team-builder as workflow not skill** — rejected. Per memory `workflows-over-skills`: "If it's a single-skill task, just author the skill. If it's multi-agent and produces a named deliverable, author a workflow contract." team-builder is single-task (assemble a team) and PRODUCES a workflow file as its output; workflow-of-workflows pattern is over-engineering for a meta-tool used 1-2 times per engagement.
+- **Item 5 fix in sync-target.sh only** — rejected. Fresh installs go through `harness_manager.install` → `post_install.bcg_conditional_propagate`; sync-target is for existing-target updates. Both paths needed the skill copy block; canonical place is post_install.py since that's the install-time hook.
+- **Item 7 = full bidirectional fork↔target with conflict resolution** — rejected as Step 8.6 scope creep. Real gap was just hook merge; a smart-merge-only tool delivers 90% of the deploy-readiness value at 10% of the implementation cost. Bidirectional content sync (target → fork via `harness-graduate.py` for memory) already exists; the missing piece was settings.json hooks specifically.
+- **Land items 4, 5, 7, 9, 10 as five branches** — rejected. Each is small enough on its own; landing as one branch keeps the deploy-readiness story in a single PR review pass and avoids merge-train churn.
+
+**Operationalised:**
+- `.agent/skills/team-builder/SKILL.md` (new, 224 lines, 5 phases: goal elicit → roster select → dispatch shape → quality gates → write file)
+- `.agent/skills/_index.md` and `.agent/skills/_manifest.jsonl` updated with team-builder
+- `.agent/tools/harness_conformance_audit.py` extended: `_check_spec_out_of_scope_in_backlog` (item 10), `_check_citation_quality` (item 4a), `_check_gate_config` (item 4b) + `EXPECTED_GATE_HOOKS` constant
+- `harness_manager/post_install.py:bcg_conditional_propagate` skill block + mirror in unpropagate
+- `.agent/tools/merge_target_settings.py` (new, smart-merge with idempotent + dry-run + --yes)
+- `sync-target.sh` calls merge_target_settings.py as final step
+- Tests (gitignored, local-only): `test_spec_out_of_scope_audit.py` (6), `test_audit_citation_and_gates.py` (10), `test_bcg_skills_propagation.py` (5), `test_merge_target_settings.py` (5) → 26 new, total 72/72 pass
+- Skill linter 28/28; conformance audit 39/39 (was 27 + 12 baseline gates pre-Step-8.5)
+
+**Status:** active. Item 3 (trace_check stabilization + Phase O drift #14-16) deferred at user request; user has different plan for it. Steps 8.5 + 8.5b leave Item 3 as the only open backlog row blocking full deploy-readiness; everything else either ships or is verified existing-functionality.
+
+

@@ -451,6 +451,97 @@ def _check_spec_out_of_scope_in_backlog(repo_root: Path) -> dict:
     }
 
 
+EXPECTED_GATE_HOOKS = {
+    "SessionStart": [
+        ".agent/harness/init_session_state.py",
+        ".agent/harness/workspace_git_reconcile.py",
+    ],
+    "UserPromptSubmit": [".agent/harness/canonical_gate_prompt.py"],
+    "PreToolUse": [".agent/harness/canonical_gate_write.py"],
+    "Stop": [".agent/harness/canonical_gate_stop.py"],
+    "SessionEnd": [".agent/harness/check_friction_capture.py"],
+}
+
+
+def _check_citation_quality(repo_root: Path) -> dict:
+    """Spot-check the latest .canonical-citation.json for gaming patterns.
+
+    Catches: empty justifications, missing reference/quote when source
+    requires them, unknown source values. Forward validation happens in
+    cite_canonical.py at write time; this is the audit-side check that
+    the existing citation isn't degenerate.
+    """
+    cite = repo_root / ".agent/memory/working/.canonical-citation.json"
+    if not cite.is_file():
+        return {"name": "citation_quality", "status": "ok",
+                "detail": "no citation file (none recently used)"}
+    try:
+        data = json.loads(cite.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return {"name": "citation_quality", "status": "fail",
+                "exit_code": 1, "stdout": f"unparseable: {e}"}
+    issues = []
+    src = data.get("source", "")
+    just = (data.get("justification") or "").strip()
+    ref = (data.get("reference") or "").strip()
+    quote = (data.get("quote") or "").strip()
+    valid_sources = {"article", "upstream", "gstack", "gbrain",
+                     "fork-decisions", "none-applies"}
+    if src not in valid_sources:
+        issues.append(f"unknown source '{src}'")
+    if len(just) < 20:
+        issues.append(f"justification too short ({len(just)} chars; need >=20)")
+    if src != "none-applies":
+        if not ref:
+            issues.append(f"source={src} requires non-empty reference")
+        if not quote:
+            issues.append(f"source={src} requires non-empty quote")
+    if issues:
+        return {"name": "citation_quality", "status": "fail",
+                "exit_code": 1, "stdout": "; ".join(issues)}
+    return {"name": "citation_quality", "status": "ok",
+            "detail": f"source={src}, just={len(just)}c, quote={len(quote)}c"}
+
+
+def _check_gate_config(repo_root: Path) -> dict:
+    """Diff .claude/settings.json hooks vs EXPECTED_GATE_HOOKS.
+
+    Catches drift where a gate hook is removed or reordered without a
+    DECISIONS entry, OR where a stale hook references a script that
+    no longer exists.
+    """
+    settings = repo_root / ".claude/settings.json"
+    if not settings.is_file():
+        return {"name": "gate_config_drift", "status": "missing",
+                "path": str(settings)}
+    try:
+        data = json.loads(settings.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return {"name": "gate_config_drift", "status": "fail",
+                "exit_code": 1, "stdout": f"unparseable: {e}"}
+    hooks = data.get("hooks", {})
+    issues = []
+    for trigger, expected in EXPECTED_GATE_HOOKS.items():
+        actual_entries = hooks.get(trigger, [])
+        actual_cmds = []
+        for entry in actual_entries:
+            for h in entry.get("hooks", []):
+                cmd = h.get("command", "")
+                m = re.search(r"\.agent/harness/[A-Za-z_]+\.py", cmd)
+                if m:
+                    actual_cmds.append(m.group(0))
+        for exp in expected:
+            if exp not in actual_cmds:
+                issues.append(f"{trigger}: expected hook {exp} missing")
+            elif not (repo_root / exp).is_file():
+                issues.append(f"{trigger}: hook script {exp} missing on disk")
+    if issues:
+        return {"name": "gate_config_drift", "status": "fail",
+                "exit_code": 1, "stdout": "; ".join(issues)}
+    return {"name": "gate_config_drift", "status": "ok",
+            "detail": f"{sum(len(v) for v in EXPECTED_GATE_HOOKS.values())} expected hooks present"}
+
+
 def run_audit(repo_root: Path, staged: bool = False) -> tuple[list[dict], int]:
     """Return (checks, fail_count)."""
     checks: list[dict] = []
@@ -497,6 +588,12 @@ def run_audit(repo_root: Path, staged: bool = False) -> tuple[list[dict], int]:
 
     # 6. Spec out-of-scope bullets tracked in WORKSPACE backlog (recall-gap guard)
     checks.append(_check_spec_out_of_scope_in_backlog(repo_root))
+
+    # 7. Citation quality (gaming detection on latest .canonical-citation.json)
+    checks.append(_check_citation_quality(repo_root))
+
+    # 8. Gate-config drift (settings.json hooks vs expected gate set)
+    checks.append(_check_gate_config(repo_root))
 
     fail_count = 0
     for c in checks:
