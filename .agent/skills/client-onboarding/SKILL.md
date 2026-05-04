@@ -1,7 +1,7 @@
 ---
 name: client-onboarding
 description: Use proactively when a new client engagement is starting and the workspace needs scaffolding. Triggers on "new engagement", "start client", "onboard client", "kick off case". Sets active_client, scaffolds .agent/memory/client/<slug>/, initializes INDEX.md, prompts user for upload pack, and dispatches document-researcher per file. Never auto-loads raw uploads — INDEX.md is the only eager surface.
-version: 2026-04-27
+version: 2026-05-04
 triggers: ["new engagement", "start client", "onboard client", "new client", "set up engagement", "kick off case"]
 tools: [bash, memory_reflect]
 preconditions: ["bcg_adapter == 'enabled' OR active_client requested"]
@@ -74,6 +74,39 @@ lazy-loading on every subsequent session — never auto-load raw uploads.
      --importance 6 \
      --note "engagement type: <type>; n_uploads: <count>"
    ```
+
+8. **Workflow handoff scan (MANDATORY).** Re-read the original session
+   prompt. Did the user name a deliverable type alongside the
+   onboarding instruction? Common signals:
+
+   - "live demo / live working demo / five-minute demo / demo for
+     [stakeholder] on [date]" → `live-demo-sprint` workflow
+   - "build a deck / proposal deck / final recommendations / mid-case
+     findings" → matching deck workflow
+   - "situation assessment / issue tree / hypothesis tree" → matching
+     consulting workflow
+   - "build the [feature] / production [feature] / ship the X" →
+     `feature-end-to-end`
+   - "prototype / spike / proof-of-concept" → `prototype-app` or
+     `feature-prototype`
+
+   If a deliverable trigger fires, look it up in
+   `.agent/workflows/_index.md` and propose the workflow handoff
+   explicitly:
+
+   > "Onboarding complete. Original prompt mentioned <deliverable>;
+   > matching workflow = `<workflow-id>` (S1: <first-stage-name>).
+   > Fire it now starting at S1, or specify alternative."
+
+   **DO NOT freelance an A/B/C options menu** when a workflow exists.
+   The workflow is the answer; surfacing options re-asks a question
+   that's already been answered upstream. If no deliverable trigger
+   fires in the original prompt, then stop and wait for the next
+   user prompt — don't invent next steps.
+
+   If multiple workflows could match, name all candidates and ask
+   which fits — but always anchor on workflow names from
+   `_index.md`, never on freelance phase labels.
 
 ## Examples
 
