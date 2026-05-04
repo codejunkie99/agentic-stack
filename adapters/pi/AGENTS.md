@@ -47,6 +47,8 @@ them.
 - Update `.agent/memory/working/WORKSPACE.md` as you work.
 - After significant actions, run
   `python3 .agent/tools/memory_reflect.py <skill> <action> <outcome>`.
+- For shell commands covered by `.agent/protocols/permissions.md`, run
+  `python3 .agent/tools/ztk.py exec -- <command>`.
 - Never delete memory entries; archive only.
 - Quick state: `python3 .agent/tools/show.py`.
 - Teach a rule in one shot:

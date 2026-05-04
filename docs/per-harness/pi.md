@@ -4,6 +4,8 @@
 Zechner) is a minimalist terminal coding harness with 15+ LLM providers
 and a TypeScript extension system. Our adapter layers the portable
 `.agent/` brain on top so you keep one knowledge base across harnesses.
+For shell commands that must be checked before execution, use
+`python3 .agent/tools/ztk.py exec -- <command>`.
 
 ## What the adapter installs
 | Path | What |

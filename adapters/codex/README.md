@@ -17,6 +17,9 @@ Or on Windows PowerShell:
 - `.agents/skills/` → `.agent/skills/` — Codex scans `.agents/skills/`
   for repository skills. The installer creates a symlink when possible
   and falls back to copying / merging when symlinks are unavailable.
+- `.codex/config.toml` — enables Codex hooks with `codex_hooks = true`.
+- `.codex/hooks.json` — routes `PreToolUse`, `PermissionRequest`, and
+  `PostToolUse` through the host-neutral `ztk` CLI.
 
 ## Verify
 Run Codex in the project and ask:
@@ -35,10 +38,21 @@ codex --ask-for-approval never "What's in my lessons file?"
 
 It should read `.agent/memory/semantic/LESSONS.md`.
 
+## Hook policy
+Codex hooks currently cover Bash, `apply_patch` file edits, and MCP tools,
+with documented coverage gaps for some shell and non-shell paths. Use:
+
+```bash
+python3 .agent/tools/ztk.py exec -- <command>
+```
+
+when an operation is not covered by a native Codex hook.
+
+Codex `PreToolUse` currently supports deny decisions, but not a safe
+ask/approval decision. ztk maps policy decisions that require approval to
+deny at `PreToolUse` time, while `PermissionRequest` declines to decide
+unless policy requires a hard deny.
+
 ## Notes
-- This adapter does **not** install Codex hooks. Codex hooks are still
-  experimental, and the official docs note they are currently disabled
-  on Windows. The adapter therefore relies on manual `recall.py` and
-  `memory_reflect.py` calls, like the Cursor and Windsurf paths.
 - If `.agents/skills/` is a copied directory rather than a symlink,
   re-run the installer after editing `.agent/skills/` to sync updates.

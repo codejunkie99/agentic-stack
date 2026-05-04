@@ -16,6 +16,14 @@ uses their frontmatter to decide activation. The agentic-stack rule is
 `.windsurfrules` file remains installed so older Windsurf builds still
 see the portable brain.
 
+Windsurf rules are prompt context, not a ztk-owned hard pre-tool gate.
+For commands that must be checked against `.agent/protocols/permissions.md`,
+use:
+
+```bash
+python3 .agent/tools/ztk.py exec -- <command>
+```
+
 ## Logging note
 Windsurf does not have a first-class post-tool hook. The rule file asks
 the agent to call `memory_reflect.py` after significant actions. If you

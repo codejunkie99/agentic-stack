@@ -13,7 +13,7 @@ Or:
 
 ## What it wires up
 - `AGENTS.md` — OpenCode reads this natively; we point it at `.agent/`.
-- `opencode.json` — declares instruction files and permission rules
+- `opencode.json` — declares instruction files and `permission` rules
   (deny force push, ask before any push).
 
 ## Verify

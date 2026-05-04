@@ -1,7 +1,9 @@
 # Permissions
 
-The pre_tool_call hook reads this file and enforces it before any tool
-invocation. Humans edit this file; the agent does not.
+The ztk policy engine reads this file and enforces it before supported
+tool invocations. Native-hook hosts call it automatically; other hosts
+must route policy-covered shell commands through `ztk exec`. Humans edit
+this file; the agent does not.
 
 ## Always allowed (no approval)
 - Read any file in the project directory.
@@ -24,7 +26,7 @@ invocation. Humans edit this file; the agent does not.
 - Access secrets or credentials directly (use env vars through the shell only).
 - Send HTTP requests to domains not on the approved list.
 - Modify `permissions.md` (only humans edit this file).
-- Disable or bypass `pre_tool_call` hooks.
+- Disable or bypass ztk policy hooks or `ztk exec`.
 - Delete entries from episodic or semantic memory (archive, don't delete).
 
 ## Approved external domains

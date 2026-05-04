@@ -1,8 +1,12 @@
 # agentic-stack
 
-**Keep one portable memory-and-skills layer across coding-agent harnesses, so switching tools doesn't reset how your agent works.**
+**Keep one portable memory-and-skills layer across coding-agent harnesses, with native policy hooks where the host exposes them.**
 
 A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
+
+ztk keeps policy in the same portable brain: Claude Code and Codex can call
+it from native hooks, OpenCode can use native permission rules, and
+prompt-only hosts can route sensitive shell work through `ztk exec`.
 
 It also includes a local data layer so you can monitor the whole suite of
 agents from one place: harness activity, cron runs, active agents, token/cost
@@ -267,9 +271,9 @@ See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
 
 Every guide shows the folder structure. This repo gives you the folder
 structure **plus the files that actually go inside**: a working portable
-brain with nine seed skills, four memory layers, enforced permissions, a
-nightly staging cycle, host-agent review tools, and adapters for multiple
-harnesses.
+brain with nine seed skills, four memory layers, ztk permission
+enforcement, a nightly staging cycle, host-agent review tools, and
+adapters for multiple harnesses.
 
 - **Memory** — `working/`, `episodic/`, `semantic/`, `personal/`. Each
   layer has its own retention policy. Query-aware retrieval (salience ×
@@ -283,8 +287,8 @@ harnesses.
   Every skill ships with a self-rewrite hook. The bundled `design-md`
   skill teaches agents to use a root `DESIGN.md` as the visual source of
   truth for UI and Google Stitch workflows.
-- **Protocols** — typed tool schemas, a `permissions.md` that the
-  pre-tool-call hook enforces, and a delegation contract for sub-agents.
+- **Protocols** — typed tool schemas, a `permissions.md` that ztk enforces
+  through native hooks or `ztk exec`, and a delegation contract for sub-agents.
 - **Data layer** — local-only dashboard exports across every harness sharing
   `.agent/`: agent events, cron timelines, KPI summaries, tokens/cost
   estimates, task categories, harness mix, `dashboard.html`, and daily report
@@ -354,7 +358,7 @@ adapters/                       # one small shim per harness, each with adapter.
 ├── openclaw/      (AGENTS.md + system-prompt include; auto-registers per-project agent)
 ├── hermes/        (AGENTS.md)
 ├── pi/            (AGENTS.md + .pi/skills symlink)
-├── codex/         (AGENTS.md + .agents/skills symlink)
+├── codex/         (AGENTS.md + .agents/skills symlink + .codex hooks)
 ├── standalone-python/  (DIY conductor entrypoint)
 └── antigravity/   (ANTIGRAVITY.md)
 
@@ -394,16 +398,21 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 
 | Harness | Config file it reads | Hook support |
 |---|---|---|
-| **Claude Code** | `CLAUDE.md` + `.claude/settings.json` | yes (PostToolUse, Stop) |
-| **Cursor** | `.cursor/rules/*.mdc` | no (manual reflect calls) |
-| **Windsurf** | `.windsurfrules` | no (manual reflect calls) |
+| **Claude Code** | `CLAUDE.md` + `.claude/settings.json` | yes (PreToolUse, PostToolUse, Stop) |
+| **Cursor** | `.cursor/rules/*.mdc` | wrapper (`ztk exec`) |
+| **Windsurf** | `.windsurfrules` | wrapper (`ztk exec`) |
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |
 | **OpenClaw** | `AGENTS.md` (auto-injected) + per-project `openclaw agents add --workspace` | varies by fork |
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
 | **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` + `.pi/extensions/` | yes (`tool_result` event) |
-| **Codex** | `AGENTS.md` + `.agents/skills/` | no (manual reflect calls) |
+| **Codex** | `AGENTS.md` + `.agents/skills/` + `.codex/hooks.json` | native hooks with documented coverage gaps |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
 | **Antigravity** | `ANTIGRAVITY.md` | yes (system context) |
+
+For a researched host-by-host breakdown, see
+[`docs/adapter-capabilities.md`](docs/adapter-capabilities.md). Hosts without
+native pre-tool hooks can still use ztk by routing risky shell operations
+through `python3 .agent/tools/ztk.py exec -- <command>`.
 
 ## Seed skills
 
@@ -517,8 +526,9 @@ Based on the article **["The Agentic Stack"](https://x.com/Av1dlive/status/20444
 by [@AV1DLIVE](https://twitter.com/AV1DLIVE) — follow for updates and collabs.
 Coded using Minimax-M2.7 in the Claude Code harness; PR review by Macroscope and Codex.
 Patterns from Gstack, Claude Code's memory system, and conversations in the
-agent-engineering community. Built with the hypothesis that
-**harness-agnosticism is the point**.
+agent-engineering community. Built with the hypothesis that file-backed
+memory is portable, while hard enforcement depends on either native hooks
+or routing risky operations through a shared policy gateway.
 
 ## Star History
 

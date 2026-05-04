@@ -26,6 +26,8 @@ follow them. This is how graduated lessons cross harnesses.
 - Update `.agent/memory/working/WORKSPACE.md` as the task evolves.
 - After significant actions, call
   `python3 .agent/tools/memory_reflect.py <skill> <action> <outcome>`.
+- For shell commands covered by `.agent/protocols/permissions.md`, run
+  `python3 .agent/tools/ztk.py exec -- <command>`.
 - Quick state: `python3 .agent/tools/show.py`.
 - Teach a rule in one shot:
   `python3 .agent/tools/learn.py "<rule>" --rationale "<why>"`.

@@ -4,7 +4,8 @@
 is a minimalist terminal coding harness with multi-provider LLM support
 and a TypeScript extension system. Our adapter layers the portable
 `.agent/` brain on top so you keep one knowledge base even if you later
-swap harnesses.
+swap harnesses. For shell commands that must be checked before execution,
+use `python3 .agent/tools/ztk.py exec -- <command>`.
 
 ## Install
 ```bash

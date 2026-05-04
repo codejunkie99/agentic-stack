@@ -10,6 +10,8 @@ base even if you later swap harnesses.
   codex, pi, hermes, and opencode can all share the same file.
 - `.agents/skills/` symlinked to `.agent/skills/` when possible. Falls
   back to copying / merging on platforms without symlink support.
+- `.codex/config.toml` with `codex_hooks = true`.
+- `.codex/hooks.json` routing supported hooks to `python3 .agent/tools/ztk.py`.
 
 ## Install
 ```bash
@@ -32,10 +34,9 @@ codex
 - Codex scans `.agents/skills/` from the current working directory up to
   the repository root. The adapter mirrors `.agent/skills/` there so the
   portable skills are visible without duplication.
-- The adapter intentionally does **not** install Codex hooks. The docs
-  mark hooks experimental, and Windows support is currently disabled, so
-  manual `recall.py` and `memory_reflect.py` calls remain the stable
-  cross-platform path.
+- Codex hooks cover Bash, `apply_patch`, and MCP tool calls, with documented
+  coverage gaps. ztk uses native hooks where available and `ztk exec` as the
+  fallback for policy-covered shell commands.
 
 ## Verify
 ```bash
@@ -50,6 +51,10 @@ Expected:
 ## Troubleshooting
 - If Codex does not pick up `AGENTS.md`, restart it from the repository
   root and run the `Summarize the current instructions` check again.
+- If hooks do not fire, confirm `.codex/config.toml` includes
+  `codex_hooks = true` and the project `.codex/` layer is trusted.
+- Codex `PreToolUse` can deny but cannot safely ask for approval. ztk maps
+  approval-required decisions to deny at `PreToolUse` time.
 - If skills are missing, inspect `.agents/skills/`. On filesystems
   without symlink support, the installer copies / merges the directory
   instead; re-run the installer after updating `.agent/skills/`.

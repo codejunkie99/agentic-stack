@@ -1,11 +1,21 @@
 {
   "name": "codex",
-  "description": "OpenAI Codex CLI — AGENTS.md + .agents/skills mirror (Codex's documented skills directory per https://developers.openai.com/codex/skills).",
+  "description": "OpenAI Codex CLI — AGENTS.md + .agents/skills mirror + optional native Codex hooks routed through ztk.",
   "files": [
     {
       "src": "AGENTS.md",
       "dst": "AGENTS.md",
       "merge_policy": "merge_or_alert"
+    },
+    {
+      "src": ".codex/config.toml",
+      "dst": ".codex/config.toml",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": ".codex/hooks.json",
+      "dst": ".codex/hooks.json",
+      "merge_policy": "overwrite"
     }
   ],
   "skills_link": {

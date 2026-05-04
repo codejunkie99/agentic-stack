@@ -45,6 +45,10 @@ re-detected (no overwrite). Re-registering the same agent name against
 the same workspace is a no-op for compatible OpenClaw versions; older
 versions may error — that's surfaced in the install output.
 
+OpenClaw does not provide ztk with a hard pre-tool gate in this adapter.
+Use `python3 .agent/tools/ztk.py exec -- <command>` for shell commands
+that must be checked by `.agent/protocols/permissions.md`.
+
 ## Troubleshooting
 - Agent runs but ignores `.agent/`: confirm the agent's workspace with
   `openclaw agents list` or `openclaw config edit`. It should match the

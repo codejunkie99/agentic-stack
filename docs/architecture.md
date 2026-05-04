@@ -1,7 +1,7 @@
 # Architecture
 
-Five modules, one principle: the harness is dumb, and the knowledge,
-telemetry, and reusable artifacts are in local files.
+Five modules, one principle: the harness is thin, and the knowledge,
+telemetry, policy, and reusable artifacts are in local files.
 
 ## Modules
 
@@ -57,8 +57,10 @@ telemetry, and reusable artifacts are in local files.
 
 You can swap the harness for any of the adapters (Claude Code, Cursor,
 Windsurf, OpenCode, OpenClaw, Hermes, Pi, Codex, standalone Python,
-Antigravity) and lose nothing. The brain is portable; only the glue
-changes. The dashboard and flywheel work for the same reason: every harness can
-write to the same local `.agent/` event stream.
+Antigravity) and keep the same memory, skills, and local data streams.
+Hard policy enforcement depends on host capabilities: Claude Code and
+Codex can call ztk inside native tool hooks, OpenCode has native permission
+rules, and prompt-only harnesses should route risky shell operations through
+`python3 .agent/tools/ztk.py exec -- <command>`.
 
 See `diagram.svg` for a visual.

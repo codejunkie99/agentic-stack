@@ -1,7 +1,7 @@
 """Heuristic pre-filter for candidate lessons. Deterministic, no LLM.
 
-The host agent (Claude Code, Codex, Windsurf) does actual reasoning via the
-CLI tools in .agent/tools/ (graduate.py, reject.py). This module catches
+The host agent does actual reasoning via the CLI tools in .agent/tools/
+(graduate.py, reject.py). This module catches
 obvious junk — too-short claims, exact duplicates — before the reviewer
 sees the candidate at all. Anything subjective is the host's job.
 """

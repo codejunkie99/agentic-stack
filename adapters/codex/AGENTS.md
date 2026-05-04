@@ -1,7 +1,7 @@
 # AGENTS.md — Codex adapter for agentic-stack
 
 Codex reads `AGENTS.md` before doing any work. This file points it at
-the portable brain in `.agent/`.
+the portable brain in `.agent/` and the host-neutral `ztk` policy CLI.
 
 > **Python invocation**: examples below use `python3`. On stock Windows
 > only `python` is on PATH; use whichever resolves on your system.
@@ -26,11 +26,26 @@ For deploy / ship / migration / schema / timestamp / date / failing test /
 debug / refactor, FIRST run:
 
 ```bash
-python3 .agent/tools/recall.py "<description>"
+python3 .agent/tools/ztk.py recall "<description>"
 ```
 
 Surface results in a `Consulted lessons before acting:` block and follow
 them.
+
+## Tool policy
+Codex hooks are configured in `.codex/hooks.json` and route supported
+tool calls through:
+
+```bash
+python3 .agent/tools/ztk.py codex-hook
+```
+
+When you need to run a risky shell command manually or the native hook does
+not cover the operation, use:
+
+```bash
+python3 .agent/tools/ztk.py exec -- <command>
+```
 
 ## Memory discipline
 - Update `.agent/memory/working/WORKSPACE.md` as you work.
@@ -44,3 +59,4 @@ them.
 ## Hard rules
 - No force push to `main`, `production`, `staging`.
 - No modification of `.agent/protocols/permissions.md`.
+- Never bypass ztk hooks or `ztk exec` for commands covered by policy.

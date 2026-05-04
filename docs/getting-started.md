@@ -20,6 +20,13 @@ cp /path/to/agentic-stack/install.sh ./
                                 # standalone-python, antigravity
 ```
 
+Claude Code and Codex install native ztk hooks. For hosts without native
+pre-tool hooks, run policy-covered shell commands through:
+
+```bash
+python3 .agent/tools/ztk.py exec -- <command>
+```
+
 Each adapter has its own `README.md` under `adapters/<name>/`.
 
 ## 3. Customize `PREFERENCES.md`

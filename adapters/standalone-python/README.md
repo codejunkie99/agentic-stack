@@ -1,8 +1,9 @@
 # Standalone Python adapter
 
 The DIY path from the article. You own the loop, the tool calling, the file
-watching. Useful when you want to run any LLM (Anthropic, OpenAI, local)
-without depending on Cursor / Claude Code / etc.
+watching, and the hook-equivalent enforcement. This is not a drop-in
+general LLM adapter; it only works well if your custom loop calls the
+same pre-tool and post-tool checks that Claude Code exposes natively.
 
 ## Install
 ```bash
@@ -27,9 +28,9 @@ python run.py "commit the staged changes"
 export AGENT_PROVIDER=anthropic   # default
 export AGENT_MODEL=claude-sonnet-4-5
 
-# or
+# or, if your custom loop implements equivalent tool hooks:
 export AGENT_PROVIDER=openai
-export AGENT_MODEL=gpt-4o
+export AGENT_MODEL=<openai-model>
 ```
 
 ## Cron the dream cycle
@@ -45,5 +46,6 @@ crontab -e
 - It logs to episodic memory after each call.
 - It does **not** decide which skills to load — the context builder does,
   via trigger matching.
-- It does **not** enforce permissions — that's the `pre_tool_call` hook's
-  job, invoked only when the agent actually calls external tools.
+- It does **not** enforce permissions by itself — your loop must invoke
+  `.agent/harness/hooks/pre_tool_call.py` before external tools, or route
+  shell commands through `python3 .agent/tools/ztk.py exec -- <command>`.

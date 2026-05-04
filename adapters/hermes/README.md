@@ -3,8 +3,9 @@
 [Hermes Agent](https://github.com/nousresearch/hermes-agent) by Nous
 Research is an open-source agent with its own persistent memory layer
 and agentskills.io-compatible skill support. Our adapter layers the
-portable `.agent/` brain on top so you keep one knowledge base even if
-you later swap harnesses.
+portable `.agent/` files on top for shared memory and skills. Hermes does
+not expose Claude Code's `PreToolUse` hook, so permission enforcement is
+best-effort prompt discipline here.
 
 ## Install
 ```bash

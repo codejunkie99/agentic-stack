@@ -1,8 +1,10 @@
 # Agent Infrastructure
 
-This folder is the portable brain. Any harness (Claude Code, Cursor, Windsurf,
-OpenCode, OpenClaw, Hermes, standalone Python) can mount it and get the
-same memory, skills, and protocols.
+This folder is the portable brain. Claude Code gets the full integration
+because its hook lifecycle can enforce pre-tool permissions and log
+post-tool actions. Other adapters can mount the same files for memory and
+skills, but prompt-only harnesses are best-effort and cannot provide the
+same hard permission gate.
 
 ## Memory (read in this order)
 - `memory/personal/PREFERENCES.md` — stable user conventions
@@ -58,6 +60,9 @@ are the exact failure mode this layer prevents.
 - `protocols/permissions.md` — read before any tool call
 - `protocols/tool_schemas/` — typed interfaces for external tools
 - `protocols/delegation.md` — rules for sub-agent handoff
+- `tools/ztk.py` — host-neutral policy CLI; use
+  `python3 .agent/tools/ztk.py exec -- <command>` when the host does not
+  provide a native pre-tool hook for a policy-covered shell command.
 
 ## Host-agent CLI tools (in `tools/`)
 Daily driver, highest-leverage first:

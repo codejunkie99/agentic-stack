@@ -22,10 +22,12 @@ Or let the top-level install script do it:
   run `recall.py` before high-stakes operations, and call `memory_reflect.py`
   manually for significant events.
 
-- **`.claude/settings.json`** — two hooks + permission denies:
+- **`.claude/settings.json`** — ztk pre-tool policy, post-tool logging, and
+  permission denies:
 
   | Hook | Trigger | Script |
   |---|---|---|
+  | `PreToolUse` | `Bash\|Edit\|Write\|MultiEdit\|NotebookEdit\|WebFetch` | `.agent/tools/claude_pre_tool_use.py` |
   | `PostToolUse` | `Bash\|Edit\|MultiEdit\|Write\|Task\|TodoWrite` | `.agent/harness/hooks/claude_code_post_tool.py` |
   | `Stop` | `*` (session end) | `.agent/memory/auto_dream.py` |
 
