@@ -257,3 +257,8 @@ scaffolding that was missing.
   + BCG harness_manager port. Two upstream regressions discovered &
   fixed locally (cli.py future import, claude-code adapter.json SDLC
   agent entries) — candidates to upstream as PRs to codejunkie99.
+- 2026-05-04 — 10 commits ahead, 2 new tags (v0.12.0, v0.13.0). Top
+  items: transfer TUI wizard + memory-in-transfer-intent (v0.13.0);
+  short-CJK-query memory-search fix + tldraw MCP server / 5th visual
+  memory layer (v0.12.0). NOT auto-merged — review before integrate
+  per cadence rule. Conformance audit clean: 39/39.
