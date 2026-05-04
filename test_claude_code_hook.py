@@ -110,6 +110,16 @@ def _load_hook():
     spec.loader.exec_module(mod)
     return mod
 
+try:
+    import pytest
+except ImportError:
+    pytest = None
+
+if pytest is not None:
+    @pytest.fixture
+    def mod():
+        return _load_hook()
+
 # ── tests ─────────────────────────────────────────────────────────────────────
 
 def test_hook_exists():
@@ -120,7 +130,7 @@ def test_hook_exists():
         fail("claude_code_post_tool.py NOT FOUND",
              f"expected: {HOOK_SCRIPT}")
 
-def test_hook_imports():
+def _check_hook_imports():
     section("2. Import / path resolution")
     try:
         mod = _load_hook()
@@ -129,6 +139,9 @@ def test_hook_imports():
     except Exception as e:
         fail("hook import failed", str(e))
         return None
+
+def test_hook_imports():
+    _check_hook_imports()
 
 def test_empty_stdin():
     section("3. Empty stdin — graceful fallback")
@@ -453,7 +466,7 @@ def main():
     print(f"agent dir:    {AGENT_DIR}")
 
     test_hook_exists()
-    mod = test_hook_imports()
+    mod = _check_hook_imports()
     if mod is None:
         print("\n\033[31mCannot continue — hook did not import.\033[0m")
         sys.exit(1)
