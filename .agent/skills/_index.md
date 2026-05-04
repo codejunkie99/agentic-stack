@@ -80,6 +80,11 @@ on match.
   Storyboard → Content (all slides at once with stickies) → Format.
   Triggers: "build a deck", "storyboard", "iterate on slides",
   "structure the storyline"
+- **synthetic-scenario-design** — domain-credible synthetic data
+  with a planted pattern: surfaces from blind agent query, invisible to
+  30s eyeball scan. Used by `live-demo-sprint.md` S3. Triggers:
+  "design synthetic data with a hidden pattern", "fake dataset where
+  the AI finds something", "demo data with a discoverable pattern"
 
 ## Operations + telemetry
 
