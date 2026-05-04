@@ -78,6 +78,14 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 
 **Step 8.5c (2026-05-02)**: SDLC workflow set authored — 8 new contracts (`product-discovery-arc`, `spec-to-design`, `feature-end-to-end`, `bugfix-arc`, `refactor-arc`, `production-incident`, `release-arc`, `project-onboarding`). Combined with 4 pre-existing SDLC workflows + 8 BCG = 20 workflows total. Full PDLC-SDLC team now BCG-parity. Branch `feature/sdlc-workflow-set`.
 
+**Step 8.7 — live-demo-sprint primitives (2026-05-04, merged)**:
+- Branch `feature/live-demo-sprint-primitives` → merged to master (`6dc593f`).
+- New workflow `.agent/workflows/live-demo-sprint.md` (137 lines): end-to-end live external-stakeholder demo for a fixed-date meeting. 8 stages with named owners (S1 scenario lock → S2 demo spec → S3 synthetic data → S4 build → S5 wow-beat hardening → S6 audience-translation → S7 packaging → S8 dry-run). Encodes wow-beat protection, audience-translation gate, iteration cookbook (feedback shape → re-entry stage). Distinct from `prototype-app.md` (validation focus) and `demo-prep.md` (packages existing prototype).
+- New skill `.agent/skills/synthetic-scenario-design/SKILL.md` (161 lines): domain-credible synthetic data with planted agent-discoverable pattern. Two binary contracts: pattern surfaces from blind agent query AND does not surface from 30s eyeball scan. Sibling `pattern-card.md` documents base distribution + planted structure + verification log + narration alignment.
+- Driven by impending CAG (Changi Airport Group) engagement — Friday 2026-05-08 live HVAC-scenario demo for E&D team. Engagement is hybrid (consulting wrapper + product demo) with single critical-path "wow" beat (Learning Loop: engineer correction → autonomous agent finds deeper pattern). 4 working days. Mech-elec audience (no software jargon).
+- Linter 29/29; conformance audit 40/40; eager-load 518/520; smoke-installed into /tmp dir.
+- Status: harness primitives ready. Scenario B install at `~/code/cag-engops-internal/` (or operator-chosen slug) pending in next session.
+
 **Step 8.6 — transfer-bundle augment (NEW backlog row, 2026-05-04)**:
 - Upstream v0.13.0 ships `transfer-bundle / transfer-tui / import-transfer.sh` family (~1500 LOC). State-shipping primitive: snapshot install A → archive → import on install B.
 - Tech-spike verdict (architect, 2026-05-04): augment, not replace. Keep `harness-graduate.py` for lesson promotion. Add transfer-bundle as new capability for harness distribution to teammates + multi-laptop setup. See DECISIONS 2026-05-04 entry "Tech-spike — transfer-bundle".
