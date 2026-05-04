@@ -5,6 +5,44 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] — 2026-05-04
+
+Minor release. Generalizes ztk from a Claude Code-only PreToolUse integration
+into a host-neutral policy layer that works across hook-native, permission-rule,
+and prompt-only coding tools.
+
+### Added
+- **Host-neutral ztk policy.** Adds `.agent/harness/ztk_policy.py` and
+  `.agent/tools/ztk.py` so one shared policy can evaluate shell commands,
+  network fetches, file writes, and permission requests across harnesses.
+- **Claude Code and Codex hook adapters.** Claude Code now routes PreToolUse
+  events through ztk, while Codex installs opt-in hook configuration and handles
+  PreToolUse, PermissionRequest, and PostToolUse events through the same policy.
+- **Portable `ztk exec` path.** Cursor, Windsurf, OpenCode, OpenClaw, Hermes,
+  Pi, and standalone agents now document `python3 .agent/tools/ztk.py exec --`
+  as the common way to run policy-covered shell commands when the host has no
+  equivalent native hook surface.
+- **Adapter capability matrix.** Adds `docs/adapter-capabilities.md` with
+  official-source notes for Claude Code hooks, Codex hooks, OpenCode
+  permissions, Cursor rules, and Windsurf rules/memories.
+
+### Changed
+- OpenCode adapter config now uses the current `permission` key.
+- Codex installs `.codex/config.toml` and `.codex/hooks.json` through the
+  manifest-driven adapter path instead of relying on installer-specific cases.
+- README and per-harness docs now describe ztk as a portable policy layer, not
+  a Claude Code-only hook.
+
+### Fixed
+- Protected `.agent/protocols/permissions.md` edits are blocked by policy,
+  including `apply_patch` payloads that mention the protected path.
+- The shared pre-tool hook checks never-allowed patterns before approval-only
+  patterns so hard denials cannot be downgraded to approval prompts.
+
+### Migration
+No migration required. Re-run the relevant adapter install to copy the new hook,
+permission, or prompt guidance files into an existing project.
+
 ## [0.13.0] — 2026-05-02
 
 Minor release. Adds an onboarding-style transfer wizard for moving a portable

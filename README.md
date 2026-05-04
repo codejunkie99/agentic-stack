@@ -29,7 +29,28 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.13.0 — transfer wizard
+### New in v0.14.0 — ztk policy for every harness
+
+Minor release. Generalizes ztk from a Claude Code-only PreToolUse integration
+into a host-neutral policy layer for hook-native, permission-rule, and
+prompt-only coding tools.
+
+- **Shared policy engine.** `.agent/harness/ztk_policy.py` evaluates shell
+  commands, network fetches, file writes, and permission requests once, then
+  renders host-specific decisions.
+- **Native hooks where available.** Claude Code uses PreToolUse, while Codex
+  installs opt-in `.codex` hook config for PreToolUse, PermissionRequest, and
+  PostToolUse.
+- **Portable fallback everywhere else.** Cursor, Windsurf, OpenCode, OpenClaw,
+  Hermes, Pi, and standalone agents document `python3 .agent/tools/ztk.py exec --`
+  for policy-covered shell commands when the host does not expose equivalent
+  hooks.
+- **Capability matrix.** `docs/adapter-capabilities.md` records the official
+  hook, permission, and rule surfaces used by the adapters.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.13.0 — transfer wizard
 
 Minor release. Adds an onboarding-style `agentic-stack transfer` wizard for
 moving a project brain into Codex, Cursor, Windsurf, or a terminal-only
@@ -45,8 +66,6 @@ moving a project brain into Codex, Cursor, Windsurf, or a terminal-only
   into another project and install the selected adapter files.
 - **Modern Windsurf rules.** Windsurf now gets `.windsurf/rules/agentic-stack.md`
   while keeping legacy `.windsurfrules` compatibility.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ### v0.12.0 — tldraw visual canvas
 
