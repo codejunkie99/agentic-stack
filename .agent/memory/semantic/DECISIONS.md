@@ -9,6 +9,12 @@
 **Alternatives considered:** _what else was on the table and why rejected_
 **Status:** active | revisited | superseded
 
+## 2026-05-04: Transfer-bundle augment — adopt with state-class adapter
+**Decision:** Vendor upstream `transfer_bundle.py` + `transfer_plan.py` + `import-transfer.sh` from `upstream/master` into `.agent/tools/`, with a fork-side `_transfer_state_classes.py` adapter encoding the six-state-class model (semantic/personal/working/client/agent_memory/machine_settings). v1 ships CLI-only (no TUI). `client` class requires explicit `--clients <slug>` allow-list (OQ-3 option ii). Conflict resolution flags `CONFLICT` and skips unless `--force` (OQ-2 option a). `harness-graduate.py` and its five quality gates explicitly out of scope.
+**Rationale:** Operator pain documented in three live scenarios (second laptop, teammate onboarding, mid-engagement re-sync); next engagement fires in 2-3 weeks. Upstream tools are stdlib-only on master (OQ-1), making the vendor path safe. Adapter layer (~50 LOC) isolates fork divergence to one file and avoids a multi-week refactor of `install.sh` / `sync-target.sh` / `harness-graduate.py` to upstream's `targets x scopes` model. ADR at `docs/adr/2026-05-04-transfer-bundle-augment.md`. Spec-review rubric 9.2/10.
+**Alternatives considered:** (a) Direct port of upstream `targets x scopes` — rejected, multi-week refactor outside PRD budget, churn risk against `harness-graduate.py` quality gates. (b) Native fork-side rewrite, ignore upstream — rejected, loses >1500 LOC of proven shipped behavior (atomic apply, manifest schema, plan diff). (c) Defer to v2 with `scp` recipe in docs only — rejected, cannot reach S2 plan-before-apply or S4 active-engagement default-N with raw rsync. (d) Vendor TUI in v1 — rejected, PRD non-goal + R2 risk on `textual` / `prompt_toolkit`. (e) OQ-2 per-entry interactive prompt — rejected by operator, would break `--dry-run` equivalence to live apply. (f) OQ-3 all-or-nothing `client` — rejected by operator, leaks prior-engagement materials into teammate handoff.
+**Status:** active
+
 ## 2026-01-01: Four-layer memory separation
 **Decision:** Split memory into working / episodic / semantic / personal rather than one flat folder.
 **Rationale:** Each layer has different retention and retrieval needs. Flat memory breaks at ~6 weeks.

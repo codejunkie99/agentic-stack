@@ -86,6 +86,7 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 - Use case (operator-confirmed): second laptop, teammate setup for next case. Live engagement state remains git-of-project-repo (bundle is snapshot not sync).
 - Branch: `feature/transfer-bundle-augment` (not yet created).
 - Status: planned, awaiting next-session execution with clean context.
+- **2026-05-04 ADR signed:** `docs/adr/2026-05-04-transfer-bundle-augment.md` (spec-review 9.2/10, 11 edge cases, 6 alternatives). DECISIONS entry appended same date. Engineer test-seam list: `build_bundle`, `compute_plan`, `apply_plan`, `is_active_engagement`, `STATE_CLASSES` registry schema, `import-transfer.sh` integration, manifest validator, S5 timed e2e.
 
 **Trace / monitoring system status (final)**: `.agent/tools/trace_check.py` (526 LOC) kept as legacy/optional tool — invoke manually for ad-hoc per-(skill, phase) trace verification. Phase O drift checkpoints #14-16 stay SKIP permanently. Future drift findings route through bug-to-invariant protocol → new Phase O checkpoint or audit check, not new trace_check matcher. `.agent/skills/data-layer/` covers cross-harness dashboard / cron monitoring / token analytics (separate concern, active).
 
