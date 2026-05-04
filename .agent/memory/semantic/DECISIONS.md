@@ -661,3 +661,44 @@ Canonical patterns sourced from:
 **Status:** active. Item 3 (trace_check stabilization + Phase O drift #14-16) deferred at user request; user has different plan for it. Steps 8.5 + 8.5b leave Item 3 as the only open backlog row blocking full deploy-readiness; everything else either ships or is verified existing-functionality.
 
 
+## 2026-05-04: Tech-spike — transfer-bundle (upstream v0.13.0) — verdict: AUGMENT (post-trigger fire)
+
+**Decision:** Augment, do not replace. Adopt upstream's `transfer-bundle / transfer-tui / import-transfer.sh` family (commit `bf24b1c` + fix `26628df`) onto the fork as a NEW capability layer. Keep `.agent/tools/harness-graduate.py` unchanged for the lesson-promotion use case. transfer-bundle covers the install-state-shipping use case which fork did not previously have.
+
+**Rationale:**
+
+Initial architect verdict (same date, earlier in this session) was **skip** with three named conditional re-open triggers: (1) documented state-shipping use case appears, (2) fork operator count grows past one, (3) upstream stabilizes ≥3 minor versions. Architect refused operator's adopt-bias and pushed back with evidence (RECOMMENDATION.md at `output/tech-spikes/2026-05-04-transfer-bundle-vs-graduate/`).
+
+Operator then revealed concrete use case after the spike landed: second laptop (own) + multi-operator setup for next case (teammates need same agent team + skills + initial memory). Triggers (1) and (2) both fire on this scenario. Trigger (3) does not fire (only second commit shipped on the family) but is mitigated by operator's stated tolerance for upstream churn given the use-case strength.
+
+The two tools answer different questions and do not overlap:
+- `transfer-bundle`: ship install state install-to-install (snapshot + plan + apply). New capability, no fork analog.
+- `harness-graduate.py`: gate-promote durable engagement lessons target → fork with rationale + dedup + engagement-specificity heuristic. Keep as-is.
+
+Critical caveat documented for operator: bundle is SNAPSHOT not LIVE SYNC. After import, installs evolve independently. For live shared engagement state during work, the existing pattern stands — engagement project repo's own git (push/pull) is the live-sync layer. Bundle is the harness-distribution layer.
+
+**Alternatives considered:**
+- **Skip** (original architect verdict at same date) — rejected post-context; triggers fired.
+- **Replace harness-graduate.py with transfer-bundle** — rejected; would lose 5 Phase H quality gates (per-entry y/n/skip, ≥20-char rationale, engagement-specificity heuristic, per-entry provenance, /regenerate-decisions recommendation). Bundle has no analog. Different shapes, not substitutes.
+- **Build a fork-native equivalent** — rejected; ~1500 LOC + test surface to maintain alone; upstream is sync-source so we get it free + can vendor.
+- **Full sync layer** (live state across teammates) — rejected as out-of-scope for this branch; not what bundle does. Live sync = engagement git repo, already covered.
+
+**Operationalised (deferred to next branch):**
+
+Adopt branch: `feature/transfer-bundle-augment`. Sequence:
+
+1. Read upstream impl in detail (`git show upstream/master:harness_manager/transfer_*.py`). Confirm: what files are in bundle scope (skills/agents/workflows/memory? or memory only?). If memory-only, may need to extend bundle to cover harness-distribution dimension.
+2. Cherry-pick or vendor: `harness_manager/transfer_{bundle,plan,tui}.py`, `scripts/import-transfer.{sh,ps1}`, 4 test files.
+3. TUI dep handling: identify which library upstream uses (textual / curses / prompt_toolkit). Pin in `pyproject.toml`. Note: this expands fork's stdlib-only `.agent/tools/` posture — accepted trade-off given use case.
+4. Documentation:
+   - DECISIONS entry pointing to this one + adopt commit
+   - WORKSPACE backlog item closed
+   - HOW-TO-START.md (in test pilot install) extended with team-onboarding section: "Lead bundles → teammates import"
+5. Test against operator scenario: bundle from agent-stack fork → import to fresh laptop / teammate install → verify 28 skills + 14 agents + 19 workflows + initial memory all materialize.
+6. Conditional: if bundle does not include skills/agents/workflows by default, fork may need to extend bundle scope. Decide on read-pass.
+
+Open question 1 from original RECOMMENDATION (TUI dep identity), 2 (bundle scope on client/agent-memory), 3 (conflict semantics) all become load-bearing for the adopt branch.
+
+**Status:** open — adopt path planned, not yet executed. Branch deferred to next session for clean context. Pre-work: read upstream impl + answer 3 open questions.
+
+

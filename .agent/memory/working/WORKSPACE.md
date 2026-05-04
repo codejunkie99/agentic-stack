@@ -78,6 +78,15 @@ Total: 16 commits in branch (spec+plan, requirements-dev, +14 feature commits + 
 
 **Step 8.5c (2026-05-02)**: SDLC workflow set authored — 8 new contracts (`product-discovery-arc`, `spec-to-design`, `feature-end-to-end`, `bugfix-arc`, `refactor-arc`, `production-incident`, `release-arc`, `project-onboarding`). Combined with 4 pre-existing SDLC workflows + 8 BCG = 20 workflows total. Full PDLC-SDLC team now BCG-parity. Branch `feature/sdlc-workflow-set`.
 
+**Step 8.6 — transfer-bundle augment (NEW backlog row, 2026-05-04)**:
+- Upstream v0.13.0 ships `transfer-bundle / transfer-tui / import-transfer.sh` family (~1500 LOC). State-shipping primitive: snapshot install A → archive → import on install B.
+- Tech-spike verdict (architect, 2026-05-04): augment, not replace. Keep `harness-graduate.py` for lesson promotion. Add transfer-bundle as new capability for harness distribution to teammates + multi-laptop setup. See DECISIONS 2026-05-04 entry "Tech-spike — transfer-bundle".
+- Spike artifacts: `output/tech-spikes/2026-05-04-transfer-bundle-vs-graduate/{QUESTION,RESEARCH,RECOMMENDATION}.md`.
+- Open questions before adopt: (a) does bundle include skills/agents/workflows or memory-only? (b) which TUI lib does upstream use? (c) conflict-resolution semantics on import.
+- Use case (operator-confirmed): second laptop, teammate setup for next case. Live engagement state remains git-of-project-repo (bundle is snapshot not sync).
+- Branch: `feature/transfer-bundle-augment` (not yet created).
+- Status: planned, awaiting next-session execution with clean context.
+
 **Trace / monitoring system status (final)**: `.agent/tools/trace_check.py` (526 LOC) kept as legacy/optional tool — invoke manually for ad-hoc per-(skill, phase) trace verification. Phase O drift checkpoints #14-16 stay SKIP permanently. Future drift findings route through bug-to-invariant protocol → new Phase O checkpoint or audit check, not new trace_check matcher. `.agent/skills/data-layer/` covers cross-harness dashboard / cron monitoring / token analytics (separate concern, active).
 
 **Dropped from scope (2026-05-02):**
