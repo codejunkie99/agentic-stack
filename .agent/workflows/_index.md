@@ -30,6 +30,7 @@ fan-out shape before reading the body.
 | `prototype-app.md` | Working prototype app (spike-mode or lite-PDLC) | `full` | "build a prototype", "build a working prototype", "MVP prototype", "proof-of-concept app", "demo-able prototype" |
 | `feature-prototype.md` | Single-feature spike inside an existing app | `flat` | "spike this feature", "prototype the [feature]", "throwaway prototype of" |
 | `tech-spike.md` | Technical research with recommendation + alternatives | `flat` | "tech spike", "research [tech approach]", "evaluate [library]", "should we use X or Y?" |
+| `live-demo-sprint.md` | Live external-stakeholder demo for a fixed-date meeting (real backend, single wow beat) | `full` | "build a live demo for [meeting]", "demo for [stakeholder] on [date]", "live working demo", "five-minute demo", "partner showcase demo" |
 | `demo-prep.md` | Package a prototype for stakeholder showcase | `flat` | "package the prototype for demo", "demo prep", "make the prototype demoable" |
 
 ## How to load
