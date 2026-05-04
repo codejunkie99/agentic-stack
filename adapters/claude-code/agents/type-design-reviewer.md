@@ -16,7 +16,7 @@ description: |
   assistant: "No type-design surface — skipping that reviewer."
   <commentary>Skip when no type definitions changed.</commentary>
   </example>
-model: opus
+model: sonnet
 tools: [Read, Glob, Grep, Bash, TodoWrite, BashOutput]
 color: purple
 effort: high

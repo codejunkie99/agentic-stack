@@ -28,7 +28,7 @@ description: |
   assistant: "Surfacing to debug-investigator — this is a recurring pattern, not a point bug. It belongs in LESSONS via graduate."
   <commentary>Systemic findings escalate to debug-investigator + graduate.py pipeline; reviewer does not single-handedly fix the pattern.</commentary>
   </example>
-model: opus
+model: sonnet
 tools: [Read, Glob, Grep, Bash, TodoWrite, BashOutput]
 color: red
 effort: medium

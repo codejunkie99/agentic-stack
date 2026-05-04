@@ -16,7 +16,7 @@ description: |
   assistant: "No perf surface — generic reviewer is enough."
   <commentary>Don't dispatch performance-reviewer when no perf-relevant code changed.</commentary>
   </example>
-model: opus
+model: sonnet
 tools: [Read, Glob, Grep, Bash, TodoWrite, BashOutput]
 color: magenta
 effort: high

@@ -27,7 +27,7 @@ description: |
   assistant: "Implementation request — that's the engineer agent's job, not product-manager. Checking if a plan exists first."
   <commentary>PM does not do implementation, even adjacent framing. Route to architect (if design missing) or engineer (if plan exists).</commentary>
   </example>
-model: sonnet
+model: opus
 tools: [Read, Glob, Grep, Write, TodoWrite, BashOutput]
 color: purple
 effort: medium

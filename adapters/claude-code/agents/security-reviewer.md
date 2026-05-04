@@ -16,7 +16,7 @@ description: |
   assistant: "No security surface — skipping security-reviewer. Generic reviewer is enough."
   <commentary>Don't dispatch all 4 reviewers for trivial diffs. Specialist overhead > value.</commentary>
   </example>
-model: opus
+model: sonnet
 tools: [Read, Glob, Grep, Bash, TodoWrite, BashOutput]
 color: red
 effort: high
