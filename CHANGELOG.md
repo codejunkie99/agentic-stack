@@ -5,6 +5,45 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [fork/gemini-cli] — 2026-05-05 (branch: feat/gemini-cli)
+
+Fork-specific feature. Adds a `gemini-cli` adapter so the portable brain
+works with Google's Gemini CLI via its native MCP server extension mechanism.
+
+### Added
+- **`gemini-cli` adapter.** Adds `adapters/gemini-cli/` with an
+`adapter.json` manifest, `GEMINI.md` project context, an MCP server
+bridge (`mcp-server.js` + `mcp-package.json`) that exposes `recall`,
+`memory_reflect`, `learn`, and `agentic_status` as MCP tools, and four
+custom TOML slash commands (`/agentic:recall`, `/agentic:learn`,
+`/agentic:status`, `/agentic:reflect`).
+- **Per-harness docs.** Adds `docs/per-harness/gemini-cli.md` covering
+install, MCP server registration, tool reference, slash commands, and
+troubleshooting.
+- **Validation suite.** Adds `test_gemini_mcp.py` with 15 checks: manifest
+validation, GEMINI.md wiring, MCP server syntax/imports/tool
+registration, package.json deps/engines, TOML command fields, docs, and
+install/remove cycle.
+
+### Changed
+- Supported harness count is now eleven: Claude Code, Cursor, Windsurf,
+OpenCode, OpenClaw, Hermes, Pi, Codex, Standalone Python, Antigravity,
+and Gemini CLI.
+- The adapter installs MCP server files into
+`<project>/.gemini/agentic-stack-mcp/` and custom commands into
+`<project>/.gemini/commands/agentic/`. Users must register the MCP
+server in `.gemini/settings.json` manually (documented in the per-harness
+guide and adapter README).
+- Fixed `opencode.json` permission key: renamed `"permissions"` to
+`"permission"` to match the opencode config schema.
+
+### Fixed
+- n/a
+
+### Migration
+No migration required. Existing installs are unaffected. The gemini-cli
+adapter is purely additive. Install with `./install.sh gemini-cli`.
+
 ## [0.13.0] — 2026-05-02
 
 Minor release. Adds an onboarding-style transfer wizard for moving a portable
@@ -13,33 +52,33 @@ generated curl/PowerShell import command.
 
 ### Added
 - **`agentic-stack transfer` wizard.** Adds an onboarding-style TUI that parses
-  natural-language requests such as `move my memory into Codex`, previews the
-  target adapter files, asks for confirmation, and either generates an import
-  command, applies locally, or both.
+natural-language requests such as `move my memory into Codex`, previews the
+target adapter files, asks for confirmation, and either generates an import
+command, applies locally, or both.
 - **Portable transfer bundles.** Adds canonical JSON + gzip + base64url
-  bundles with SHA-256 verification. The importer merges preferences and
-  accepted lessons idempotently, restores selected memory files, copies skills,
-  records import metadata, and installs selected adapters through the existing
-  harness manager.
+bundles with SHA-256 verification. The importer merges preferences and
+accepted lessons idempotently, restores selected memory files, copies skills,
+records import metadata, and installs selected adapters through the existing
+harness manager.
 - **Full memory intent.** `move my memory` now means preferences, accepted
-  lessons, skills, working memory, episodic/history logs, and candidate
-  lessons. Data-layer exports, flywheel traces, runtime indexes, and caches
-  stay out unless future scopes explicitly add them.
+lessons, skills, working memory, episodic/history logs, and candidate
+lessons. Data-layer exports, flywheel traces, runtime indexes, and caches
+stay out unless future scopes explicitly add them.
 - **Curl and PowerShell bootstraps.** Adds `scripts/import-transfer.sh` and
-  `scripts/import-transfer.ps1` so another terminal can import a transfer
-  bundle without manually cloning the repo first.
+`scripts/import-transfer.ps1` so another terminal can import a transfer
+bundle without manually cloning the repo first.
 
 ### Changed
 - Windsurf installs a modern `.windsurf/rules/agentic-stack.md` workspace rule
-  and still writes legacy `.windsurfrules` for older Windsurf builds.
+and still writes legacy `.windsurfrules` for older Windsurf builds.
 - `agentic-stack transfer export` and `agentic-stack transfer import` provide
-  non-interactive surfaces for scripts and CI-style handoff flows.
+non-interactive surfaces for scripts and CI-style handoff flows.
 
 ### Fixed
 - Transfer export blocks secret-like content, including private keys and common
-  API token patterns, before payload generation.
+API token patterns, before payload generation.
 - Fresh Codex imports now copy the full `.agent` brain before installing the
-  Codex `AGENTS.md` and `.agents/skills` adapter wiring.
+Codex `AGENTS.md` and `.agents/skills` adapter wiring.
 
 ### Migration
 No migration required. Existing installs keep working. Run
@@ -50,9 +89,9 @@ import a transfer bundle.
 - Tag `v0.13.0` cut from master.
 - GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.13.0>
 - `Formula/agentic-stack.rb` bumped to v0.13.0 in a follow-up commit after
-  the tag tarball existed and its sha256 could be computed.
+the tag tarball existed and its sha256 could be computed.
 - Tarball sha256:
-  `83f71bab05bd607f3590571b5422a0cc74650d69ff5d818b6682d0f877e16514`.
+`83f71bab05bd607f3590571b5422a0cc74650d69ff5d818b6682d0f877e16514`.
 
 ## [0.12.0] — 2026-04-27
 

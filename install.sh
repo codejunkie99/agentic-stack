@@ -16,8 +16,9 @@
 #                                                # (or, if install.json exists,
 #                                                # show what's installable)
 #
-# adapter-name: claude-code | cursor | windsurf | opencode | openclaw |
-#               hermes | pi | codex | standalone-python | antigravity
+# Core adapters: claude-code | cursor | windsurf | opencode | openclaw |
+# hermes | pi | codex | standalone-python | antigravity
+# Fork adapters (branch: feat/gemini-cli): gemini-cli
 #
 # All real logic lives in harness_manager/ (Python). This script is a
 # thin dispatcher so install.sh and install.ps1 share one backend.

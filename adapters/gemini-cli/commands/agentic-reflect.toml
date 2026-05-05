@@ -1,0 +1,12 @@
+description = "Log a significant event to the agentic-stack episodic memory (skill, action, outcome)"
+prompt = """
+Log a significant event to the agentic-stack portable brain's episodic memory.
+
+Details: {{args}}
+
+Expected format: skill action outcome [importance]
+
+Run: !{python3 .agent/tools/memory_reflect.py {{args}}}
+
+Confirm the event was logged. If the importance is 7+, mention that the dream cycle will likely promote this into a candidate lesson.
+"""

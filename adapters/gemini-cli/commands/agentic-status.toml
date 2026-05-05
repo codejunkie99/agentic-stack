@@ -1,0 +1,8 @@
+description = "Show the current state of the agentic-stack portable brain"
+prompt = """
+Show the current brain-state dashboard for the agentic-stack portable memory.
+
+Run: !{python3 .agent/tools/show.py}
+
+Summarize the key numbers: total episodes, pending candidates, graduated lessons, and any failing skills.
+"""
