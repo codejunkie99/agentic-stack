@@ -147,7 +147,7 @@ After the first `./install.sh <adapter>`, manage your project with
 verb-style subcommands (works with both `install.sh` and `install.ps1`):
 
 ```bash
-./install.sh dashboard           # interactive dashboard: health, adapters, memory, transfer
+./install.sh dashboard           # TUI dashboard: health, verify, memory, team, skills, instances
 ./install.sh add cursor          # add a second adapter (Claude Code + Cursor in same repo)
 ./install.sh status              # one-screen view: which adapters, brain stats
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
@@ -366,7 +366,7 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── state.py                    # install.json read/write with fcntl/msvcrt locking
 ├── doctor.py                   # read-only audit + pre-v0.9 migration synthesis
 ├── remove.py                   # safe uninstall with shared-file detection + ownership handoff
-├── dashboard_tui.py            # project dashboard front door for health/adapters/memory/transfer
+├── dashboard_tui.py            # project dashboard for health/verify/memory/team/skills/instances
 ├── post_install.py             # named built-ins (openclaw_register_workspace)
 ├── manage_tui.py               # interactive menu loop for add/remove/audit
 ├── transfer_tui.py             # onboarding-style memory transfer wizard
