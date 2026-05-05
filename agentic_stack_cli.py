@@ -57,10 +57,12 @@ def _print_doctor(payload: dict[str, Any]) -> None:
 
 def _cmd_doctor(args: argparse.Namespace) -> int:
     payload = trust_model.collect_health(args.project)
+    failed = any(check["status"] == "fail" for check in payload["checks"])
     if args.json:
-        return _dump_json(payload)
-    _print_doctor(payload)
-    return 1 if any(check["status"] == "fail" for check in payload["checks"]) else 0
+        _dump_json(payload)
+    else:
+        _print_doctor(payload)
+    return 1 if failed else 0
 
 
 def _cmd_tui(args: argparse.Namespace) -> int:

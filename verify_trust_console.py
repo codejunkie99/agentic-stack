@@ -86,12 +86,16 @@ def _fixture_project():
     _write(
         os.path.join(root, "CLAUDE.md"),
         "Read .agent/AGENTS.md, PREFERENCES.md, LESSONS.md, permissions.md. "
-        "Run recall.py before risky work. Use memory_reflect.py after actions.\n",
+        "Run recall.py before risky work. Use memory_reflect.py after actions. "
+        "Skill loading via .agent/skills/_manifest.jsonl.\n",
     )
+    _write_json(os.path.join(root, ".claude", "settings.json"), {"hooks": {}})
     _write(
         os.path.join(root, ".openclaw-system.md"),
         "Read .agent/AGENTS.md and PREFERENCES.md and LESSONS.md and permissions.md.\n",
     )
+    # AGENTS.md exists but opencode.json does NOT — exercises the all-files install rule.
+    _write(os.path.join(root, "AGENTS.md"), "Read .agent/PREFERENCES.md and LESSONS.md and permissions.md.\n")
     return root
 
 
@@ -131,6 +135,13 @@ def main():
     check("claude-code installed", by_name["claude-code"]["installed"]["status"] == "pass")
     check("claude-code recall pass", by_name["claude-code"]["recall"]["status"] == "pass")
     check("openclaw missing recall warning", by_name["openclaw"]["recall"]["status"] == "warn")
+    check(
+        "opencode partial install reports fail",
+        by_name["opencode"]["installed"]["status"] == "fail"
+        and "opencode.json" in by_name["opencode"]["installed"]["detail"],
+        by_name["opencode"]["installed"],
+    )
+    check("hermes single-file install passes", by_name["hermes"]["installed"]["status"] == "pass")
 
     print("\n4. team init creates explicit team brain files")
     init = trust_model.team_init(project)
@@ -169,6 +180,20 @@ def main():
     else:
         check("verify --json includes harnesses", len(payload.get("harnesses", [])) >= 3)
 
+    broken = tempfile.mkdtemp(prefix="agentic-stack-broken-")
+    proc = subprocess.run(
+        [sys.executable, os.path.join(HERE, "agentic_stack_cli.py"), "doctor", "--json", "--project", broken],
+        capture_output=True,
+        text=True,
+        cwd=HERE,
+    )
+    check("doctor --json exits 1 on missing .agent", proc.returncode == 1, f"rc={proc.returncode}")
+    try:
+        payload = json.loads(proc.stdout)
+        check("doctor --json broken still emits parseable payload", isinstance(payload.get("score"), int))
+    except json.JSONDecodeError as exc:
+        check("doctor --json broken emits parseable JSON", False, str(exc))
+
     print("\n6. TUI tolerates terminals without cursor visibility support")
     import trust_tui
 
@@ -186,6 +211,19 @@ def main():
         check("safe cursor update ignores curses errors", False, str(exc))
     else:
         check("safe cursor update ignores curses errors", True)
+
+    print("\n7. Glyph fallback adapts to stdout encoding")
+
+    class _FakeStream:
+        def __init__(self, encoding):
+            self.encoding = encoding
+
+    ascii_glyphs = trust_tui._select_glyphs(stream=_FakeStream("ascii"))
+    utf8_glyphs = trust_tui._select_glyphs(stream=_FakeStream("utf-8"))
+    none_glyphs = trust_tui._select_glyphs(stream=_FakeStream(None))
+    check("ASCII encoding falls back to ASCII glyphs", ascii_glyphs == trust_tui._STATUS_GLYPH_ASCII)
+    check("UTF-8 encoding uses Unicode glyphs", utf8_glyphs == trust_tui._STATUS_GLYPH_UNICODE)
+    check("None encoding falls back to ASCII glyphs", none_glyphs == trust_tui._STATUS_GLYPH_ASCII)
 
     if failures:
         print(f"\n{len(failures)} failure(s)")

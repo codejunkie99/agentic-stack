@@ -27,3 +27,6 @@ venv/
 # Placed AFTER the negation above so the later rule wins.
 .agent/memory/.index/
 .agent/memory/.index/**
+
+# Runtime backups (auto_dream rewrites). Never versioned.
+.agent/memory/**/*.bak

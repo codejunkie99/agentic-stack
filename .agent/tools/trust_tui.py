@@ -11,6 +11,25 @@ import trust_model
 
 SECTIONS = ("Doctor", "Memory", "Verify", "Team Brain", "Skills", "Instances")
 
+_STATUS_GLYPH_UNICODE = {"pass": "✓", "warn": "!", "fail": "✗"}
+_STATUS_GLYPH_ASCII = {"pass": "+", "warn": "!", "fail": "x"}
+
+
+def _select_glyphs(stream: Any = None) -> dict[str, str]:
+    enc = (getattr(stream or sys.stdout, "encoding", "") or "").lower()
+    if not enc:
+        return _STATUS_GLYPH_ASCII
+    try:
+        for glyph in _STATUS_GLYPH_UNICODE.values():
+            glyph.encode(enc)
+    except (UnicodeEncodeError, LookupError):
+        return _STATUS_GLYPH_ASCII
+    return _STATUS_GLYPH_UNICODE
+
+
+def _glyph(status: str) -> str:
+    return _select_glyphs().get(status, status)
+
 
 def _clip(text: object, width: int) -> str:
     s = str(text)
@@ -39,8 +58,7 @@ def _plain_lines(project_root: str | None = None) -> list[str]:
         "Doctor",
     ]
     for check in health["checks"]:
-        marker = {"pass": "PASS", "warn": "WARN", "fail": "FAIL"}.get(check["status"], check["status"].upper())
-        lines.append(f"  {marker:4} {check['label']} - {check['detail']}")
+        lines.append(f"  {_glyph(check['status'])} {check['label']} - {check['detail']}")
     memory = health["memory"]
     lines.extend([
         "",
@@ -65,8 +83,7 @@ def _draw_doctor(stdscr: Any, y: int, x: int, width: int, health: dict[str, Any]
     stdscr.addstr(y, x, "Doctor", getattr(stdscr, "A_BOLD", 0) if hasattr(stdscr, "A_BOLD") else 0)
     y += 2
     for check in health["checks"][: max(0, stdscr.getmaxyx()[0] - y - 3)]:
-        status = check["status"].upper()
-        line = f"{status:4} {check['label']} - {check['detail']}"
+        line = f"{_glyph(check['status'])} {check['label']} - {check['detail']}"
         stdscr.addstr(y, x, _clip(line, width))
         y += 1
     return y
@@ -99,12 +116,12 @@ def _draw_verify(stdscr: Any, y: int, x: int, width: int, project_root: str | No
     for row in matrix["harnesses"][: max(0, stdscr.getmaxyx()[0] - y - 3)]:
         line = (
             f"{row['harness']:<16}"
-            f"{row['installed']['status']:<8}"
-            f"{row['memory']['status']:<7}"
-            f"{row['skills']['status']:<7}"
-            f"{row['recall']['status']:<7}"
-            f"{row['reflect']['status']:<8}"
-            f"{row['permissions']['status']}"
+            f"{_glyph(row['installed']['status']):<8}"
+            f"{_glyph(row['memory']['status']):<7}"
+            f"{_glyph(row['skills']['status']):<7}"
+            f"{_glyph(row['recall']['status']):<7}"
+            f"{_glyph(row['reflect']['status']):<8}"
+            f"{_glyph(row['permissions']['status'])}"
         )
         stdscr.addstr(y, x, _clip(line, width))
         y += 1
@@ -214,7 +231,9 @@ def run(project_root: str | None = None, plain: bool = False) -> int:
                 stdscr.addstr(3, 0, "Use explicit CLI commands for memory decisions:")
                 stdscr.addstr(5, 2, "python3 .agent/tools/graduate.py <id> --rationale ...")
                 stdscr.addstr(6, 2, "python3 .agent/tools/reject.py <id> --reason ...")
-                stdscr.addstr(8, 0, "Press any key to return.")
+                _g = _select_glyphs()
+                stdscr.addstr(8, 0, f"Status:  {_g['pass']} pass   {_g['warn']} warn   {_g['fail']} fail")
+                stdscr.addstr(10, 0, "Press any key to return.")
                 stdscr.refresh()
                 stdscr.getch()
 

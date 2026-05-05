@@ -198,10 +198,10 @@ def _adapter_installed(project: Path, harness: str) -> dict[str, str]:
     files = ADAPTER_FILES.get(harness, [])
     if not files:
         return _status("fail", "installed", "unknown harness", "error")
-    existing = [rel for rel in files if (project / rel).exists()]
-    if existing:
-        return _status("pass", "installed", ", ".join(existing), "info")
-    return _status("fail", "installed", "missing: " + ", ".join(files), "error")
+    missing = [rel for rel in files if not (project / rel).exists()]
+    if not missing:
+        return _status("pass", "installed", ", ".join(files), "info")
+    return _status("fail", "installed", "missing: " + ", ".join(missing), "error")
 
 
 def _contains(text: str, *needles: str) -> bool:
