@@ -46,6 +46,24 @@ cd agentic-stack
 brew update && brew upgrade agentic-stack
 ```
 
+## Trust Console
+
+agentic-stack now ships a local monitoring layer for the `.agent/` brain:
+
+```bash
+agentic-stack doctor              # health, memory, skills, candidates
+agentic-stack tui                 # read-only terminal console
+agentic-stack memory learned      # accepted lessons
+agentic-stack memory rejected     # rejected candidates
+agentic-stack memory why <id>     # evidence trail for a lesson/candidate
+agentic-stack verify --all        # adapter conformance matrix
+agentic-stack team status         # shared team-brain files
+```
+
+Every diagnostic command is local-first and file-backed. Use `--json` on
+`doctor`, `verify`, `memory`, and `team` commands when you need CI-friendly
+or pasteable output.
+
 ### Clone instead?
 
 ```bash
@@ -184,6 +202,8 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── learn.py                # one-shot lesson teaching (stage + graduate)
     ├── recall.py               # surface lessons relevant to an intent
     ├── show.py                 # colorful brain-state dashboard
+    ├── trust_model.py          # normalized Trust Console data collectors
+    ├── trust_tui.py            # read-only stdlib terminal UI
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py

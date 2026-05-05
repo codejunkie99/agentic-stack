@@ -5,6 +5,16 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Trust Console local monitoring layer.** New `agentic-stack doctor`,
+  `agentic-stack tui`, `agentic-stack memory ...`, `agentic-stack verify`,
+  and `agentic-stack team ...` commands inspect the existing file-backed
+  `.agent/` data layer without requiring a daemon or web UI. The same
+  normalized collectors power plain output, JSON output, and the read-only
+  stdlib TUI.
+
 ## [0.8.0] — 2026-04-21
 
 ### Added

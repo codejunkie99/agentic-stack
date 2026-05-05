@@ -9,14 +9,15 @@ class AgenticStack < Formula
   def install
     # install the brain + adapters alongside install.sh so relative paths hold
     pkgshare.install ".agent", "adapters", "install.sh",
+                     "agentic_stack_cli.py",
                      "onboard.py", "onboard_ui.py", "onboard_widgets.py",
                      "onboard_render.py", "onboard_write.py",
                      "onboard_features.py"
 
-    # wrapper so `agentic-stack cursor` works from anywhere
+    # wrapper so `agentic-stack cursor` and `agentic-stack doctor` work from anywhere
     (bin/"agentic-stack").write <<~EOS
       #!/bin/bash
-      exec "#{pkgshare}/install.sh" "$@"
+      exec python3 "#{pkgshare}/agentic_stack_cli.py" "$@"
     EOS
   end
 
