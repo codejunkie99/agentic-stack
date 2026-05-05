@@ -147,6 +147,7 @@ After the first `./install.sh <adapter>`, manage your project with
 verb-style subcommands (works with both `install.sh` and `install.ps1`):
 
 ```bash
+./install.sh dashboard           # interactive dashboard: health, adapters, memory, transfer
 ./install.sh add cursor          # add a second adapter (Claude Code + Cursor in same repo)
 ./install.sh status              # one-screen view: which adapters, brain stats
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
@@ -159,8 +160,9 @@ Bare `./install.sh` (no arguments) opens a **multi-select wizard** on
 a fresh project — check every harness you actually use, hit enter,
 each one gets installed. The wizard auto-detects harnesses already on
 disk and pre-checks them. On a project that already has an
-`install.json`, bare `./install.sh` lists what's still installable.
-In non-TTY shells (CI), it prints usage and exits with code 2.
+`install.json`, bare interactive `./install.sh` opens the dashboard.
+In non-TTY shells (CI), it stays script-safe and prints the available
+subcommands instead of opening a TUI.
 
 Upgrading from pre-v0.9? Run `./install.sh doctor` first — it
 synthesizes `install.json` from on-disk adapter signals so the new
@@ -364,6 +366,7 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── state.py                    # install.json read/write with fcntl/msvcrt locking
 ├── doctor.py                   # read-only audit + pre-v0.9 migration synthesis
 ├── remove.py                   # safe uninstall with shared-file detection + ownership handoff
+├── dashboard_tui.py            # project dashboard front door for health/adapters/memory/transfer
 ├── post_install.py             # named built-ins (openclaw_register_workspace)
 ├── manage_tui.py               # interactive menu loop for add/remove/audit
 ├── transfer_tui.py             # onboarding-style memory transfer wizard
