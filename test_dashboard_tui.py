@@ -9,6 +9,58 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 
+class FakeCurses:
+    A_BOLD = 1
+    KEY_DOWN = 258
+    KEY_UP = 259
+    KEY_ENTER = 343
+
+    def __init__(self):
+        self.cursor_values = []
+        self.endwin_count = 0
+
+    def curs_set(self, value):
+        self.cursor_values.append(value)
+
+    def endwin(self):
+        self.endwin_count += 1
+
+
+class FakeScreen:
+    def __init__(self, keys, height=32, width=100):
+        self.keys = list(keys)
+        self.height = height
+        self.width = width
+        self.keypad_enabled = None
+        self.clear_count = 0
+        self.current = {}
+        self.snapshots = []
+
+    def getmaxyx(self):
+        return self.height, self.width
+
+    def keypad(self, enabled):
+        self.keypad_enabled = enabled
+
+    def erase(self):
+        self.current = {}
+
+    def clear(self):
+        self.clear_count += 1
+        self.current = {}
+
+    def addstr(self, y, x, text, attr=0):
+        self.current[(y, x)] = text
+
+    def refresh(self):
+        self.snapshots.append(dict(self.current))
+
+    def getch(self):
+        if self.keys:
+            return self.keys.pop(0)
+        return ord("q")
+
+
 class DashboardTuiTest(unittest.TestCase):
     def make_project(self, root: Path) -> None:
         agent = root / ".agent"
@@ -228,6 +280,54 @@ class DashboardTuiTest(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("open dashboard", result.stdout)
+
+    def test_interactive_dashboard_keypress_navigation(self):
+        from harness_manager import dashboard_tui
+
+        curses = FakeCurses()
+        screen = FakeScreen(
+            [
+                curses.KEY_DOWN,
+                curses.KEY_DOWN,
+                ord("r"),
+                curses.KEY_UP,
+                ord("q"),
+            ]
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            self.make_project(project)
+
+            dashboard_tui._run_interactive(screen, project, ROOT, curses)
+
+        self.assertEqual(curses.cursor_values, [0])
+        self.assertTrue(screen.keypad_enabled)
+        headings = [snapshot.get((4, 21)) for snapshot in screen.snapshots]
+        self.assertEqual(headings, ["Overview", "Adapters", "Doctor", "Doctor", "Adapters"])
+
+    def test_interactive_dashboard_enter_opens_selected_section(self):
+        from harness_manager import dashboard_tui
+
+        curses = FakeCurses()
+        screen = FakeScreen([curses.KEY_DOWN, curses.KEY_ENTER, ord("q")])
+        opened = []
+        original_open_section = dashboard_tui._open_section
+
+        def fake_open_section(section, target_root, stack_root):
+            opened.append((section, target_root, stack_root))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            self.make_project(project)
+            try:
+                dashboard_tui._open_section = fake_open_section
+                dashboard_tui._run_interactive(screen, project, ROOT, curses)
+            finally:
+                dashboard_tui._open_section = original_open_section
+
+        self.assertEqual(opened, [("Adapters", project, ROOT)])
+        self.assertEqual(curses.endwin_count, 1)
+        self.assertEqual(screen.clear_count, 1)
 
 
 if __name__ == "__main__":

@@ -812,6 +812,33 @@ def _open_section(section: str, target_root: Path, stack_root: Path) -> None:
         _pause()
 
 
+def _run_interactive(stdscr: Any, target: Path, stack: Path, curses_mod: Any) -> None:
+    try:
+        curses_mod.curs_set(0)
+    except Exception:
+        pass
+    stdscr.keypad(True)
+    section_idx = 0
+    while True:
+        _draw(stdscr, section_idx, target, stack, curses_mod)
+        key = stdscr.getch()
+        if key in (ord("q"), 27):
+            return
+        if key in (ord("j"), curses_mod.KEY_DOWN):
+            section_idx = min(len(SECTIONS) - 1, section_idx + 1)
+        elif key in (ord("k"), curses_mod.KEY_UP):
+            section_idx = max(0, section_idx - 1)
+        elif key == ord("r"):
+            continue
+        elif key in (10, 13, curses_mod.KEY_ENTER):
+            section = SECTIONS[section_idx]
+            curses_mod.endwin()
+            try:
+                _open_section(section, target, stack)
+            finally:
+                stdscr.clear()
+
+
 def run(target_root: Path | str, stack_root: Path | str, plain: bool = False) -> int:
     target = _logical_path(target_root)
     stack = Path(stack_root)
@@ -825,30 +852,7 @@ def run(target_root: Path | str, stack_root: Path | str, plain: bool = False) ->
         return 0
 
     def _main(stdscr: Any) -> None:
-        try:
-            curses.curs_set(0)
-        except Exception:
-            pass
-        stdscr.keypad(True)
-        section_idx = 0
-        while True:
-            _draw(stdscr, section_idx, target, stack, curses)
-            key = stdscr.getch()
-            if key in (ord("q"), 27):
-                return
-            if key in (ord("j"), curses.KEY_DOWN):
-                section_idx = min(len(SECTIONS) - 1, section_idx + 1)
-            elif key in (ord("k"), curses.KEY_UP):
-                section_idx = max(0, section_idx - 1)
-            elif key == ord("r"):
-                continue
-            elif key in (10, 13, curses.KEY_ENTER):
-                section = SECTIONS[section_idx]
-                curses.endwin()
-                try:
-                    _open_section(section, target, stack)
-                finally:
-                    stdscr.clear()
+        _run_interactive(stdscr, target, stack, curses)
 
     curses.wrapper(_main)
     return 0
