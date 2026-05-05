@@ -40,12 +40,13 @@ No migration required. Existing projects can run `agentic-stack dashboard`
 after upgrading. Re-run an adapter install only if you want the latest copied
 adapter guidance files in a project.
 
-### Release prep
-- GitHub release notes should use this changelog entry after PR #41 merges.
-- `v0.14.0` already exists on GitHub, so this production dashboard release uses
-  the next minor tag, `v0.15.0`.
-- `Formula/agentic-stack.rb` must be bumped in the usual follow-up after the
-  `v0.15.0` tag exists and the tag tarball sha256 can be computed.
+### Release
+- Tag `v0.15.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.15.0>
+- `Formula/agentic-stack.rb` bumped to v0.15.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `e3fe0dde7a9997086a378123a365eced5514ad1a68871b294195fbf514611131`.
 
 ## [0.13.0] — 2026-05-02
 

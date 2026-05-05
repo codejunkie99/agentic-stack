@@ -1,9 +1,9 @@
 class AgenticStack < Formula
   desc "One brain, many harnesses — portable .agent/ folder for AI coding agents"
   homepage "https://github.com/codejunkie99/agentic-stack"
-  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.13.0.tar.gz"
-  sha256 "83f71bab05bd607f3590571b5422a0cc74650d69ff5d818b6682d0f877e16514"
-  version "0.13.0"
+  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.15.0.tar.gz"
+  sha256 "e3fe0dde7a9997086a378123a365eced5514ad1a68871b294195fbf514611131"
+  version "0.15.0"
   license "Apache-2.0"
 
   def install
@@ -29,5 +29,6 @@ class AgenticStack < Formula
     system "#{bin}/agentic-stack", "claude-code", testpath.to_s, "--yes"
     assert_predicate testpath/".agent/memory/personal/PREFERENCES.md", :exist?
     assert_predicate testpath/".agent/memory/.features.json", :exist?
+    assert_match "agentic-stack dashboard", shell_output("#{bin}/agentic-stack dashboard #{testpath} --plain")
   end
 end
