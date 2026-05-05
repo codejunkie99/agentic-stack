@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/flywheel/approved-run.schema.json",
+  "title": "ApprovedRun",
+  "description": "Sanitized human-approved source run for local data-flywheel export.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "created_at", "domain", "workflow", "input_redacted", "output_approved", "human_review", "redaction_status", "pii_level"],
+  "properties": {
+    "id": {"type": "string"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "project": {"type": "string"},
+    "domain": {"type": "string", "examples": ["real_estate", "saas", "legal_ops"]},
+    "workflow": {"type": "string", "examples": ["lead_intake", "bug_triage", "document_review"]},
+    "harness": {"type": "string", "examples": ["claude-code", "openclaw", "hermes", "codex"]},
+    "skill": {"type": "string"},
+    "instruction": {"type": "string"},
+    "input_redacted": {"type": "string"},
+    "output_approved": {"type": "string"},
+    "input_summary": {"type": "string"},
+    "output_summary": {"type": "string"},
+    "human_review": {"type": "object", "additionalProperties": true},
+    "redaction_status": {"type": "string", "examples": ["passed", "needs_review", "failed"]},
+    "pii_level": {"type": "string", "examples": ["none", "low", "medium", "high", "unknown"]},
+    "raw_input_stored": {"type": "boolean"},
+    "trainable": {"type": "boolean"}
+  }
+}

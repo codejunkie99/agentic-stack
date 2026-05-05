@@ -94,7 +94,9 @@ def _human_age(ts_iso):
         t = datetime.datetime.fromisoformat(ts_iso)
     except (TypeError, ValueError):
         return "unknown"
-    delta = datetime.datetime.now() - t
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=datetime.timezone.utc)
+    delta = datetime.datetime.now(datetime.timezone.utc) - t
     if delta.days >= 7:
         return f"{delta.days // 7}w ago"
     if delta.days >= 1:
@@ -124,15 +126,22 @@ def _load_episodic():
 
 
 def _daily_counts(entries, days=14):
-    """Return list of (date_str, count) for the last `days` days, oldest first."""
-    today = datetime.date.today()
+    """Return list of (date_str, count) for the last `days` days, oldest first.
+
+    Buckets on UTC dates so the activity graph aligns with the UTC
+    timestamps every writer now emits.
+    """
+    today = datetime.datetime.now(datetime.timezone.utc).date()
     buckets = {today - datetime.timedelta(days=i): 0 for i in range(days)}
     for e in entries:
         ts = e.get("timestamp", "")
         try:
-            d = datetime.datetime.fromisoformat(ts).date()
+            parsed = datetime.datetime.fromisoformat(ts)
         except ValueError:
             continue
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+        d = parsed.astimezone(datetime.timezone.utc).date()
         if d in buckets:
             buckets[d] += 1
     return [(d, buckets[d]) for d in sorted(buckets)]
@@ -165,14 +174,17 @@ def episodic_stats():
     entries = _load_episodic()
     failures_14d = 0
     latest = None
-    cutoff = datetime.datetime.now() - datetime.timedelta(days=14)
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=14)
     for e in entries:
         ts = e.get("timestamp", "")
         if ts > (latest or ""):
             latest = ts
         if e.get("result") == "failure":
             try:
-                if datetime.datetime.fromisoformat(ts) > cutoff:
+                parsed = datetime.datetime.fromisoformat(ts)
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+                if parsed > cutoff:
                     failures_14d += 1
             except ValueError:
                 pass
@@ -242,19 +254,24 @@ def skill_stats():
 def last_dream_cycle():
     if not os.path.exists(DREAM_LOG):
         return None
-    return datetime.datetime.fromtimestamp(os.path.getmtime(DREAM_LOG)).isoformat()
+    # UTC so _human_age (which now compares against UTC) reads it correctly.
+    return datetime.datetime.fromtimestamp(
+        os.path.getmtime(DREAM_LOG), tz=datetime.timezone.utc).isoformat()
 
 
 def failing_skills(threshold=3, window_days=14):
     if not os.path.exists(EPISODIC):
         return []
-    cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=window_days)
     by_skill = {}
     for e in _load_episodic():
         if e.get("result") != "failure":
             continue
         try:
-            if datetime.datetime.fromisoformat(e.get("timestamp", "")) <= cutoff:
+            parsed = datetime.datetime.fromisoformat(e.get("timestamp", ""))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+            if parsed <= cutoff:
                 continue
         except ValueError:
             continue

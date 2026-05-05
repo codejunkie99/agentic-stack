@@ -1,0 +1,16 @@
+{
+  "name": "windsurf",
+  "description": "Windsurf — modern .windsurf/rules instruction file plus legacy .windsurfrules compatibility. No hooks today.",
+  "files": [
+    {
+      "src": ".windsurf/rules/agentic-stack.md",
+      "dst": ".windsurf/rules/agentic-stack.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": ".windsurfrules",
+      "dst": ".windsurfrules",
+      "merge_policy": "overwrite"
+    }
+  ]
+}

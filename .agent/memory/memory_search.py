@@ -21,6 +21,7 @@ The index is stored at .agent/memory/.index/memory.db and auto-rebuilds
 when any memory file changes, is renamed, or is deleted.
 """
 import json
+import re
 import shutil
 import sys
 import sqlite3
@@ -34,6 +35,7 @@ FEATURES_PATH = MEMORY_DIR / ".features.json"
 
 # Files we consider "memory documents" for both indexing and search.
 MEMORY_SUFFIXES = (".md", ".jsonl")
+CJK_RE = re.compile(r"[\u3400-\u9fff]")
 
 
 def feature_enabled() -> bool:
@@ -170,6 +172,15 @@ def search_fts5(query: str):
         ).fetchall()
     except sqlite3.OperationalError:
         # Query syntax error — fall back to LIKE
+        rows = conn.execute(
+            "SELECT filename, substr(content, 1, 300) FROM memories WHERE content LIKE ?",
+            (f"%{query}%",),
+        ).fetchall()
+
+    # SQLite's unicode61 tokenizer is good for mixed Latin/CJK text, but it
+    # does not segment every short CJK substring the way users expect. Keep the
+    # fast FTS path first, then recover exact CJK substring matches.
+    if not rows and CJK_RE.search(query):
         rows = conn.execute(
             "SELECT filename, substr(content, 1, 300) FROM memories WHERE content LIKE ?",
             (f"%{query}%",),

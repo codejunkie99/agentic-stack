@@ -10,6 +10,10 @@ __pycache__/
 venv/
 .pytest_cache/
 
+# tests live outside the repo — keep in your local working tree but don't
+# ship them in releases or the brew bottle.
+tests/
+
 # editor
 .DS_Store
 .idea/
@@ -18,6 +22,14 @@ venv/
 # runtime logs
 .agent/memory/dream.log
 *.log
+
+# local agent activity/data-layer exports (private, regenerated)
+.agent/data-layer/
+.agent/data-layer/**
+
+# local approved-run flywheel exports (private, regenerated)
+.agent/flywheel/
+.agent/flywheel/**
 
 # do NOT ignore memory files — they are the point
 !.agent/memory/
@@ -28,5 +40,19 @@ venv/
 .agent/memory/.index/
 .agent/memory/.index/**
 
+# ...and Python bytecode that lands anywhere under .agent/memory/ when
+# modules there are imported. The negation above re-includes these by
+# default; re-exclude explicitly.
+.agent/memory/**/__pycache__/
+.agent/memory/**/*.py[cod]
+
 # Runtime backups (auto_dream rewrites). Never versioned.
 .agent/memory/**/*.bak
+
+# Test scratch dir — the CLI round-trip test creates shim scripts here.
+.tmp/
+
+# tldraw skill runtime data — generated at use, not committed.
+.agent/skills/tldraw/INDEX.md
+.agent/skills/tldraw/snapshots/
+.agent/skills/tldraw/snapshots.jsonl

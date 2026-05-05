@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui,Helvetica,Arial,sans-serif" viewBox="0 0 980 620">
+  <defs>
+    <linearGradient id="dl-panel" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f8fafc"/>
+    </linearGradient>
+    <linearGradient id="dl-blue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#bfdbfe"/>
+    </linearGradient>
+    <linearGradient id="dl-green" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dcfce7"/>
+      <stop offset="1" stop-color="#bbf7d0"/>
+    </linearGradient>
+    <linearGradient id="dl-amber" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fef3c7"/>
+      <stop offset="1" stop-color="#fde68a"/>
+    </linearGradient>
+    <marker id="dl-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="9" refY="5" viewBox="0 0 10 10">
+      <path fill="#2563eb" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <filter id="dl-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity=".10"/>
+    </filter>
+  </defs>
+  <rect width="980" height="620" fill="#f8fafc"/>
+  <text x="490" y="40" fill="#0f172a" font-size="24" font-weight="700" text-anchor="middle">agentic-stack data layer</text>
+  <text x="490" y="66" fill="#475569" font-size="13" text-anchor="middle">Local monitoring for every harness sharing the same portable .agent/ brain</text>
+  <g transform="translate(38,104)">
+    <text x="0" y="-18" fill="#334155" font-size="12" font-weight="700">INPUT STREAMS</text>
+    <rect width="210" height="366" rx="14" fill="url(#dl-panel)" stroke="#cbd5e1" filter="url(#dl-shadow)"/>
+    <g transform="translate(18,24)">
+      <rect width="174" height="58" rx="10" fill="#fff" stroke="#93c5fd"/>
+      <text x="18" y="24" fill="#1e3a8a" font-size="12" font-weight="700">Harness events</text>
+      <text x="18" y="42" fill="#64748b" font-size="10">Claude, Codex, Cursor, etc.</text>
+    </g>
+    <g transform="translate(18,98)">
+      <rect width="174" height="58" rx="10" fill="#fff" stroke="#86efac"/>
+      <text x="18" y="24" fill="#166534" font-size="12" font-weight="700">Episodic memory</text>
+      <text x="18" y="42" fill="#64748b" font-size="10">skills, actions, outcomes</text>
+    </g>
+    <g transform="translate(18,172)">
+      <rect width="174" height="58" rx="10" fill="#fff" stroke="#fbbf24"/>
+      <text x="18" y="24" fill="#92400e" font-size="12" font-weight="700">Cron runs</text>
+      <text x="18" y="42" fill="#64748b" font-size="10">started, finished, status</text>
+    </g>
+    <g transform="translate(18,246)">
+      <rect width="174" height="58" rx="10" fill="#fff" stroke="#c4b5fd"/>
+      <text x="18" y="24" fill="#5b21b6" font-size="12" font-weight="700">Category rules</text>
+      <text x="18" y="42" fill="#64748b" font-size="10">personal, admin, coding</text>
+    </g>
+    <text x="105" y="342" fill="#64748b" font-size="10" text-anchor="middle">Everything stays local by default</text>
+  </g>
+  <g fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#dl-arrow)">
+    <path d="M258 170 L318 220"/>
+    <path d="M258 244 L318 248"/>
+    <path d="M258 318 L318 276"/>
+    <path d="M258 392 L318 304"/>
+  </g>
+  <g transform="translate(318,150)">
+    <rect width="344" height="230" rx="16" fill="#0f172a" filter="url(#dl-shadow)"/>
+    <text x="172" y="34" fill="#e2e8f0" font-size="14" font-weight="700" text-anchor="middle">data_layer_export.py</text>
+    <text x="172" y="54" fill="#94a3b8" font-size="10" text-anchor="middle">normalize, hash private ids, bucket time, summarize KPIs</text>
+    <g transform="translate(24,82)">
+      <rect width="88" height="62" rx="10" fill="url(#dl-blue)"/>
+      <text x="44" y="25" fill="#1e3a8a" font-size="11" font-weight="700" text-anchor="middle">Normalize</text>
+      <text x="44" y="43" fill="#334155" font-size="9" text-anchor="middle">events + runs</text>
+    </g>
+    <g transform="translate(128,82)">
+      <rect width="88" height="62" rx="10" fill="url(#dl-green)"/>
+      <text x="44" y="25" fill="#166534" font-size="11" font-weight="700" text-anchor="middle">Aggregate</text>
+      <text x="44" y="43" fill="#334155" font-size="9" text-anchor="middle">hour/day/week</text>
+    </g>
+    <g transform="translate(232,82)">
+      <rect width="88" height="62" rx="10" fill="url(#dl-amber)"/>
+      <text x="44" y="25" fill="#92400e" font-size="11" font-weight="700" text-anchor="middle">Render</text>
+      <text x="44" y="43" fill="#334155" font-size="9" text-anchor="middle">HTML + TUI</text>
+    </g>
+    <g transform="translate(24,172)">
+      <rect width="296" height="34" rx="8" fill="#1e293b" stroke="#334155"/>
+      <text x="148" y="22" fill="#cbd5e1" font-family="ui-monospace,Menlo,monospace" font-size="11" text-anchor="middle">.agent/data-layer/exports/&lt;date&gt;/</text>
+    </g>
+  </g>
+  <g fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#dl-arrow)">
+    <path d="M662 265 L724 265"/>
+  </g>
+  <g transform="translate(724,104)">
+    <text x="0" y="-18" fill="#334155" font-size="12" font-weight="700">OUTPUTS</text>
+    <rect width="218" height="366" rx="14" fill="url(#dl-panel)" stroke="#cbd5e1" filter="url(#dl-shadow)"/>
+    <g transform="translate(18,22)">
+      <rect width="182" height="116" rx="12" fill="#fff" stroke="#93c5fd"/>
+      <text x="16" y="24" fill="#1e3a8a" font-size="12" font-weight="700">dashboard.html</text>
+      <rect x="16" y="42" width="42" height="30" rx="6" fill="#dbeafe"/>
+      <rect x="70" y="42" width="42" height="30" rx="6" fill="#dcfce7"/>
+      <rect x="124" y="42" width="42" height="30" rx="6" fill="#fef3c7"/>
+      <path d="M18 96 L52 84 L86 90 L120 70 L164 78" fill="none" stroke="#2563eb" stroke-width="2"/>
+    </g>
+    <g transform="translate(18,154)">
+      <rect width="182" height="54" rx="10" fill="#fff" stroke="#86efac"/>
+      <text x="16" y="22" fill="#166534" font-size="12" font-weight="700">dashboard.tui.txt</text>
+      <text x="16" y="39" fill="#64748b" font-size="10">terminal dashboard</text>
+    </g>
+    <g transform="translate(18,224)">
+      <rect width="182" height="54" rx="10" fill="#fff" stroke="#fbbf24"/>
+      <text x="16" y="22" fill="#92400e" font-size="12" font-weight="700">CSV + JSON</text>
+      <text x="16" y="39" fill="#64748b" font-size="10">timelines, KPIs, categories</text>
+    </g>
+    <g transform="translate(18,294)">
+      <rect width="182" height="48" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="91" y="20" fill="#334155" font-size="11" font-weight="700" text-anchor="middle">Optional handoff</text>
+      <text x="91" y="36" fill="#64748b" font-size="9" text-anchor="middle">screenshots only with approval</text>
+    </g>
+  </g>
+  <g transform="translate(38,514)">
+    <rect width="904" height="62" rx="14" fill="#ecfeff" stroke="#67e8f9"/>
+    <text x="452" y="25" fill="#155e75" font-size="13" font-weight="700" text-anchor="middle">Privacy posture</text>
+    <text x="452" y="45" fill="#475569" font-size="11" text-anchor="middle">No remote telemetry. Raw runtime exports are regenerated and gitignored under .agent/data-layer/.</text>
+  </g>
+</svg>

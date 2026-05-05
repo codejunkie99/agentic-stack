@@ -1,0 +1,21 @@
+{
+  "name": "pi",
+  "description": "Pi Coding Agent — AGENTS.md + .pi/skills symlink + .pi/extensions/memory-hook.ts. The extension subscribes to tool_result (bash/edit/write only) for episodic logging and runs auto_dream.py on session shutdown. No Python subprocess per tool call — all scoring is inline TypeScript.",
+  "files": [
+    {
+      "src": "AGENTS.md",
+      "dst": "AGENTS.md",
+      "merge_policy": "skip_if_exists"
+    },
+    {
+      "src": "memory-hook.ts",
+      "dst": ".pi/extensions/memory-hook.ts",
+      "merge_policy": "overwrite"
+    }
+  ],
+  "skills_link": {
+    "target": ".agent/skills",
+    "dst": ".pi/skills",
+    "fallback": "rsync_with_delete"
+  }
+}

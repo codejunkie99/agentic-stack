@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/flywheel/flywheel-metrics.schema.json",
+  "title": "FlywheelMetrics",
+  "description": "Local readiness metrics for approved workflow traces and future context/eval/training paths.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["generated_at", "privacy_model", "total_traces", "accepted_traces", "trainable_traces", "redaction_pass_rate", "workflows"],
+  "properties": {
+    "generated_at": {"type": "string", "format": "date-time"},
+    "privacy_model": {"type": "string"},
+    "total_traces": {"type": "integer", "minimum": 0},
+    "accepted_traces": {"type": "integer", "minimum": 0},
+    "trainable_traces": {"type": "integer", "minimum": 0},
+    "redaction_pass_rate": {"type": "number", "minimum": 0, "maximum": 1},
+    "avg_context_tokens_before": {"type": ["number", "null"], "minimum": 0},
+    "avg_context_tokens_after": {"type": ["number", "null"], "minimum": 0},
+    "context_reduction_pct": {"type": ["number", "null"]},
+    "thresholds": {"type": "object", "additionalProperties": true},
+    "workflows": {"type": "object", "additionalProperties": true}
+  }
+}

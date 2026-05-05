@@ -37,6 +37,13 @@ Skip it and the system is just files on disk.
 - Teach the agent a new rule in one shot:
   `python3 .agent/tools/learn.py "<the rule>" --rationale "<why>"`.
 
+## Visual memory (tldraw, opt-in)
+If `.agent/memory/.features.json` has `tldraw.enabled: true`, the `tldraw`
+skill is available. It draws on a live canvas at `http://localhost:3030`
+via the tldraw MCP server configured in `.mcp.json`. Worthwhile drawings
+snapshot into the skill's local store and are recalled with
+`python3 .agent/skills/tldraw/store.py list`. Off by default.
+
 ## Rules that override defaults
 - Never force push to `main`, `production`, or `staging`.
 - Never delete episodic or semantic memory entries — archive them.

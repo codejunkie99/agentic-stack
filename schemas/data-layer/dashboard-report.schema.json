@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/data-layer/dashboard-report.schema.json",
+  "title": "DashboardReport",
+  "description": "Local screenshot/report configuration for daily agent resource management.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "cadence", "charts", "privacy_level"],
+  "properties": {
+    "id": {"type": "string", "examples": ["daily_agent_resource_report"]},
+    "cadence": {"type": "string", "examples": ["daily", "weekly", "0 8 * * *"]},
+    "timezone": {"type": "string", "examples": ["America/Toronto"]},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "dashboard_html": {"type": "string", "examples": ["dashboard.html"]},
+    "terminal_dashboard": {"type": "string", "examples": ["dashboard.tui.txt"]},
+    "daily_report_md": {"type": "string", "examples": ["daily-report.md"]},
+    "screenshot_target": {"type": "string", "examples": ["dashboard.html"]},
+    "charts": {
+      "type": "array",
+      "items": {"type": "string"},
+      "examples": [["resource_overview", "activity", "tokens", "cron_timeline", "harness_mix"]]
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "User-approved delivery metadata. Do not store secrets here."
+    },
+    "privacy_level": {"type": "string", "examples": ["local_only", "sanitized_export"]},
+    "pii_level": {"type": "string", "examples": ["none", "low", "medium", "high", "unknown"]}
+  }
+}

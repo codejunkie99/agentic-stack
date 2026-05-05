@@ -14,6 +14,467 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `.agent/` data layer without requiring a daemon or web UI. The same
   normalized collectors power plain output, JSON output, and the read-only
   stdlib TUI.
+- **Status glyphs in the TUI.** Doctor and Verify panes render `✓ / ! / ✗`
+  instead of `PASS / WARN / FAIL` text. Encoding-aware fallback to
+  `+ / ! / x` when stdout cannot encode Unicode (e.g. `PYTHONIOENCODING=ascii`).
+
+### Fixed
+- Adapter conformance (`agentic-stack verify`) now requires every listed
+  adapter file before marking install pass; previously any single file
+  was sufficient and produced false positives for opencode/pi.
+- `agentic-stack doctor --json` preserves non-zero exit code when checks
+  fail (was always exiting 0 even on failure, masking CI signals).
+
+## [0.13.0] — 2026-05-02
+
+Minor release. Adds an onboarding-style transfer wizard for moving a portable
+`.agent` brain into Codex, Cursor, Windsurf, or terminal-only projects with a
+generated curl/PowerShell import command.
+
+### Added
+- **`agentic-stack transfer` wizard.** Adds an onboarding-style TUI that parses
+  natural-language requests such as `move my memory into Codex`, previews the
+  target adapter files, asks for confirmation, and either generates an import
+  command, applies locally, or both.
+- **Portable transfer bundles.** Adds canonical JSON + gzip + base64url
+  bundles with SHA-256 verification. The importer merges preferences and
+  accepted lessons idempotently, restores selected memory files, copies skills,
+  records import metadata, and installs selected adapters through the existing
+  harness manager.
+- **Full memory intent.** `move my memory` now means preferences, accepted
+  lessons, skills, working memory, episodic/history logs, and candidate
+  lessons. Data-layer exports, flywheel traces, runtime indexes, and caches
+  stay out unless future scopes explicitly add them.
+- **Curl and PowerShell bootstraps.** Adds `scripts/import-transfer.sh` and
+  `scripts/import-transfer.ps1` so another terminal can import a transfer
+  bundle without manually cloning the repo first.
+
+### Changed
+- Windsurf installs a modern `.windsurf/rules/agentic-stack.md` workspace rule
+  and still writes legacy `.windsurfrules` for older Windsurf builds.
+- `agentic-stack transfer export` and `agentic-stack transfer import` provide
+  non-interactive surfaces for scripts and CI-style handoff flows.
+
+### Fixed
+- Transfer export blocks secret-like content, including private keys and common
+  API token patterns, before payload generation.
+- Fresh Codex imports now copy the full `.agent` brain before installing the
+  Codex `AGENTS.md` and `.agents/skills` adapter wiring.
+
+### Migration
+No migration required. Existing installs keep working. Run
+`agentic-stack transfer` from a project that already has `.agent/` to create or
+import a transfer bundle.
+
+### Release
+- Tag `v0.13.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.13.0>
+- `Formula/agentic-stack.rb` bumped to v0.13.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `83f71bab05bd607f3590571b5422a0cc74650d69ff5d818b6682d0f877e16514`.
+
+## [0.12.0] — 2026-04-27
+
+Minor release. Adds the opt-in `tldraw` seed skill for live canvas diagrams
+and a skill-local snapshot store. The feature stays beta and off by default.
+
+### Added
+- **`tldraw` seed skill — live canvas diagrams.** Adds
+  `.agent/skills/tldraw/SKILL.md` with MCP tool guidance, shape constraints,
+  and a self-rewrite hook for diagram, sketch, wireframe, flowchart,
+  whiteboard, and architecture visualization prompts.
+- **Skill-local snapshot store.** Adds `.agent/skills/tldraw/store.py` with
+  `snapshot`, `list`, `load`, and `archive` CLI/API support. Runtime output is
+  local and gitignored under `.agent/skills/tldraw/`: `snapshots.jsonl`,
+  `snapshots/`, and `INDEX.md`.
+- **Opt-in feature flag.** Onboarding now writes a `tldraw` beta feature flag,
+  default off. The skill loader skips flagged skills unless
+  `.agent/memory/.features.json` explicitly enables them.
+- **Manual MCP config source.** Adds `adapters/_shared/tldraw-mcp.json` as the
+  canonical tldraw MCP config block users can merge into Claude Code,
+  Cursor, or Antigravity after enabling the feature.
+
+### Changed
+- Seed skill count is now nine: `skillforge`, `memory-manager`, `git-proxy`,
+  `debug-investigator`, `deploy-checklist`, `design-md`, `data-layer`,
+  `data-flywheel`, and `tldraw`.
+- tldraw persistence is intentionally skill-local storage, not a fifth memory
+  layer: it has no dream-cycle, clustering, recall, or semantic-memory
+  lifecycle.
+- Default adapter installs no longer wire beta tldraw MCP config
+  automatically.
+
+### Fixed
+- Updated the tldraw validation suite to target
+  `.agent/skills/tldraw/store.py` instead of the removed
+  `.agent/memory/visual/visual_memory.py`.
+- `store.py` renders `INDEX.md` while holding the JSONL lock so concurrent
+  snapshots cannot leave the index stale.
+- Added coverage for feature-gated skill loading, no default MCP install, path
+  traversal rejection, malformed JSONL recovery, same-second snapshot ids, and
+  concurrent snapshots.
+
+### Migration
+No migration required. Existing installs keep tldraw disabled until users opt
+in through onboarding reconfiguration or `.agent/memory/.features.json`.
+
+### Credits
+- PR #11 by @Siddharth11Roy, with review fixes and release prep by Codex.
+
+### Release
+- Tag `v0.12.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.12.0>
+- `Formula/agentic-stack.rb` bumped to v0.12.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `cd18a0cf82e027390ef10a102ec4bfed26fc45114f6ce96c0787e5a1cf0dce26`.
+
+## [0.11.2] — 2026-04-26
+
+Patch release. Makes the data-layer dashboard easier to access from coding
+tools by turning the injected `data-layer` skill into the natural-language
+dashboard surface.
+
+### Added
+- **Injected dashboard behavior.** The `data-layer` skill now triggers on plain
+  phrases such as "show me the dashboard", "what did my agents do",
+  "agent status", and "usage report". When the model decides the user wants
+  local agent activity, the skill tells it to render the terminal dashboard
+  directly instead of making the user remember flags.
+- **Natural-language exporter requests.** The existing exporter now accepts
+  requests such as
+  `python3 .agent/tools/data_layer_export.py show me last 7 days by hour`.
+  It maps common phrases to `--window` and `--bucket`; explicit flags still
+  override the natural-language text for scripts and automation.
+
+### Changed
+- The terminal dashboard now uses the same rail/marker visual language as the
+  onboarding flow while keeping `dashboard.tui.txt` plain text with no ANSI
+  escape codes.
+- `dashboard-summary.json` records the natural-language request that produced
+  the export when one was provided.
+
+### Migration
+No migration required. Existing flag-based commands still work.
+
+### Release
+- Tag `v0.11.2` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.2>
+- `Formula/agentic-stack.rb` bumped to v0.11.2 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `b9eb098466376c13e087dc91a0655d97481dfd13a6f640989384881990eb1e58`.
+
+## [0.11.1] — 2026-04-26
+
+Patch release. Makes the data-layer dashboard visible directly in coding-tool
+terminals and adds a visual SVG explainer for the data-layer flow.
+
+### Added
+- **Terminal dashboard by default.** The existing
+  `python3 .agent/tools/data_layer_export.py --window 30d --bucket day`
+  command now prints a compact TUI-style dashboard after writing exports. It
+  shows resource numbers, latest bucket activity, top harnesses, top workflows,
+  top categories, and artifact paths without requiring a browser.
+- **`dashboard.tui.txt`.** The same terminal dashboard is saved next to
+  `dashboard.html`, CSV/JSON exports, and `daily-report.md` for agents and
+  users who want to inspect or attach a plain-text report.
+- **`docs/data-layer.svg`.** README and `docs/data-layer.md` now include a
+  visual of the local data-layer flow: input streams, exporter, browser
+  dashboard, terminal dashboard, CSV/JSON, and approved handoff.
+
+### Changed
+- `dashboard-report.json` now advertises the terminal dashboard artifact.
+- Data-layer docs no longer require a separate command to see the terminal
+  view; the normal export command prints it.
+
+### Migration
+No migration required. Existing data-layer commands still work; they now print
+the terminal dashboard in addition to the previous status lines.
+
+### Release
+- Tag `v0.11.1` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.1>
+- `Formula/agentic-stack.rb` bumped to v0.11.1 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `c0f09417c6caf34ba712d03271177ea2779af50e86a19bf76c10ba5d50bcff3e`.
+
+## [0.11.0] — 2026-04-26
+
+Minor release. Adds two local-first data capabilities: a cross-harness
+monitoring/data layer and an approved-run data flywheel. Both stay private by
+default, write regenerated runtime artifacts under ignored `.agent/`
+subdirectories, and avoid remote telemetry or model training.
+
+### Added
+- **`data-layer` seed skill — local cross-harness monitoring.** Adds
+  `.agent/skills/data-layer/SKILL.md` and
+  `.agent/tools/data_layer_export.py` to export dashboard-ready local data
+  across Claude Code, Hermes, OpenClaw, Codex, Cursor, OpenCode, and custom
+  loops sharing the same `.agent/` brain. Outputs include agent events, cron
+  timelines, KPI summaries, token/cost estimates, category breakdowns,
+  `dashboard.html`, and `daily-report.md`. Runtime exports live under
+  `.agent/data-layer/`, which is gitignored. Thanks to @danielfoch for PR #25.
+- **`data-flywheel` seed skill — approved runs to reusable artifacts.** Adds
+  `.agent/skills/data-flywheel/SKILL.md` and
+  `.agent/tools/data_flywheel_export.py` to turn human-approved, redacted runs
+  into trace records, context cards, eval cases, training-ready JSONL, and
+  flywheel metrics. Runtime exports live under `.agent/flywheel/`, which is
+  gitignored. The tool is local-only, model-agnostic, and does not train
+  models or call external APIs. Thanks to @danielfoch for PR #26.
+- Schemas, sanitized examples, tests, README sections, and architecture docs
+  for both local data features.
+
+### Changed
+- Seed skill count is now eight: `skillforge`, `memory-manager`, `git-proxy`,
+  `debug-investigator`, `deploy-checklist`, `design-md`, `data-layer`, and
+  `data-flywheel`.
+- `docs/architecture.md` now describes five local modules: memory, skills,
+  protocols, data layer, and data flywheel.
+
+### Migration
+`brew upgrade agentic-stack` is enough. There are no on-disk schema changes.
+The new runtime directories, `.agent/data-layer/` and `.agent/flywheel/`, are
+private and regenerated; both are gitignored.
+
+### Release
+- Tag `v0.11.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.11.0>
+- Superseded by v0.11.1 before the Homebrew formula bump.
+
+### Credits
+- PR #25 and PR #26 by @danielfoch.
+- Merge conflict resolution, verification, and release prep by Codex.
+
+## [0.10.0] — 2026-04-26
+
+Minor release. Adds the `design-md` seed skill (sixth seed skill in the
+brain), and fixes a hard crash on macOS-default Python 3.9 that hit every
+brew user on first run.
+
+### Added
+- **`design-md` seed skill — DESIGN.md / Google Stitch support.** A new
+  portable skill that points coding agents at a root `DESIGN.md` (Google
+  Stitch format) as the visual-system source of truth. Loads only when
+  `DESIGN.md` exists at the project root; default behavior is read-only on
+  the contract file, and validation prefers
+  `npx @google/design.md lint DESIGN.md` over hand-checks. Brings the seed
+  skill count from five to six. Thanks to @danielfoch for the contribution
+  (PR #21). Decision recorded in `.agent/memory/semantic/DECISIONS.md`.
+
+### Fixed
+- **Python 3.9 crash on first run (#27).** Every brew user on macOS-default
+  Python 3.9 hit `TypeError: unsupported operand type(s) for |: 'type' and
+  'type'` immediately after `brew install agentic-stack` because
+  `harness_manager/` used PEP 604 union syntax (`Path | str`) that requires
+  Python 3.10+ at runtime. Added `from __future__ import annotations`
+  (PEP 563) to the eight affected files so all annotations are stored as
+  strings and never evaluated at import time. Works on Python 3.7+, which
+  covers every macOS-shipped Python in the wild. Zero-cost vs. the
+  reporter's suggested `python@3.10` brew dep (~150 MB pull). Thanks to
+  @WhoLsJohnGalt for the precise repro and the suggested workaround.
+
+### Migration
+`brew upgrade agentic-stack` is enough — no on-disk schema changes. Users
+on Python 3.9 who hit #27 on v0.9.x can upgrade and the crash goes away.
+Users with existing `.pi/extensions/memory-hook.ts` from v0.9.0 already
+got the fixes via `./install.sh pi` after the v0.9.1 upgrade; this release
+adds the `design-md` skill on top.
+
+### Release
+- Tag `v0.10.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.10.0>
+- `Formula/agentic-stack.rb` bumped to v0.10.0 in a follow-up commit
+  (same flow as v0.8.0 → v0.9.0 → v0.9.1): tag first, compute sha256,
+  then bump `url` + `sha256` + `version` together so brew always points
+  at a real installable artifact.
+
+### Credits
+- PR #21 by @danielfoch (design-md skill), with cross-model review fixes
+  applied as a follow-up commit.
+- Issue #27 by @WhoLsJohnGalt — clean repro of the macOS Python 3.9 crash
+  including a working sed-based workaround.
+
+## [0.9.1] — 2026-04-26
+
+Patch release that closes the gap between v0.9.0 and a working pi adapter.
+Every brew user on v0.9.0 hit the first bug; the rest are quieter but make
+the dream cycle and the cross-harness episodic log actually correct.
+
+### Fixed
+- **`agentic-stack pi` crashed for every brew user with `ModuleNotFoundError:
+  No module named 'harness_manager'`.** The v0.9.0 Formula didn't include
+  `harness_manager/` in `pkgshare.install`, so `install.sh` couldn't dispatch.
+  Adds it back.
+- **Pi dream cycle never fired.** The `session_shutdown` handler filtered
+  on `event.reason`, but Pi's `SessionShutdownEvent` carries no `reason`
+  field — verified against `pi-coding-agent` types.d.ts and the emit site
+  at `agent-session.js:1638`. The filter rejected every event, so
+  `auto_dream.py` never ran. Filter dropped; re-entrancy guard added.
+- **Pi edit reflections lost the diff.** Hook accessed `event.input.edits[0]`
+  but Pi's `EditToolInput` is flat `{ path, oldText, newText }` (no `edits`
+  array — that's MultiEdit on Claude Code). Reflections silently degraded
+  to `Edited <path>` with no old/new content. Read the flat fields.
+- **`decay.py` crashed comparing aware-UTC entries to naive cutoff.** The
+  new `session_shutdown` hook surfaced this on every clean pi exit. Cutoff
+  is now `datetime.now(timezone.utc)`; entry timestamps are normalised to
+  UTC before comparison.
+- **Naive-local Python timestamps drifted against the UTC decay window.**
+  Decay's "naive == UTC" assumption was correct only if writers emitted UTC.
+  They didn't: `post_execution`, `on_failure`, `learn`, `graduate`,
+  `promote`, `review_state`, `render_lessons` all wrote naive-local. Every
+  writer now emits aware UTC; every reader (`salience`, `show._human_age`
+  / `_daily_counts` / `failing_skills` / `last_dream_cycle`,
+  `on_failure._count_recent_failures`, `review_state._age_factor`,
+  `archive`) normalises naive timestamps to UTC before comparison.
+- **One bad regex in `hook_patterns.json` disabled every user pattern in
+  the Pi hook.** Pre-fix used a single combined RegExp per list, caught
+  any error, returned null for both. Now per-fragment validation with
+  incremental merge — same posture as `claude_code_post_tool.py`'s
+  `_filter_valid` / `_build_with_fallback`.
+- **`auto_dream` lost entries that landed mid-cycle.** Original `_write_entries`
+  had a truncate-before-lock window — `open(path, "w")` truncates BEFORE
+  a lock can be taken. The deeper bug: even after fixing the inner race,
+  any `append_jsonl()` between `_load_entries()` and `_write_entries(kept)`
+  would be truncated away by the rewrite. The cycle now holds a single
+  exclusive flock on `AGENT_LEARNINGS.jsonl` across the entire
+  read-modify-write window via `_episodic_locked()`. Mutually exclusive
+  with `_episodic_io.append_jsonl` (same flock target). POSIX only;
+  Windows falls back to historical best-effort behaviour.
+- **`_cachedSha` went stale after `git commit` inside a pi session.** TS
+  hook cached the SHA per-process for performance, so every entry logged
+  after a mid-session commit recorded the pre-commit SHA. Cache, but
+  invalidate on bash commands matching `git <subcmd>` for HEAD-moving
+  subcommands. Allows option flags between `git` and the subcommand
+  (`git -c key=val checkout main`, `git -C path switch dev`).
+- **`salience` over-scored future-skewed legacy rows.** Legacy naive-local
+  timestamps re-interpreted as UTC could read as a few hours in the future
+  during the migration window. `timedelta.days` then went negative and
+  recency exceeded the intended cap. Floor age at 0; clamp recency to ≤ 10.
+- **`decay` archive filename used local date while cutoff was UTC.**
+  `archive_{date}.jsonl` now uses UTC date so a tz-jumping user gets a
+  deterministic path.
+
+### Changed
+- `adapters/pi/adapter.json` no longer manages
+  `.agent/harness/hooks/pi_post_tool.py` via `from_stack`. The TS hook is
+  self-contained — all scoring + reflection inline, no Python subprocess
+  per tool call. The .py still ships in the brain template under
+  `.agent/harness/hooks/` for standalone use.
+- `tests/` is now untracked and listed in `.gitignore`. CI never ran
+  these (`.github/workflows/ci.yml` runs `test_claude_code_hook.py` +
+  `verify_*.py` at repo root). Pull from an older tag if you want the
+  unittest suite locally.
+
+### Migration
+`brew upgrade agentic-stack` is enough — there are no on-disk schema
+changes. Existing pi installs with the v0.9.0 hook get the new logic on
+the next `./install.sh pi`. Existing `.agent/memory/episodic/AGENT_LEARNINGS.jsonl`
+files with naive-local timestamps continue to work — readers normalise
+them at compare time and writers emit UTC going forward.
+
+### Release
+- Tag `v0.9.1` cut from master at `d7b70b2`.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.9.1>
+- `Formula/agentic-stack.rb` bumped to v0.9.1 in a follow-up commit
+  (same flow as v0.8.0 → v0.9.0): tag first, compute sha256, then bump
+  `url` + `sha256` + `version` together so brew always points at a real
+  installable artifact.
+- Tarball sha256:
+  `09cc3b8c9ec159cf8b85cf672fc15a29e6bfa9377cc9c59dd270acd441ced568`
+  (verify locally with
+  `curl -sL https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.9.1.tar.gz | shasum -a 256`)
+
+### Credits
+PR #24 by @aliirz; Codex CLI used for an independent second-opinion review
+that surfaced the auto_dream window race + the SHA-regex narrowness.
+
+## [0.9.0] — 2026-04-23
+
+### Added
+- **Harness manager: manifest-driven adapter system.** Each adapter now
+  ships an `adapters/<name>/adapter.json` declaring its files,
+  collision policy, optional skills directory mirror, and named
+  post-install actions. Adding a new adapter is now a JSON-only PR —
+  no Python code, no test wiring, no class registration. Lives in the
+  new `harness_manager/` Python package.
+- **`./install.sh add <adapter>`** — append an adapter to an existing
+  project without re-running the onboarding wizard.
+- **`./install.sh remove <adapter>`** — confirmation prompt lists every
+  file before deletion. Hard delete (no quarantine, no undo — git is
+  the safety net). Reverses post-install actions automatically (e.g.,
+  `openclaw agents remove`).
+- **`./install.sh doctor`** — read-only audit of installed adapters.
+  Verifies tracked files exist, post-install state is valid, `.agent/`
+  brain is intact. Exits 0 on green, 1 on red. First run on a
+  pre-v0.9.0 project asks before synthesizing `install.json` — never
+  silently mutates.
+- **`./install.sh status`** — one-screen view of installed adapters,
+  brain stats (skills/episodic/lessons), last-updated timestamp.
+- **`.agent/install.json`** — authoritative record of what's installed.
+  Schema-versioned. Atomic write via tempfile + rename, fcntl-locked
+  on POSIX.
+- **PowerShell parity from day one.** `install.ps1` is now a 70-line
+  thin dispatcher to the same Python backend `install.sh` uses. The
+  new `add`/`remove`/`doctor`/`status` verbs behave identically across
+  mac/Linux/Windows. Was 270+ lines of duplicated bash-shaped logic.
+- `docs/per-harness/standalone-python.md` — gap-fill for the only
+  harness that didn't have a per-harness doc.
+
+### Fixed
+- **#18** — Claude Code hook commands break when cwd is not the
+  project root. `adapters/claude-code/settings.json` template now uses
+  `{{BRAIN_ROOT}}` placeholder, which the manifest backend substitutes
+  with `$CLAUDE_PROJECT_DIR` at install time. Hook commands resolve
+  correctly regardless of which directory Claude Code's cwd points at.
+  Thanks to @palamp for the report and the proposal that shaped the
+  larger feature.
+
+### Security
+- **Manifest path-safety hardening (`harness_manager/schema.py`).** The
+  pre-existing path-traversal guard only tokenized on `/` and only
+  treated `/`-prefixed paths as absolute, so Windows-style inputs
+  (`..\..\outside`, `\\server\share`, `C:\temp\x`, `C:foo`) bypassed
+  validation and could let install/remove read or write outside the
+  adapter/project roots when run on Windows. Also extended the same
+  validation to `skills_link.target` and `skills_link.dst`, which were
+  previously only checked for presence — a manifest could otherwise
+  point the symlink/rsync into arbitrary filesystem locations on any
+  platform. Both POSIX and Windows separators are now normalized
+  before traversal detection, and every common absolute-path form
+  (POSIX root, Windows root, UNC, drive-letter) is rejected.
+
+### Changed
+- `install.sh` shrinks from 175 lines of bash case-statements to 35
+  lines of dispatcher. All install logic moved to `harness_manager/`.
+  Existing CLI surface preserved: `./install.sh <adapter> [target]
+  [--yes|--reconfigure|--force]` works identically.
+- `install.ps1` shrinks from 270+ lines to 70.
+
+### Migration
+Existing v0.8.x users: `brew upgrade agentic-stack`, then run
+`./install.sh doctor` in your project. Doctor detects existing
+adapters from filesystem signals and asks before writing `install.json`.
+Subsequent doctor runs are read-only.
+
+### Release checklist (post-merge, pre-`brew upgrade`)
+The Homebrew Formula (`Formula/agentic-stack.rb`) intentionally still
+points at the v0.8.0 tarball in this PR. The v0.9.0 release flow is:
+
+1. Merge this PR to master.
+2. Tag `v0.9.0` on master and create the GitHub release.
+3. Run `curl -L https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.9.0.tar.gz | shasum -a 256` to compute the new sha256.
+4. Open a follow-up PR that updates `url`, `sha256`, `version` together,
+   and adds `harness_manager` + `install.ps1` to the `pkgshare.install` line.
+   This is the same pattern as commit `abaa352` (the v0.8.0 sha256 bump).
+
+Reason for the split: a Formula change that adds `harness_manager/` to
+`pkgshare.install` while still pointing at the v0.8.0 tarball would fail
+brew install (file-not-found in the staged tarball). Bumping all four
+fields together as a follow-up after the tag exists keeps the formula
+always pointing at a real, installable artifact.
 
 ## [0.8.0] — 2026-04-21
 

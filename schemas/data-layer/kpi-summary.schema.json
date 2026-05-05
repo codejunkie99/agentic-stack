@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/data-layer/kpi-summary.schema.json",
+  "title": "KPISummaryRow",
+  "description": "Dashboard-ready KPI row for agentic AI resource and workflow management.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kpi", "value", "unit", "description"],
+  "properties": {
+    "kpi": {"type": "string", "examples": ["cron_runs_per_day", "tokens_per_run_estimate", "success_rate"]},
+    "value": {"type": ["number", "integer", "string", "null"]},
+    "unit": {"type": "string", "examples": ["runs/day", "tokens/run", "ratio", "USD"]},
+    "description": {"type": "string"}
+  }
+}

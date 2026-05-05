@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.dev/schemas/flywheel/context-card.schema.json",
+  "title": "ContextCard",
+  "description": "Compact reusable context distilled from approved workflow traces.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "domain", "workflow", "goal", "stable_rules", "human_approval_required_for", "source_trace_count", "token_budget", "eval_refs", "version"],
+  "properties": {
+    "id": {"type": "string"},
+    "domain": {"type": "string"},
+    "workflow": {"type": "string"},
+    "goal": {"type": "string"},
+    "stable_rules": {"type": "array", "items": {"type": "string"}},
+    "tool_contracts": {"type": "array", "items": {"type": "string"}},
+    "human_approval_required_for": {"type": "array", "items": {"type": "string"}},
+    "source_trace_count": {"type": "integer", "minimum": 0},
+    "token_budget": {"type": "integer", "minimum": 0},
+    "eval_refs": {"type": "array", "items": {"type": "string"}},
+    "version": {"type": "string"}
+  }
+}

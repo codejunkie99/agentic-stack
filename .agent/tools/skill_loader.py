@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 SKILLS_DIR = os.path.join(ROOT, "skills")
 MANIFEST = os.path.join(SKILLS_DIR, "_manifest.jsonl")
+FEATURES_PATH = os.path.join(ROOT, "memory", ".features.json")
 
 # Skill names: alphanumerics, underscore, hyphen only. No path separators or dots.
 _SAFE_NAME_RE = re.compile(r"[a-zA-Z0-9_-]+")
@@ -73,6 +74,21 @@ def check_preconditions(skill):
     return True
 
 
+def feature_enabled(key):
+    try:
+        with open(FEATURES_PATH, encoding="utf-8") as f:
+            features = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return False
+    entry = features.get(key) or {}
+    return bool(entry.get("enabled"))
+
+
+def skill_enabled(skill):
+    feature_flag = skill.get("feature_flag")
+    return True if not feature_flag else feature_enabled(feature_flag)
+
+
 def load_skill_full(name):
     # Validate the skill name BEFORE touching the filesystem so a malicious
     # name (e.g. "../../etc") cannot probe paths outside SKILLS_DIR.
@@ -131,6 +147,8 @@ def progressive_load(user_input):
                 f"skill_loader: skipping manifest entry with unsafe name {name!r}",
                 file=sys.stderr,
             )
+            continue
+        if not skill_enabled(skill):
             continue
         if not check_preconditions(skill):
             continue

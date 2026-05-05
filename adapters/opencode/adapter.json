@@ -1,0 +1,16 @@
+{
+  "name": "opencode",
+  "description": "OpenCode — AGENTS.md (with collision protection) + opencode.json permission rules.",
+  "files": [
+    {
+      "src": "AGENTS.md",
+      "dst": "AGENTS.md",
+      "merge_policy": "merge_or_alert"
+    },
+    {
+      "src": "opencode.json",
+      "dst": "opencode.json",
+      "merge_policy": "overwrite"
+    }
+  ]
+}

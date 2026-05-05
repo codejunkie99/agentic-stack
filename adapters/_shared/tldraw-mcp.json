@@ -1,0 +1,9 @@
+{
+  "_comment": "Canonical tldraw MCP server config. Adapters reference or copy this block. The tldraw MCP server is a Node package; `npx -y @tldraw-mcp/server` fetches and runs it on demand. See https://github.com/... for the server source.",
+  "mcpServers": {
+    "tldraw": {
+      "command": "npx",
+      "args": ["-y", "@tldraw-mcp/server"]
+    }
+  }
+}
