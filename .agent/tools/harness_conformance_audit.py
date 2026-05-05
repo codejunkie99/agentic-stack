@@ -74,8 +74,8 @@ BUDGETS = {
     "agents_md_max_lines": 110,
     "skill_md_max_lines": 510,  # Step 8.4 Gap 10: gate-bearing skills are denser
     "context_file_max_lines": 80,
-    "eager_load_total_max": 720,  # BCG-enabled (Step 8.4 +10 gates; Step 8.5c +10 SDLC workflow parity)
-    "eager_load_total_max_lean": 520,  # without adapters (Step 8.4 +10 gates; Step 8.5c +10 SDLC workflow parity)
+    "eager_load_total_max": 730,  # BCG-enabled (Step 8.4 +10 gates; Step 8.5c +10 SDLC workflow parity; PR1 creative-vertical +10)
+    "eager_load_total_max_lean": 530,  # without adapters (Step 8.4 +10 gates; Step 8.5c +10 SDLC workflow parity; PR1 creative-vertical +10)
 }
 
 

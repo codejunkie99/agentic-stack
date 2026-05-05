@@ -32,6 +32,8 @@ fan-out shape before reading the body.
 | `tech-spike.md` | Technical research with recommendation + alternatives | `flat` | "tech spike", "research [tech approach]", "evaluate [library]", "should we use X or Y?" |
 | `live-demo-sprint.md` | Live external-stakeholder demo for a fixed-date meeting (real backend, single wow beat) | `full` | "build a live demo for [meeting]", "demo for [stakeholder] on [date]", "live working demo", "five-minute demo", "partner showcase demo" |
 | `demo-prep.md` | Package a prototype for stakeholder showcase | `flat` | "package the prototype for demo", "demo prep", "make the prototype demoable" |
+| **Creative vertical** (conditional on `creative_adapter: enabled`) | | | |
+| `content-pipeline.md` | One short-form post per persona: pattern-select → research → script → assets → edit → continuity QA → publish → analytics + engagement loop | `full` | "produce a post for [persona]", "next post for [persona]", "make a tiktok/reel/short for [persona]", "ship today's [persona] post", "run content-pipeline for [persona]" |
 
 ## How to load
 

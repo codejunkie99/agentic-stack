@@ -94,3 +94,10 @@ on match.
 - **data-flywheel** — approved-run export to trace records / context
   cards / eval cases / training-ready JSONL. Triggers:
   "data flywheel", "trace to train", "training traces", "eval cases"
+
+## Creative vertical (mount: `creative_adapter: enabled`)
+
+- **realism-review** — continuity + realism QA on AI-generated assets;
+  emits `continuity-report.md` per ip-library protocol. Used at
+  `content-pipeline.md` C7. Triggers: "realism review", "continuity
+  check", "QA the generated image/video", "C7 stage"
