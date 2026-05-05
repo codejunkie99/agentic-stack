@@ -25,22 +25,22 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.13.0 — transfer wizard
+### New in v0.15.0 — dashboard TUI
 
-Minor release. Adds an onboarding-style `agentic-stack transfer` wizard for
-moving a project brain into Codex, Cursor, Windsurf, or a terminal-only
-`AGENTS.md` setup.
+Minor release. Adds `agentic-stack dashboard` as the production front door for
+installed projects: one terminal screen for health, adapters, verification,
+memory, team brain, skills, instances, transfer, and local dashboard exports.
 
-- **Natural-language transfer plans.** Say things like `move my memory into
-  Codex`; the wizard detects targets, memory scopes, and whether to generate a
-  curl command, apply locally, or both.
-- **Portable memory bundles.** Transfers preferences, accepted lessons,
-  skills, working memory, episodic/history logs, and candidate lessons, with
-  SHA-256 verification and secret-like content blocking.
-- **One-line import.** Generated curl/PowerShell bootstraps import the bundle
-  into another project and install the selected adapter files.
-- **Modern Windsurf rules.** Windsurf now gets `.windsurf/rules/agentic-stack.md`
-  while keeping legacy `.windsurfrules` compatibility.
+- **Dashboard command.** Run `agentic-stack dashboard` or `./install.sh dashboard`
+  to open the TUI; use `dash` or `--plain` for a compact script-safe view.
+- **Trust-console parity.** The dashboard includes a per-harness verify matrix,
+  accepted/rejected memory, `memory_why()` evidence lookup, team brain
+  status/init, skills, and managed instances.
+- **Safer installed-project default.** Bare interactive `./install.sh` opens the
+  dashboard once `.agent/install.json` exists; non-TTY shells still print
+  script-safe command guidance instead of launching a TUI.
+- **Production coverage.** Renderer, CLI, parity, non-TTY fallback, and
+  interactive keypress navigation are covered by local tests.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
@@ -130,6 +130,7 @@ cd agentic-stack
 
 ```bash
 brew update && brew upgrade agentic-stack
+agentic-stack dashboard
 ```
 
 ### Clone instead?
@@ -155,6 +156,8 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 ./install.sh transfer            # onboarding-style wizard: export/import memory as a curl bridge
 ./install.sh remove cursor       # confirm prompt + delete; no quarantine, no undo
 ```
+
+PowerShell uses the same verbs, for example `.\install.ps1 dashboard`.
 
 Bare `./install.sh` (no arguments) opens a **multi-select wizard** on
 a fresh project — check every harness you actually use, hit enter,
