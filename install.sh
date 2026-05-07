@@ -11,6 +11,7 @@
 #   ./install.sh doctor [target-dir]             # read-only audit
 #   ./install.sh status [target-dir]             # one-screen view
 #   ./install.sh dashboard [target-dir]          # interactive project dashboard
+#   ./install.sh mission-control [target-dir]    # beta local web dashboard
 #   ./install.sh manage [target-dir]             # interactive adapter TUI
 #   ./install.sh transfer                        # memory transfer wizard
 #   ./install.sh                                 # bare: install wizard for fresh

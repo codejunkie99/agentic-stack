@@ -1,6 +1,7 @@
 """Argparse dispatcher. install.sh and install.ps1 invoke this.
 
-Verbs (subcommands): add, remove, doctor, status, manage, dashboard, transfer.
+Verbs (subcommands): add, remove, doctor, status, manage, dashboard,
+mission-control (beta), transfer.
 Anything else in first position → treated as an adapter name (existing
 `./install.sh <adapter>` UX preserved).
 """
@@ -19,7 +20,19 @@ from . import status as status_mod
 from . import __version__
 
 
-VERBS = {"add", "remove", "doctor", "status", "manage", "dashboard", "dash", "transfer"}
+VERBS = {
+    "add",
+    "remove",
+    "doctor",
+    "status",
+    "manage",
+    "dashboard",
+    "dash",
+    "mission-control",
+    "mission",
+    "mc",
+    "transfer",
+}
 
 
 def _stack_root() -> Path:
@@ -258,6 +271,33 @@ def cmd_dashboard(target: Path, plain: bool = False) -> int:
     return dashboard_tui.run(target_root=target, stack_root=_stack_root(), plain=plain)
 
 
+def cmd_mission_control(args: list[str]) -> int:
+    """Serve the beta local web Mission Control dashboard."""
+    parser = argparse.ArgumentParser(
+        prog="./install.sh mission-control",
+        description=(
+            "Beta local web dashboard. It runs only while this command is active; "
+            "turn it off with Ctrl-C and clear local events by removing "
+            ".agent/runtime/mission-control-events.jsonl."
+        ),
+    )
+    parser.add_argument("target", nargs="?", default=str(Path.cwd()))
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8787)
+    parser.add_argument("--snapshot")
+    parser.add_argument("--no-open", action="store_true")
+    ns = parser.parse_args(args)
+    from . import mission_control
+    return mission_control.run(
+        target_root=Path(ns.target),
+        stack_root=_stack_root(),
+        host=ns.host,
+        port=ns.port,
+        snapshot=ns.snapshot,
+        open_browser=not ns.no_open,
+    )
+
+
 def cmd_transfer(args: list[str], target: Path) -> int:
     from . import transfer_tui
     return transfer_tui.run(args, target_root=target, stack_root=_stack_root())
@@ -340,6 +380,7 @@ def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     print("  ./install.sh add <name>  # install another adapter")
     print("  ./install.sh remove <name>  # remove an adapter (with confirm)")
     print("  ./install.sh dashboard   # interactive project dashboard")
+    print("  ./install.sh mission-control --port 8787  # beta local web dashboard; Ctrl-C turns it off")
     print("  ./install.sh manage      # interactive TUI for adapter management")
     print("  ./install.sh transfer    # onboarding-style memory transfer wizard")
     return 2
@@ -485,6 +526,8 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             target = Path(target_args[0]) if target_args else Path.cwd()
             return cmd_dashboard(target, plain=plain)
+        if verb in ("mission-control", "mission", "mc"):
+            return cmd_mission_control(rest[1:])
         if verb == "transfer":
             return cmd_transfer(rest[1:], Path.cwd())
 

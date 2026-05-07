@@ -63,6 +63,8 @@ def _wizard(target, force):
     note("Optional features", [
         f"{ORANGE}[BETA]{R}{MUTED} features — off by default, opt-in only.",
         "You can change this later with  agentic-stack <harness> --reconfigure.",
+        "Mission Control beta runs only when launched; turn it off by",
+        "stopping the local server or editing .agent/memory/.features.json.",
     ])
     a["feature_memory_search"] = ask_confirm(
         f"Enable FTS memory search  {ORANGE}[BETA]{R}?",
@@ -70,6 +72,10 @@ def _wizard(target, force):
     )
     a["feature_tldraw"] = ask_confirm(
         f"Enable tldraw visual memory  {ORANGE}[BETA]{R}?",
+        default=False,
+    )
+    a["feature_mission_control"] = ask_confirm(
+        f"Enable Mission Control web UI  {ORANGE}[BETA]{R}?",
         default=False,
     )
     return a
@@ -90,10 +96,12 @@ def main():
         features_file = write_features(target, {
             "memory_search_fts": {"enabled": False, "beta": True},
             "tldraw": {"enabled": False, "beta": True},
+            "mission_control": {"enabled": False, "beta": True},
         })
         print(f"{GREEN}◆{R}  {WHITE}{B}PREFERENCES.md{R} written with defaults")
         print(f"{MUTED}   {path}{R}")
         print(f"{MUTED}   {features_file} (all beta features off){R}\n")
+        print(f"{MUTED}   Mission Control beta is off by default; if enabled later, turn it off by stopping the server or editing .features.json.{R}\n")
         sys.exit(0)
 
     try:
@@ -110,6 +118,10 @@ def main():
                 "enabled": bool(answers.get("feature_tldraw")),
                 "beta": True,
             },
+            "mission_control": {
+                "enabled": bool(answers.get("feature_mission_control")),
+                "beta": True,
+            },
         }
         features_file = write_features(target, features)
         outro([
@@ -117,6 +129,8 @@ def main():
             f"{path}",
             f"Features: {features_file}",
             "Edit either file any time — your AI re-reads them every session.",
+            "Mission Control beta can be turned off by stopping the local server",
+            "or setting mission_control.enabled=false in .agent/memory/.features.json.",
             "Tip: git add .agent/memory/ to track your brain.",
             "Want Claude Code to score YOUR stack's deploys/migrations as",
             "high-stakes? Edit .agent/protocols/hook_patterns.json —",
