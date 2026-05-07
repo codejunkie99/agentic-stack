@@ -2,7 +2,7 @@
 
 This package is the implementation backend for `./install.sh` and `./install.ps1`.
 The user-facing surface is plain verbs: install, add, remove, doctor, status,
-dashboard, mission-control, manage, and transfer.
+dashboard, manage, and transfer.
 The "harness_manager" name is internal only and never appears in CLI help, docs,
 or error messages users see.
 """
