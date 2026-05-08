@@ -76,6 +76,8 @@ Daily driver, highest-leverage first:
   flywheel metrics. It does not train models or call APIs.
 - `list_candidates.py` / `graduate.py` / `reject.py` / `reopen.py` — review
   protocol for patterns the dream cycle has staged.
+- `retract_lesson.py <lesson_id> --rationale "..."` — stop an accepted lesson
+  from being injected into future recall/context while preserving audit history.
 - `memory_reflect.py <skill> <action> <outcome>` — log a significant event.
 
 ## Rules
@@ -85,7 +87,7 @@ Daily driver, highest-leverage first:
    via `.agent/tools/memory_reflect.py`.
 4. Update `memory/working/WORKSPACE.md` as you work; archive on completion.
 5. Never hand-edit `memory/semantic/LESSONS.md` — it's rendered from
-   `lessons.jsonl`. Use `graduate.py` / `reject.py` instead.
+   `lessons.jsonl`. Use `graduate.py` / `reject.py` / `retract_lesson.py`.
 6. Follow `protocols/permissions.md`. Blocked means blocked.
 7. When a self-rewrite hook fires, propose conservative edits only.
 8. The harness is dumb on purpose. Reasoning lives in skills + the host agent.

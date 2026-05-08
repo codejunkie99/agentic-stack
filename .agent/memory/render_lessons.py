@@ -103,14 +103,15 @@ def load_lessons(semantic_dir):
     if not os.path.exists(path):
         return []
     out = []
-    for line in open(path):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            out.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
     return out
 
 
@@ -124,6 +125,8 @@ def _bullet_for(lesson, superseded_by):
     sup_by = superseded_by.get(lid)
     if sup_by:
         return f"- ~~{claim}~~  <!-- {ann} superseded_by={sup_by} -->"
+    if status == "retracted":
+        return f"- ~~[RETRACTED] {claim}~~  <!-- {ann} -->"
     if status == "provisional":
         return f"- [PROVISIONAL] {claim}  <!-- {ann} -->"
     return f"- {claim}  <!-- {ann} -->"

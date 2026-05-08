@@ -42,19 +42,45 @@ def _load_structured():
     """
     if not os.path.exists(LESSONS_JSONL):
         return []
+    rows = []
+    with open(LESSONS_JSONL, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+
+    # lessons.jsonl is append-only, so only the latest row per lesson id is
+    # considered active. This keeps retracted/provisional transitions from
+    # leaking stale accepted rows into recall.
+    latest = {}
+    order = []
+    no_id_rows = []
+    for row in rows:
+        lid = row.get("id")
+        if not lid:
+            no_id_rows.append(row)
+            continue
+        if lid not in latest:
+            order.append(lid)
+        latest[lid] = row
+
     out = []
-    for line in open(LESSONS_JSONL):
-        line = line.strip()
-        if not line:
+    for lid in order:
+        lesson = latest[lid]
+        if lesson.get("status") != "accepted":
             continue
-        try:
-            l = json.loads(line)
-        except json.JSONDecodeError:
+        lesson.setdefault("_source", "lessons.jsonl")
+        out.append(lesson)
+
+    for lesson in no_id_rows:
+        if lesson.get("status") != "accepted":
             continue
-        if l.get("status") != "accepted":
-            continue
-        l.setdefault("_source", "lessons.jsonl")
-        out.append(l)
+        lesson.setdefault("_source", "lessons.jsonl")
+        out.append(lesson)
     return out
 
 
@@ -68,7 +94,8 @@ def _load_markdown_fallback():
     """
     if not os.path.exists(LESSONS_MD):
         return []
-    text = open(LESSONS_MD).read()
+    with open(LESSONS_MD, encoding="utf-8") as f:
+        text = f.read()
     out = []
     for line in text.splitlines():
         s = line.strip()
