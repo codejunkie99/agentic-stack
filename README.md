@@ -287,11 +287,15 @@ python3 .agent/tools/reject.py <id> --reason "too specific to generalize"
 
 # requeue a previously-rejected candidate
 python3 .agent/tools/reopen.py <id>
+
+# retract an accepted lesson from future recall/context (append-only audit)
+python3 .agent/tools/retract_lesson.py <lesson_id> --rationale "obsolete after migration"
 ```
 
 Graduated lessons land in `semantic/lessons.jsonl` (source of truth) and
 are rendered to `semantic/LESSONS.md`. Rejected candidates retain full
-decision history so recurring churn is visible, not fresh.
+decision history so recurring churn is visible, not fresh. Retracted lessons
+stay in history with `status=retracted` but are excluded from proactive recall.
 
 See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
 
