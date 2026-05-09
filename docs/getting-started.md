@@ -1,24 +1,41 @@
 # Getting Started
 
-## 1. Clone or drop `.agent/` into your project
+## 1. Install agentic-stack
+
+### macOS / Linux (recommended)
 
 ```bash
-# new project
-git clone https://github.com/<you>/agentic-stack.git my-project
-cd my-project
+brew tap codejunkie99/agentic-stack https://github.com/codejunkie99/agentic-stack
+brew install agentic-stack
+```
 
-# or add to an existing project
-cp -R /path/to/agentic-stack/.agent ./
-cp /path/to/agentic-stack/install.sh ./
+### Windows (PowerShell)
+
+```powershell
+git clone https://github.com/codejunkie99/agentic-stack.git
+cd agentic-stack
+.\install.ps1 claude-code C:\path\to\your-project
+```
+
+### Clone install (any platform)
+
+If you prefer not to use Homebrew:
+
+```bash
+git clone https://github.com/codejunkie99/agentic-stack.git
+cd agentic-stack && ./install.sh claude-code
 ```
 
 ## 2. Pick your harness
 
 ```bash
-./install.sh claude-code        # or cursor, windsurf, opencode,
-                                # openclaw, hermes, pi, codex,
-                                # standalone-python, antigravity
+cd your-project
+agentic-stack claude-code
+# or: cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
 ```
+
+The onboarding wizard runs automatically, populating
+`.agent/memory/personal/PREFERENCES.md` and `.agent/memory/.features.json`.
 
 Each adapter has its own `README.md` under `adapters/<name>/`.
 
@@ -26,7 +43,8 @@ Each adapter has its own `README.md` under `adapters/<name>/`.
 
 Open `.agent/memory/personal/PREFERENCES.md` and fill in 5–10 lines about
 your code style, workflow, and constraints. This is the one file every
-user should customize on day one.
+user should customize on day one. The onboarding wizard pre-populates it,
+but you can always edit it later.
 
 ## 4. Run the dream cycle on a schedule
 
@@ -42,6 +60,27 @@ Open your harness and ask it anything. The first few days it will feel
 stateless. After ~2 weeks you'll notice it checking past lessons, logging
 failures with reflection, and (if you let it) proposing skill rewrites.
 
+## Managing your project
+
+After the initial setup, use verb-style subcommands:
+
+```bash
+agentic-stack dashboard           # TUI dashboard: health, verify, memory, team, skills
+agentic-stack status              # one-screen view: which adapters, brain stats
+agentic-stack doctor              # read-only audit; green / yellow / red per adapter
+agentic-stack upgrade --dry-run   # preview safe .agent infrastructure refresh
+agentic-stack upgrade --yes       # apply latest harness/memory/tools + new skills
+agentic-stack sync-manifest       # rebuild .agent/skills/_manifest.jsonl from SKILL.md
+```
+
+Adding or removing adapters:
+
+```bash
+agentic-stack add cursor          # add a second adapter alongside Claude Code
+agentic-stack remove cursor       # confirm prompt + delete
+agentic-stack manage              # interactive TUI for add/remove/audit
+```
+
 ## Optional: add a visual system with `DESIGN.md`
 
 If your project has UI, drop a Google Stitch-style `DESIGN.md` file in the
@@ -55,7 +94,23 @@ When Node tooling is available, agents can validate the file with:
 npx @google/design.md lint DESIGN.md
 ```
 
+## Keeping up to date
+
+```bash
+brew update && brew upgrade agentic-stack
+cd your-project
+agentic-stack upgrade --dry-run   # preview changes
+agentic-stack upgrade --yes       # apply (safe — won't overwrite your memory or config)
+```
+
+The upgrade command refreshes skeleton-owned `.agent` infrastructure
+(harness scripts, top-level memory/tools Python files, skill index, and new
+skill directories) but never overwrites `CLAUDE.md`, `.claude/settings.json`,
+personal/semantic/episodic/working memory, candidates, or existing skill
+directories.
+
 ## Verify the wiring
+
 ```bash
 python3 .agent/tools/budget_tracker.py "commit and push"
 # tokens_used, chars, budget, headroom
