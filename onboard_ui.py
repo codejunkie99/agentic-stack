@@ -1,6 +1,11 @@
 """ANSI palette, block-char banner, and clack-style layout atoms (stdlib only)."""
 import sys, os, shutil
 
+try:
+    from harness_manager import __version__ as _AGENTIC_STACK_VERSION
+except Exception:
+    _AGENTIC_STACK_VERSION = "unknown"
+
 _WIN = sys.platform == "win32"
 if _WIN:
     import msvcrt
@@ -25,7 +30,7 @@ CLR  = "\x1b[2K\r"; UP   = "\x1b[1A"
 # 2-row pixel font spells "AGENTIC STACK"
 _L1 = "  ▄▀█ █▀▀ █▀▀ █▄░█ ▀█▀ █ █▀▀  █▀ ▀█▀ ▄▀█ █▀▀ █▄▀ "
 _L2 = "  █▀█ █▄█ ██▄ █░▀█ ░█░ █ █▄▄  ▄█ ░█░ █▀█ █▄▄ █░█ "
-_T  = "  your portable brain  ·  harness-agnostic AI memory  ·  v0.8.0"
+_T  = f"  your portable brain  ·  harness-agnostic AI memory  ·  v{_AGENTIC_STACK_VERSION}"
 
 def _cc(c):
     if c == "█": return f"{PURPLE}{B}{c}{R}"
