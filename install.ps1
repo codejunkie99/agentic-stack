@@ -13,6 +13,8 @@
 #   .\install.ps1 dashboard [target-dir]       # interactive project dashboard
 #   .\install.ps1 manage [target-dir]          # interactive adapter TUI
 #   .\install.ps1 transfer                     # memory transfer wizard
+#   .\install.ps1 upgrade [target-dir] [-Yes]  # safely refresh .agent infra
+#   .\install.ps1 sync-manifest [target-dir]   # repair skills manifest
 #   .\install.ps1                              # bare: install wizard for fresh
 #                                              # projects, dashboard for already
 #                                              # installed interactive projects

@@ -11,6 +11,8 @@ writes. Codex's UX framing: doctor must not mutate without consent.
 from __future__ import annotations
 
 import os
+import json
+import shlex
 import shutil
 import sys
 from pathlib import Path
@@ -234,6 +236,12 @@ def _audit_adapter(
             # Unknown post_install action — just record
             lines.append(f"post_install {action}: {st}")
 
+    if adapter_name == "claude-code":
+        hook_status, hook_lines = _audit_claude_hook_wiring(target_root)
+        if hook_lines:
+            lines.extend(hook_lines)
+            status_overall = max(status_overall, hook_status, key=_status_rank)
+
     # .agent/ brain still intact?
     if not (target_root / ".agent" / "AGENTS.md").is_file():
         lines.append(".agent/AGENTS.md missing — brain not present")
@@ -273,6 +281,91 @@ def _check_openclaw_agent(agent_name: str) -> str:
 
 def _status_rank(s: str) -> int:
     return {GREEN: 0, YELLOW: 1, RED: 2}[s]
+
+
+def _audit_claude_hook_wiring(target_root: Path) -> tuple[str, list[str]]:
+    settings = target_root / ".claude" / "settings.json"
+    if not settings.is_file():
+        return GREEN, []
+    try:
+        data = json.loads(settings.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return YELLOW, [f".claude/settings.json unreadable JSON: {e}"]
+
+    referenced = _claude_hook_references(data)
+    lines: list[str] = []
+    missing = [
+        rel
+        for rel in sorted(referenced)
+        if rel.startswith(".agent/") and not (target_root / rel).is_file()
+    ]
+    if missing:
+        lines.append(f"missing hook command file(s): {', '.join(missing)}")
+
+    hooks_dir = target_root / ".agent" / "harness" / "hooks"
+    if hooks_dir.is_dir():
+        wired = {rel for rel in referenced if rel.startswith(".agent/harness/hooks/")}
+        orphaned = []
+        for path in sorted(hooks_dir.glob("*.py")):
+            if _ignore_claude_orphan_candidate(path.name):
+                continue
+            rel = path.relative_to(target_root).as_posix()
+            if rel not in wired:
+                orphaned.append(rel)
+        if orphaned:
+            lines.append(
+                "orphaned hook files not referenced by .claude/settings.json: "
+                + ", ".join(orphaned)
+            )
+    return (YELLOW if lines else GREEN), lines
+
+
+def _claude_hook_references(settings: dict) -> set[str]:
+    refs: set[str] = set()
+    hooks = settings.get("hooks") or {}
+    if not isinstance(hooks, dict):
+        return refs
+    for entries in hooks.values():
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            for hook in entry.get("hooks") or []:
+                if not isinstance(hook, dict):
+                    continue
+                command = hook.get("command")
+                if isinstance(command, str):
+                    refs.update(_agent_paths_from_command(command))
+    return refs
+
+
+def _agent_paths_from_command(command: str) -> set[str]:
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        tokens = command.split()
+    refs: set[str] = set()
+    for token in tokens:
+        if ".agent/" not in token:
+            continue
+        rel = token[token.index(".agent/"):].strip(";,")
+        if rel.endswith(".py"):
+            refs.add(rel)
+    return refs
+
+
+def _ignore_claude_orphan_candidate(filename: str) -> bool:
+    if filename == "__init__.py" or filename.startswith("_"):
+        return True
+    if filename in {
+        "on_failure.py",
+        "post_execution.py",
+        "pre_tool_call.py",
+        "pi_post_tool.py",
+    }:
+        return True
+    return False
 
 
 def _summary(doc: dict, any_red: bool) -> str:

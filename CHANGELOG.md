@@ -5,6 +5,22 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`agentic-stack upgrade`.** Adds a safe project migration verb that refreshes
+  skeleton-owned `.agent` infrastructure, copies new skills, supports
+  `--dry-run`/`--yes`, and leaves adapter configs plus user memory untouched.
+- **`agentic-stack sync-manifest`.** Rebuilds `.agent/skills/_manifest.jsonl`
+  from installed `SKILL.md` frontmatter so copied skills can trigger correctly.
+
+### Fixed
+- Install/add now re-sync the skill manifest when a project already has
+  `.agent/skills`, preventing `_index.md` / `_manifest.jsonl` drift.
+- `doctor` now warns when Claude Code hook commands reference missing `.agent`
+  Python files or when hook scripts are present but not wired in
+  `.claude/settings.json`.
+
 ## [0.15.0] — 2026-05-06
 
 Minor release. Adds a production dashboard TUI for installed agentic-stack
