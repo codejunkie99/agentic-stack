@@ -25,7 +25,24 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.16.0 — safe project upgrades
+### New in v0.16.1 — getting-started refresh
+
+Patch release. Ships the production-ready getting-started guide from PR #49
+and fixes onboarding version drift in the first-run banner.
+
+- **Accurate install paths.** The getting-started guide now separates
+  Homebrew, source checkout, and PowerShell flows so users do not expect a
+  global `agentic-stack` command from a plain clone.
+- **Current management commands.** The guide documents `dashboard`, `status`,
+  `doctor`, `upgrade`, `sync-manifest`, `add`, `remove`, and `manage` for both
+  Homebrew and source-checkout users.
+- **Correct onboarding version.** The setup banner now reads the package
+  version from `harness_manager.__version__` instead of showing stale release
+  text.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.16.0 — safe project upgrades
 
 Minor release. Adds `agentic-stack upgrade` and `agentic-stack sync-manifest`
 so installed projects can pick up new `.agent` infrastructure and skill
@@ -42,8 +59,6 @@ metadata without clobbering adapter settings or user memory.
 - **Stricter doctor.** `agentic-stack doctor` now warns when Claude Code hook
   commands point to missing `.agent` files or hook scripts are present but
   unwired.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ### v0.12.0 — tldraw visual canvas
 

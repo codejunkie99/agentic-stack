@@ -5,6 +5,25 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] — 2026-05-10
+
+Patch release. Ships the production-ready getting-started guide from PR #49
+and fixes stale version text in the onboarding banner.
+
+### Changed
+- `docs/getting-started.md` now leads with the Homebrew install path while
+  documenting source-checkout and PowerShell flows separately.
+- The guide now explains which commands are available through the global
+  `agentic-stack` wrapper and which source-checkout users should run through
+  `./install.sh`.
+- The guide now documents current project-management verbs, including
+  `dashboard`, `status`, `doctor`, `upgrade`, `sync-manifest`, `add`,
+  `remove`, and `manage`.
+
+### Fixed
+- The onboarding banner now derives its displayed version from
+  `harness_manager.__version__` instead of showing stale `v0.8.0` text.
+
 ## [0.16.0] — 2026-05-09
 
 Minor release. Adds a safe installed-project upgrade path and repairs skill
