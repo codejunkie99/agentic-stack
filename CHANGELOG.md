@@ -24,6 +24,14 @@ and fixes stale version text in the onboarding banner.
 - The onboarding banner now derives its displayed version from
   `harness_manager.__version__` instead of showing stale `v0.8.0` text.
 
+### Release
+- Tag `v0.16.1` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.16.1>
+- `Formula/agentic-stack.rb` bumped to v0.16.1 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `4dc3bfeb60b53895baf15b8fb0932245cb44c5d1d850ddc3474d83a38415b398`.
+
 ## [0.16.0] — 2026-05-09
 
 Minor release. Adds a safe installed-project upgrade path and repairs skill
