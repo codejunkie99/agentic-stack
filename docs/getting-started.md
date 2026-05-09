@@ -2,12 +2,28 @@
 
 ## 1. Install agentic-stack
 
-### macOS / Linux (recommended)
+### macOS / Linux with Homebrew (recommended)
 
 ```bash
 brew tap codejunkie99/agentic-stack https://github.com/codejunkie99/agentic-stack
 brew install agentic-stack
 ```
+
+This installs the `agentic-stack` command.
+
+### Source checkout (no Homebrew)
+
+If you prefer not to use Homebrew, clone the repo and run `install.sh`
+against the project you want to wire:
+
+```bash
+git clone https://github.com/codejunkie99/agentic-stack.git
+cd agentic-stack
+./install.sh claude-code /path/to/your-project
+```
+
+This path does not install a global `agentic-stack` command. Keep the clone
+around and run future management commands through `./install.sh`.
 
 ### Windows (PowerShell)
 
@@ -17,22 +33,19 @@ cd agentic-stack
 .\install.ps1 claude-code C:\path\to\your-project
 ```
 
-### Clone install (any platform)
-
-If you prefer not to use Homebrew:
-
-```bash
-git clone https://github.com/codejunkie99/agentic-stack.git
-cd agentic-stack && ./install.sh claude-code
-```
-
 ## 2. Pick your harness
+
+If you installed with Homebrew, run the CLI from your project root:
 
 ```bash
 cd your-project
 agentic-stack claude-code
 # or: cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
 ```
+
+If you are using a source checkout, the install command above already picked
+the harness. To add another adapter later, run
+`./install.sh add <adapter> /path/to/your-project` from the clone.
 
 The onboarding wizard runs automatically, populating
 `.agent/memory/personal/PREFERENCES.md` and `.agent/memory/.features.json`.
@@ -62,7 +75,8 @@ failures with reflection, and (if you let it) proposing skill rewrites.
 
 ## Managing your project
 
-After the initial setup, use verb-style subcommands:
+After the initial setup, Homebrew users can run verb-style subcommands from
+the project root:
 
 ```bash
 agentic-stack dashboard           # TUI dashboard: health, verify, memory, team, skills
@@ -73,12 +87,33 @@ agentic-stack upgrade --yes       # apply latest harness/memory/tools + new skil
 agentic-stack sync-manifest       # rebuild .agent/skills/_manifest.jsonl from SKILL.md
 ```
 
-Adding or removing adapters:
+Source checkout users can run the same verbs through the clone:
+
+```bash
+./install.sh dashboard /path/to/your-project
+./install.sh status /path/to/your-project
+./install.sh doctor /path/to/your-project
+./install.sh upgrade /path/to/your-project --dry-run
+./install.sh upgrade /path/to/your-project --yes
+./install.sh sync-manifest /path/to/your-project
+```
+
+PowerShell users can run the same verbs through `.\install.ps1`.
+
+Adding or removing adapters with Homebrew:
 
 ```bash
 agentic-stack add cursor          # add a second adapter alongside Claude Code
 agentic-stack remove cursor       # confirm prompt + delete
 agentic-stack manage              # interactive TUI for add/remove/audit
+```
+
+Source checkout equivalents:
+
+```bash
+./install.sh add cursor /path/to/your-project
+./install.sh remove cursor /path/to/your-project
+./install.sh manage /path/to/your-project
 ```
 
 ## Optional: add a visual system with `DESIGN.md`
@@ -100,7 +135,16 @@ npx @google/design.md lint DESIGN.md
 brew update && brew upgrade agentic-stack
 cd your-project
 agentic-stack upgrade --dry-run   # preview changes
-agentic-stack upgrade --yes       # apply (safe — won't overwrite your memory or config)
+agentic-stack upgrade --yes       # apply; won't overwrite your memory or config
+```
+
+Source checkout users should update the clone first:
+
+```bash
+cd /path/to/agentic-stack
+git pull --ff-only
+./install.sh upgrade /path/to/your-project --dry-run
+./install.sh upgrade /path/to/your-project --yes
 ```
 
 The upgrade command refreshes skeleton-owned `.agent` infrastructure
