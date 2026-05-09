@@ -13,6 +13,9 @@
 #   ./install.sh dashboard [target-dir]          # interactive project dashboard
 #   ./install.sh manage [target-dir]             # interactive adapter TUI
 #   ./install.sh transfer                        # memory transfer wizard
+#   ./install.sh upgrade [target-dir] [--dry-run|--yes]
+#                                                # safely refresh .agent infra
+#   ./install.sh sync-manifest [target-dir]       # repair skills manifest
 #   ./install.sh                                 # bare: install wizard for fresh
 #                                                # projects, dashboard for already
 #                                                # installed interactive projects

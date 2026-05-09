@@ -154,6 +154,9 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
 ./install.sh manage              # interactive TUI: header pane + menu loop for add/remove/audit
 ./install.sh transfer            # onboarding-style wizard: export/import memory as a curl bridge
+./install.sh upgrade --dry-run   # preview safe .agent infrastructure refresh
+./install.sh upgrade --yes       # copy latest harness/memory/tools + new skills
+./install.sh sync-manifest       # rebuild .agent/skills/_manifest.jsonl from SKILL.md frontmatter
 ./install.sh remove cursor       # confirm prompt + delete; no quarantine, no undo
 ```
 
@@ -171,6 +174,16 @@ Upgrading from pre-v0.9? Run `./install.sh doctor` first — it
 synthesizes `install.json` from on-disk adapter signals so the new
 backend can track them. Installing on top without migration would
 orphan the prior installs.
+
+Upgrading an already-installed project after `brew upgrade`? Run
+`agentic-stack upgrade --dry-run` in the project first, then
+`agentic-stack upgrade --yes` to refresh only skeleton-owned `.agent`
+infrastructure (`harness/**/*.py`, top-level `memory/*.py`, `tools/*.py`,
+the generated skill index, and new skill directories). It does not rewrite
+`CLAUDE.md`, `.claude/settings.json`, personal/semantic/episodic/working
+memory, candidates, or existing skill directories. `agentic-stack
+sync-manifest` is available as a repair command if `_manifest.jsonl` drifts
+from installed `SKILL.md` files.
 
 ## Onboarding wizard
 
@@ -375,6 +388,8 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── transfer_tui.py             # onboarding-style memory transfer wizard
 ├── transfer_plan.py            # natural-language target/scope planning
 ├── transfer_bundle.py          # export/import bundle codec + merge logic
+├── skill_manifest.py           # rebuilds skills/_manifest.jsonl from SKILL.md
+├── upgrade.py                  # safe .agent infrastructure refresh
 └── cli.py                      # argparse dispatcher for install.sh / install.ps1
 
 docs/                           # architecture, getting-started, per-harness

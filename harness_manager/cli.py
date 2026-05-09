@@ -14,12 +14,25 @@ from . import doctor as doctor_mod
 from . import install as install_mod
 from . import remove as remove_mod
 from . import schema as schema_mod
+from . import skill_manifest as skill_manifest_mod
 from . import state as state_mod
 from . import status as status_mod
+from . import upgrade as upgrade_mod
 from . import __version__
 
 
-VERBS = {"add", "remove", "doctor", "status", "manage", "dashboard", "dash", "transfer"}
+VERBS = {
+    "add",
+    "remove",
+    "doctor",
+    "status",
+    "manage",
+    "dashboard",
+    "dash",
+    "transfer",
+    "upgrade",
+    "sync-manifest",
+}
 
 
 def _stack_root() -> Path:
@@ -263,6 +276,37 @@ def cmd_transfer(args: list[str], target: Path) -> int:
     return transfer_tui.run(args, target_root=target, stack_root=_stack_root())
 
 
+def cmd_sync_manifest(target: Path) -> int:
+    try:
+        skill_manifest_mod.sync_manifest(target)
+        return 0
+    except FileNotFoundError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+
+def cmd_upgrade(args: list[str], yes: bool) -> int:
+    dry_run = False
+    target_args: list[str] = []
+    for arg in args:
+        if arg == "--dry-run":
+            dry_run = True
+        elif arg in ("--yes", "-y"):
+            yes = True
+        else:
+            target_args.append(arg)
+    if len(target_args) > 1:
+        print("usage: ./install.sh upgrade [target-dir] [--dry-run] [--yes]", file=sys.stderr)
+        return 2
+    target = Path(target_args[0]) if target_args else Path.cwd()
+    return upgrade_mod.upgrade(
+        target_root=target,
+        stack_root=_stack_root(),
+        dry_run=dry_run,
+        yes=yes,
+    )
+
+
 def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     """`./install.sh` with no args.
 
@@ -342,6 +386,8 @@ def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     print("  ./install.sh dashboard   # interactive project dashboard")
     print("  ./install.sh manage      # interactive TUI for adapter management")
     print("  ./install.sh transfer    # onboarding-style memory transfer wizard")
+    print("  ./install.sh upgrade     # safely refresh .agent infrastructure")
+    print("  ./install.sh sync-manifest  # repair skills/_manifest.jsonl")
     return 2
 
 
@@ -487,6 +533,11 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_dashboard(target, plain=plain)
         if verb == "transfer":
             return cmd_transfer(rest[1:], Path.cwd())
+        if verb == "upgrade":
+            return cmd_upgrade(rest[1:], yes=yes)
+        if verb == "sync-manifest":
+            target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
+            return cmd_sync_manifest(target)
 
     # Treat as adapter name (existing UX)
     adapter = first

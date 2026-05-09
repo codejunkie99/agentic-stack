@@ -13,6 +13,7 @@ from typing import Callable, Iterable
 
 from . import post_install as post_install_mod
 from . import schema as schema_mod
+from . import skill_manifest as skill_manifest_mod
 from . import state as state_mod
 from . import __version__
 
@@ -189,6 +190,8 @@ def install(
     if not target_agent.exists():
         shutil.copytree(stack_root / ".agent", target_agent)
         log("  + .agent/ (portable brain)")
+    if (target_agent / "skills").is_dir():
+        skill_manifest_mod.sync_manifest(target_root, log=lambda _msg: None)
 
     files_written: list[str] = []        # we created — safe for remove to delete
     files_overwritten: list[str] = []    # we modified but file pre-existed — DO NOT delete on remove
