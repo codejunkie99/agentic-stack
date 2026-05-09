@@ -31,6 +31,14 @@ projects to preview safe `.agent` infrastructure updates, then
 `agentic-stack upgrade --yes` to apply them. Run `agentic-stack sync-manifest`
 if a project's skill manifest needs repair without copying files.
 
+### Release
+- Tag `v0.16.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.16.0>
+- `Formula/agentic-stack.rb` bumped to v0.16.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `55ffef80e990f1ceed6ec8016d66e8bab8b328762b3f5a3fdd80375dfa715dae`.
+
 ## [0.15.0] — 2026-05-06
 
 Minor release. Adds a production dashboard TUI for installed agentic-stack
