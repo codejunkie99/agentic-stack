@@ -5,7 +5,11 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.16.0] — 2026-05-09
+
+Minor release. Adds a safe installed-project upgrade path and repairs skill
+manifest drift so newly copied skills can trigger reliably after version
+upgrades.
 
 ### Added
 - **`agentic-stack upgrade`.** Adds a safe project migration verb that refreshes
@@ -20,6 +24,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `doctor` now warns when Claude Code hook commands reference missing `.agent`
   Python files or when hook scripts are present but not wired in
   `.claude/settings.json`.
+
+### Migration
+After upgrading the CLI, run `agentic-stack upgrade --dry-run` in installed
+projects to preview safe `.agent` infrastructure updates, then
+`agentic-stack upgrade --yes` to apply them. Run `agentic-stack sync-manifest`
+if a project's skill manifest needs repair without copying files.
 
 ## [0.15.0] — 2026-05-06
 
