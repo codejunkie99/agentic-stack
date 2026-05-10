@@ -45,6 +45,14 @@ Triggers: "data flywheel", "trace to train", "training traces",
 Constraints: local-only by default; human-approved runs only; redaction required
 before trainable; does not train models.
 
+## brain
+Connects agentic-stack projects to the external Brain CLI and MCP server for
+git-backed long-term memory shared across harnesses.
+Triggers: "brain", "long-term memory", "shared memory", "cross-agent memory",
+"mcp memory", "remember across tools", "git-backed memory"
+Constraints: Brain is external; check availability before use, do not store
+secrets, and use `brain_bridge.py ask` before saving new durable notes.
+
 ## design-md
 Uses a root `DESIGN.md` as the portable visual system contract for
 Google Stitch workflows. Loads only when `DESIGN.md` exists at the

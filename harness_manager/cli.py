@@ -1,7 +1,7 @@
 """Argparse dispatcher. install.sh and install.ps1 invoke this.
 
 Verbs (subcommands): add, remove, doctor, status, manage, dashboard,
-mission-control (beta), transfer, upgrade, sync-manifest.
+mission-control (beta), brain, transfer, upgrade, sync-manifest.
 Anything else in first position → treated as an adapter name (existing
 `./install.sh <adapter>` UX preserved).
 """
@@ -33,6 +33,7 @@ VERBS = {
     "mission-control",
     "mission",
     "mc",
+    "brain",
     "transfer",
     "upgrade",
     "sync-manifest",
@@ -302,6 +303,11 @@ def cmd_mission_control(args: list[str]) -> int:
     )
 
 
+def cmd_brain(args: list[str]) -> int:
+    from . import brain as brain_mod
+    return brain_mod.run(args, target_root=Path.cwd(), stack_root=_stack_root())
+
+
 def cmd_transfer(args: list[str], target: Path) -> int:
     from . import transfer_tui
     return transfer_tui.run(args, target_root=target, stack_root=_stack_root())
@@ -416,6 +422,7 @@ def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     print("  ./install.sh remove <name>  # remove an adapter (with confirm)")
     print("  ./install.sh dashboard   # interactive project dashboard")
     print("  ./install.sh mission-control --port 8787  # beta local web dashboard; Ctrl-C turns it off")
+    print("  ./install.sh brain status  # optional external Brain CLI integration")
     print("  ./install.sh manage      # interactive TUI for adapter management")
     print("  ./install.sh transfer    # onboarding-style memory transfer wizard")
     print("  ./install.sh upgrade     # safely refresh .agent infrastructure")
@@ -565,6 +572,15 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_dashboard(target, plain=plain)
         if verb in ("mission-control", "mission", "mc"):
             return cmd_mission_control(rest[1:])
+        if verb == "brain":
+            brain_args = list(rest[1:])
+            brain_command = brain_args[0] if brain_args else "status"
+            if brain_command == "onboard":
+                if yes and "--yes" not in brain_args and "-y" not in brain_args:
+                    brain_args.append("--yes")
+                if "--reconfigure" in wizard_flags and "--reconfigure" not in brain_args:
+                    brain_args.append("--reconfigure")
+            return cmd_brain(brain_args)
         if verb == "transfer":
             return cmd_transfer(rest[1:], Path.cwd())
         if verb == "upgrade":
