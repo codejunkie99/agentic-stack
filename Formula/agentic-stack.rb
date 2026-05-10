@@ -1,9 +1,9 @@
 class AgenticStack < Formula
   desc "One brain, many harnesses — portable .agent/ folder for AI coding agents"
   homepage "https://github.com/codejunkie99/agentic-stack"
-  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.17.0.tar.gz"
-  sha256 "704f8e7f05123b3791187e16f352936199e5e57e6855564c773961900ea13dd6"
-  version "0.17.0"
+  url "https://github.com/codejunkie99/agentic-stack/archive/refs/tags/v0.18.0.tar.gz"
+  sha256 "ef2d9d9209755e3dd1888064eae48a78add44b2140a78b7952664d7c4945ba85"
+  version "0.18.0"
   license "Apache-2.0"
 
   def install
@@ -24,6 +24,7 @@ class AgenticStack < Formula
     output = shell_output("#{bin}/agentic-stack 2>&1", 2)
     assert_match "usage", output
     assert_match "agentic-stack transfer", shell_output("#{bin}/agentic-stack transfer --help")
+    assert_match "brain CLI not found", shell_output("#{bin}/agentic-stack brain install-help")
     # Wizard --yes must write PREFERENCES.md AND .features.json into a temp project dir
     (testpath/".agent/memory/personal").mkpath
     system "#{bin}/agentic-stack", "claude-code", testpath.to_s, "--yes"

@@ -19,6 +19,14 @@ independent and optional.
 - **Brain seed skill.** Adds a `brain` skill that teaches host agents when to
   query or write Brain memory and how to avoid storing secrets.
 
+### Release
+- Tag `v0.18.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.18.0>
+- `Formula/agentic-stack.rb` bumped to v0.18.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `ef2d9d9209755e3dd1888064eae48a78add44b2140a78b7952664d7c4945ba85`.
+
 ## [0.17.0] — 2026-05-10
 
 Minor release. Clears the open PR queue and ships new harness adapters, the
