@@ -1,0 +1,16 @@
+{
+  "name": "gemini",
+  "description": "Google Gemini CLI — gemini.md + .gemini/skills mirror",
+  "files": [
+    {
+      "src": "gemini.md",
+      "dst": "gemini.md",
+      "merge_policy": "overwrite"
+    }
+  ],
+  "skills_link": {
+    "target": ".agent/skills",
+    "dst": ".gemini/skills",
+    "fallback": "rsync_with_delete"
+  }
+}
