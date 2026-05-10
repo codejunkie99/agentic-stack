@@ -40,7 +40,7 @@ If you installed with Homebrew, run the CLI from your project root:
 ```bash
 cd your-project
 agentic-stack claude-code
-# or: cursor | windsurf | opencode | openclaw | hermes | pi | codex | standalone-python | antigravity
+# or: cursor | windsurf | opencode | openclaw | copilot-cli | gemini | hermes | pi | codex | standalone-python | antigravity
 ```
 
 If you are using a source checkout, the install command above already picked

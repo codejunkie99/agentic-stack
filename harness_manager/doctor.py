@@ -46,6 +46,7 @@ DETECT_SIGNALS = {
         ("gemini.md", "weak"),
         (".gemini/skills", "strong"),
     ],
+    "copilot-cli": [(".github/instructions/agentic-stack.instructions.md", "strong")],
 }
 
 

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "python3 .agent/harness/hooks/copilot_cli_post_tool.py",
+        "powershell": "python .agent/harness/hooks/copilot_cli_post_tool.py",
+        "cwd": ".",
+        "timeoutSec": 15
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "python3 .agent/memory/auto_dream.py",
+        "powershell": "python .agent/memory/auto_dream.py",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

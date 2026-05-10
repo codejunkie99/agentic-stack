@@ -1,0 +1,26 @@
+{
+  "name": "copilot-cli",
+  "description": "GitHub Copilot CLI — AGENTS.md primary instructions + .github/instructions/ path-specific instructions + .github/hooks/ auto-memory hooks + .github/skills/ native skill mirror.",
+  "files": [
+    {
+      "src": "agentic-stack.instructions.md",
+      "dst": ".github/instructions/agentic-stack.instructions.md",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "hooks.json",
+      "dst": ".github/hooks/agentic-stack.json",
+      "merge_policy": "overwrite"
+    },
+    {
+      "src": "AGENTS.md",
+      "dst": "AGENTS.md",
+      "merge_policy": "merge_or_alert"
+    }
+  ],
+  "skills_link": {
+    "target": ".agent/skills",
+    "dst": ".github/skills",
+    "fallback": "rsync_with_delete"
+  }
+}
