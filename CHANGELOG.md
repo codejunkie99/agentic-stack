@@ -36,6 +36,14 @@ layout.
   Copilot CLI, Gemini, Mission Control, upgrades, onboarding, and lesson
   retraction.
 
+### Release
+- Tag `v0.17.0` cut from master.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.17.0>
+- `Formula/agentic-stack.rb` bumped to v0.17.0 in a follow-up commit after
+  the tag tarball existed and its sha256 could be computed.
+- Tarball sha256:
+  `704f8e7f05123b3791187e16f352936199e5e57e6855564c773961900ea13dd6`.
+
 ## [0.16.1] — 2026-05-10
 
 Patch release. Ships the production-ready getting-started guide from PR #49
