@@ -19,8 +19,9 @@
 #                                              # projects, dashboard for already
 #                                              # installed interactive projects
 #
-# adapter-name: claude-code | cursor | windsurf | opencode | openclaw |
-#               hermes | pi | codex | standalone-python | antigravity
+# adapter-name: claude-code | copilot-cli | cursor | gemini | windsurf |
+#               opencode | openclaw | hermes | pi | codex |
+#               standalone-python | antigravity
 #
 # All real logic lives in harness_manager/ (Python). This script is a
 # thin dispatcher so install.sh and install.ps1 share one backend —
