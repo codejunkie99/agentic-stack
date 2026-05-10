@@ -4,7 +4,7 @@ Validation suite for the GitHub Copilot CLI adapter.
 
 Run from the agentic-stack repo root:
 
-    python3 test_copilot_cli_adapter.py
+    python3 tests/test_copilot_cli_adapter.py
 
 Exit 0 = all tests passed. Non-zero = something is broken.
 
@@ -28,7 +28,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1]
 ADAPTER_DIR = HERE / "adapters" / "copilot-cli"
 MANIFEST_PATH = ADAPTER_DIR / "adapter.json"
 

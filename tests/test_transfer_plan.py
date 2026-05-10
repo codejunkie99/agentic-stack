@@ -10,7 +10,7 @@ from harness_manager.transfer_plan import (
 )
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class TransferPlanTest(unittest.TestCase):

@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 MEMORY_SEARCH = ROOT / ".agent" / "memory" / "memory_search.py"
 
 
