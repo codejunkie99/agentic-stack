@@ -3,7 +3,7 @@
 
 Run from the agentic-stack repo root:
 
-    python3 test_tldraw_visual_memory.py
+    python3 tests/test_tldraw_visual_memory.py
 
 Exit 0 = all tests passed. Non-zero = something is broken.
 
@@ -32,7 +32,7 @@ import sys
 import tempfile
 import threading
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AGENT = os.path.join(HERE, ".agent")
 TLDRAW = os.path.join(AGENT, "skills", "tldraw")
 TOOLS = os.path.join(AGENT, "tools")

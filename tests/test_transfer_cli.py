@@ -8,7 +8,7 @@ from pathlib import Path
 from harness_manager.transfer_bundle import encode_bundle, export_bundle
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class TransferCliTest(unittest.TestCase):

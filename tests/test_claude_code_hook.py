@@ -4,11 +4,11 @@ Validation suite for the Claude Code hook fix.
 
 Run this from any project that has .agent/ installed:
 
-    python3 /path/to/agentic-stack/test_claude_code_hook.py
+    python3 /path/to/agentic-stack/tests/test_claude_code_hook.py
 
 Or run it from the agentic-stack repo itself:
 
-    python3 test_claude_code_hook.py
+    python3 tests/test_claude_code_hook.py
 
 Exit 0 = all tests passed. Non-zero = something is broken.
 
@@ -35,10 +35,12 @@ def find_agent_root():
         if os.path.isdir(os.path.join(cur, ".agent")):
             return cur
         cur = os.path.dirname(cur)
-    # last resort: look next to this script
+    # last resort: look next to this script, then one level up when tests live
+    # under tests/.
     here = os.path.dirname(os.path.abspath(__file__))
-    if os.path.isdir(os.path.join(here, ".agent")):
-        return here
+    for candidate in (here, os.path.dirname(here)):
+        if os.path.isdir(os.path.join(candidate, ".agent")):
+            return candidate
     return None
 
 PROJECT_ROOT = find_agent_root()
