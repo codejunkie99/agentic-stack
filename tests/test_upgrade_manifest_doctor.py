@@ -121,10 +121,18 @@ category: visualization
                 (agent / "tools" / "skill_loader.py").read_text(encoding="utf-8"),
                 (ROOT / ".agent" / "tools" / "skill_loader.py").read_text(encoding="utf-8"),
             )
+            self.assertEqual(
+                (agent / "tools" / "brain_bridge.py").read_text(encoding="utf-8"),
+                (ROOT / ".agent" / "tools" / "brain_bridge.py").read_text(encoding="utf-8"),
+            )
             self.assertTrue((agent / "skills" / "tldraw" / "SKILL.md").is_file())
+            self.assertTrue((agent / "skills" / "brain" / "SKILL.md").is_file())
             rows = {row["name"]: row for row in self.manifest_rows(project)}
+            self.assertIn("brain", rows)
+            self.assertIn("long-term memory", rows["brain"]["triggers"])
             self.assertIn("tldraw", rows)
             self.assertIn("draw", rows["tldraw"]["triggers"])
+            self.assertIn("brain", (agent / "skills" / "_index.md").read_text(encoding="utf-8"))
             self.assertIn("tldraw", (agent / "skills" / "_index.md").read_text(encoding="utf-8"))
 
     def test_doctor_warns_for_missing_and_unwired_claude_hook_files(self):

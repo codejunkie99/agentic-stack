@@ -25,26 +25,29 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.17.0 — adapters, Mission Control, and lesson retraction
+### New in v0.18.0 — external Brain memory integration
+
+Minor release. Adds an optional bridge to
+[`codejunkie99/brain`](https://github.com/codejunkie99/brain), the external
+git-backed long-term memory CLI/TUI/MCP server, without vendoring Brain's Rust
+workspace into agentic-stack.
+
+- **`agentic-stack brain ...`.** Check Brain status, onboard a project, search
+  global memory, write durable notes, run Brain doctor/TUI, or print the MCP
+  stdio command from the normal agentic-stack CLI.
+- **Project bridge.** Installed `.agent/` projects now include
+  `.agent/tools/brain_bridge.py`, so host agents can call Brain explicitly when
+  a task needs cross-project recall.
+- **Brain seed skill.** A new `brain` skill teaches agents when to query or
+  write Brain memory, and keeps secret handling explicit.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.17.0 — adapters, Mission Control, and lesson retraction
 
 Minor release. Clears the open PR queue and ships the combined production
 surface from Copilot CLI, Gemini, Mission Control, and semantic lesson
 retraction work.
-
-- **New adapters.** GitHub Copilot CLI installs `AGENTS.md`,
-  `.github/instructions/`, `.github/hooks/`, and `.github/skills/`; Google
-  Gemini CLI installs `gemini.md` and a `.gemini/skills/` mirror.
-- **Mission Control beta.** Run `agentic-stack mission-control --port 8787`
-  for a local web dashboard, or use `--snapshot` to render a static HTML
-  report without opening a browser.
-- **Lesson retraction.** Run `.agent/tools/retract_lesson.py <lesson_id> --rationale "..."`
-  to stop obsolete accepted lessons from guiding future recall while preserving
-  append-only audit history.
-- **Test layout cleanup.** The validation suite now lives under `tests/` with
-  pytest configuration, covering adapters, upgrades, Mission Control, and
-  semantic retraction.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ### v0.16.1 — getting-started refresh
 
@@ -175,6 +178,7 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 ```bash
 ./install.sh dashboard           # TUI dashboard: health, verify, memory, team, skills, instances
 ./install.sh mission-control     # beta local web dashboard; Ctrl-C turns it off
+./install.sh brain status        # optional external Brain CLI integration
 ./install.sh add cursor          # add a second adapter (Claude Code + Cursor in same repo)
 ./install.sh status              # one-screen view: which adapters, brain stats
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
@@ -187,6 +191,32 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 ```
 
 PowerShell uses the same verbs, for example `.\install.ps1 dashboard`.
+
+### Optional: external Brain integration
+
+[`codejunkie99/brain`](https://github.com/codejunkie99/brain) is the
+git-backed long-term memory binary and MCP server. agentic-stack now treats it
+as an optional external memory layer instead of vendoring its Rust workspace.
+
+Install Brain first:
+
+```bash
+brew install codejunkie99/tap/brain
+```
+
+Then check or wire it from a project:
+
+```bash
+agentic-stack brain status
+agentic-stack brain onboard --agents codex,cursor --yes
+agentic-stack brain ask "auth decisions"
+agentic-stack brain note "Use PKCE for local OAuth flows."
+agentic-stack brain mcp-command
+```
+
+Installed `.agent/` projects also get `python3 .agent/tools/brain_bridge.py`
+and a `brain` seed skill so host agents can query or write Brain memory when a
+task needs cross-harness long-term recall.
 
 Bare `./install.sh` (no arguments) opens a **multi-select wizard** on
 a fresh project — check every harness you actually use, hit enter,
@@ -389,6 +419,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── show.py                 # colorful brain-state dashboard
     ├── data_layer_export.py    # local cross-harness dashboard/data export
     ├── data_flywheel_export.py # approved runs -> traces/cards/evals/JSONL
+    ├── brain_bridge.py         # bridge to external Brain CLI/MCP memory
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py
@@ -417,6 +448,7 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── remove.py                   # safe uninstall with shared-file detection + ownership handoff
 ├── dashboard_tui.py            # project dashboard for health/verify/memory/team/skills/instances
 ├── mission_control.py          # beta local web dashboard entrypoint
+├── brain.py                    # optional external Brain CLI integration
 ├── mission_control_collectors.py
 ├── mission_control_render.py
 ├── mission_control_server.py

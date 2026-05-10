@@ -5,6 +5,20 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] — 2026-05-10
+
+Minor release. Adds first-class integration with the external Brain CLI/MCP
+memory system while keeping agentic-stack's project-local `.agent/` runtime
+independent and optional.
+
+### Added
+- **Brain integration.** Adds `agentic-stack brain ...` and
+  `.agent/tools/brain_bridge.py` so projects can use the external
+  `codejunkie99/brain` CLI/MCP server as a git-backed long-term memory layer
+  without vendoring the Rust workspace into agentic-stack.
+- **Brain seed skill.** Adds a `brain` skill that teaches host agents when to
+  query or write Brain memory and how to avoid storing secrets.
+
 ## [0.17.0] — 2026-05-10
 
 Minor release. Clears the open PR queue and ships new harness adapters, the

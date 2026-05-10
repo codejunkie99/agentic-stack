@@ -12,6 +12,7 @@
 #   ./install.sh status [target-dir]             # one-screen view
 #   ./install.sh dashboard [target-dir]          # interactive project dashboard
 #   ./install.sh mission-control [target-dir]    # beta local web dashboard
+#   ./install.sh brain status                    # optional external Brain integration
 #   ./install.sh manage [target-dir]             # interactive adapter TUI
 #   ./install.sh transfer                        # memory transfer wizard
 #   ./install.sh upgrade [target-dir] [--dry-run|--yes]

@@ -78,6 +78,8 @@ Daily driver, highest-leverage first:
   protocol for patterns the dream cycle has staged.
 - `retract_lesson.py <lesson_id> --rationale "..."` — stop an accepted lesson
   from being injected into future recall/context while preserving audit history.
+- `brain_bridge.py ask|note|status` — optional bridge to the external Brain
+  CLI for git-backed long-term memory shared across harnesses.
 - `memory_reflect.py <skill> <action> <outcome>` — log a significant event.
 
 ## Rules
