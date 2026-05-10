@@ -80,6 +80,7 @@ the project root:
 
 ```bash
 agentic-stack dashboard           # TUI dashboard: health, verify, memory, team, skills
+agentic-stack mission-control     # beta local web dashboard; Ctrl-C turns it off
 agentic-stack status              # one-screen view: which adapters, brain stats
 agentic-stack doctor              # read-only audit; green / yellow / red per adapter
 agentic-stack upgrade --dry-run   # preview safe .agent infrastructure refresh
@@ -91,6 +92,7 @@ Source checkout users can run the same verbs through the clone:
 
 ```bash
 ./install.sh dashboard /path/to/your-project
+./install.sh mission-control /path/to/your-project
 ./install.sh status /path/to/your-project
 ./install.sh doctor /path/to/your-project
 ./install.sh upgrade /path/to/your-project --dry-run

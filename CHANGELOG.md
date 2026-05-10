@@ -5,6 +5,37 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] — 2026-05-10
+
+Minor release. Clears the open PR queue and ships new harness adapters, the
+Mission Control beta, semantic lesson retraction, and the consolidated pytest
+layout.
+
+### Added
+- **GitHub Copilot CLI adapter.** Installs `AGENTS.md`,
+  `.github/instructions/agentic-stack.instructions.md`,
+  `.github/hooks/agentic-stack.json`, and a `.github/skills/` mirror so Copilot
+  CLI can load the portable brain and run memory hooks.
+- **Google Gemini CLI adapter.** Installs `gemini.md` plus a `.gemini/skills/`
+  mirror for Gemini CLI projects.
+- **`agentic-stack mission-control`.** Adds a beta local web dashboard with a
+  snapshot mode, local-only event store, static assets, collectors, renderer,
+  and tests.
+- **Semantic lesson retraction.** Adds `.agent/tools/retract_lesson.py` so an
+  accepted lesson can be marked `status=retracted` with a required rationale
+  while preserving append-only `lessons.jsonl` history.
+
+### Changed
+- README, getting-started docs, POSIX installer help, and PowerShell installer
+  help now list all 12 adapters and the Mission Control command.
+- Proactive recall now considers only the latest append-only state for each
+  lesson id, excluding retracted lessons from future recall results.
+- `LESSONS.md` rendering deduplicates append-only lesson state by id so the
+  rendered markdown reflects the current status without losing audit history.
+- Tests now live under `tests/` with `pytest.ini`, including coverage for
+  Copilot CLI, Gemini, Mission Control, upgrades, onboarding, and lesson
+  retraction.
+
 ## [0.16.1] — 2026-05-10
 
 Patch release. Ships the production-ready getting-started guide from PR #49

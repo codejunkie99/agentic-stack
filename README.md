@@ -25,22 +25,31 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
-### New in v0.16.1 — getting-started refresh
+### New in v0.17.0 — adapters, Mission Control, and lesson retraction
+
+Minor release. Clears the open PR queue and ships the combined production
+surface from Copilot CLI, Gemini, Mission Control, and semantic lesson
+retraction work.
+
+- **New adapters.** GitHub Copilot CLI installs `AGENTS.md`,
+  `.github/instructions/`, `.github/hooks/`, and `.github/skills/`; Google
+  Gemini CLI installs `gemini.md` and a `.gemini/skills/` mirror.
+- **Mission Control beta.** Run `agentic-stack mission-control --port 8787`
+  for a local web dashboard, or use `--snapshot` to render a static HTML
+  report without opening a browser.
+- **Lesson retraction.** Run `.agent/tools/retract_lesson.py <lesson_id> --rationale "..."`
+  to stop obsolete accepted lessons from guiding future recall while preserving
+  append-only audit history.
+- **Test layout cleanup.** The validation suite now lives under `tests/` with
+  pytest configuration, covering adapters, upgrades, Mission Control, and
+  semantic retraction.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+### v0.16.1 — getting-started refresh
 
 Patch release. Ships the production-ready getting-started guide from PR #49
 and fixes onboarding version drift in the first-run banner.
-
-- **Accurate install paths.** The getting-started guide now separates
-  Homebrew, source checkout, and PowerShell flows so users do not expect a
-  global `agentic-stack` command from a plain clone.
-- **Current management commands.** The guide documents `dashboard`, `status`,
-  `doctor`, `upgrade`, `sync-manifest`, `add`, `remove`, and `manage` for both
-  Homebrew and source-checkout users.
-- **Correct onboarding version.** The setup banner now reads the package
-  version from `harness_manager.__version__` instead of showing stale release
-  text.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ### v0.16.0 — safe project upgrades
 
@@ -165,6 +174,7 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 
 ```bash
 ./install.sh dashboard           # TUI dashboard: health, verify, memory, team, skills, instances
+./install.sh mission-control     # beta local web dashboard; Ctrl-C turns it off
 ./install.sh add cursor          # add a second adapter (Claude Code + Cursor in same repo)
 ./install.sh status              # one-screen view: which adapters, brain stats
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
@@ -382,7 +392,8 @@ The index is stored at `.agent/memory/.index/` and gitignored.
     ├── list_candidates.py
     ├── graduate.py
     ├── reject.py
-    └── reopen.py
+    ├── reopen.py
+    └── retract_lesson.py       # append-only semantic lesson retraction
 
 adapters/                       # one small shim per harness, each with adapter.json manifest
 ├── claude-code/   (CLAUDE.md + settings.json hooks — $CLAUDE_PROJECT_DIR wired, closes #18)
@@ -405,6 +416,11 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── doctor.py                   # read-only audit + pre-v0.9 migration synthesis
 ├── remove.py                   # safe uninstall with shared-file detection + ownership handoff
 ├── dashboard_tui.py            # project dashboard for health/verify/memory/team/skills/instances
+├── mission_control.py          # beta local web dashboard entrypoint
+├── mission_control_collectors.py
+├── mission_control_render.py
+├── mission_control_server.py
+├── mission_control_static.py
 ├── post_install.py             # named built-ins (openclaw_register_workspace)
 ├── manage_tui.py               # interactive menu loop for add/remove/audit
 ├── transfer_tui.py             # onboarding-style memory transfer wizard
