@@ -135,23 +135,39 @@ def _audit_adapter(
     # the user merges the snippet. Re-check current file content — they
     # may have merged it since install. Yellow if still un-merged; green
     # if they merged.
-    still_alerted = []
+    unwired: list[str] = []
+    other_alerted: list[str] = []
     for f in entry.get("files_alerted", []):
         p = target_root / f
         if not p.is_file():
-            still_alerted.append(f"{f} (file missing entirely)")
+            other_alerted.append(f"{f} (file missing entirely)")
             continue
         try:
             content = p.read_text(encoding="utf-8", errors="replace")
         except OSError:
-            still_alerted.append(f"{f} (unreadable)")
+            other_alerted.append(f"{f} (unreadable)")
             continue
         if ".agent/" not in content:
-            still_alerted.append(f)
-    if still_alerted:
+            unwired.append(f)
+    if unwired:
         lines.append(
-            f"merge required: {', '.join(still_alerted)} — install printed a snippet to paste in"
+            f"merge required: {', '.join(unwired)} exists but does not "
+            f"reference .agent/ — the brain isn't wired into it yet."
         )
+        snippet_src = _alerted_snippet_source(adapter_name, unwired)
+        if snippet_src:
+            lines.append(
+                f"  to wire it up, merge the snippet from {snippet_src} "
+                f"into {unwired[0]} (or re-run `./install.sh {adapter_name}` "
+                f"to re-print it)."
+            )
+        else:
+            lines.append(
+                f"  re-run `./install.sh {adapter_name}` to re-print the snippet."
+            )
+        status_overall = YELLOW
+    if other_alerted:
+        lines.append(f"merge required: {', '.join(other_alerted)}")
         status_overall = YELLOW
 
     # Check skills_link target exists
@@ -253,6 +269,32 @@ def _audit_adapter(
         return RED, lines
 
     return status_overall, lines
+
+
+def _alerted_snippet_source(adapter_name: str, alerted: list[str]) -> str | None:
+    """Look up the adapter source path for the first alerted dst file.
+
+    Returns the absolute path to the snippet the user needs to merge, or
+    None if the adapter manifest can't be read. Doctor never reads the
+    target's files_alerted entries blindly — they may include suffixes
+    like " (file missing entirely)" — so we strip those before matching.
+    """
+    if not alerted:
+        return None
+    first = alerted[0].split(" (")[0]
+    stack_root = Path(__file__).resolve().parent.parent
+    manifest_path = stack_root / "adapters" / adapter_name / "adapter.json"
+    if not manifest_path.is_file():
+        return None
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    for entry in manifest.get("files", []):
+        if entry.get("dst") == first and entry.get("src"):
+            src_root = stack_root if entry.get("from_stack") else manifest_path.parent
+            return str(src_root / entry["src"])
+    return None
 
 
 def _check_openclaw_agent(agent_name: str) -> str:
