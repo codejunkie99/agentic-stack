@@ -55,6 +55,34 @@ def _lesson_already_appended(cid):
     return False
 
 
+def _append_episodic_mirror(cid, claim, ts, source="learn"):
+    """Mirror a manual stage into AGENT_LEARNINGS.jsonl so evidence_ids
+    referencing `ts` resolve to a real episodic record — matching the
+    auto-derived candidate path's existing behavior. Never raises; a
+    failure here must not block staging (same fail-open posture as
+    _lesson_already_appended's read-only probe).
+    """
+    episodic_path = os.path.join(BASE, "memory/episodic/AGENT_LEARNINGS.jsonl")
+    entry = {
+        "timestamp": ts,
+        "skill": "learn",
+        "action": f"manual-stage:{cid}",
+        "result": "success",
+        "detail": f"Manually staged lesson {cid} via .agent/tools/learn.py: {claim!r}",
+        "pain_score": 1,
+        "importance": 6,
+        "reflection": "",
+        "confidence": 0.9,
+        "source": {"skill": "learn", "profile": "manual", "run_id": f"manual_{cid[:6]}"},
+        "evidence_ids": [ts],
+    }
+    try:
+        with open(episodic_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except OSError:
+        pass  # fail-open: staging must succeed even if the mirror write fails
+
+
 def stage(claim, conditions, source="learn", importance=7):
     os.makedirs(CANDIDATES, exist_ok=True)
     cid = pattern_id(claim, conditions)
@@ -79,6 +107,7 @@ def stage(claim, conditions, source="learn", importance=7):
     path = os.path.join(CANDIDATES, f"{cid}.json")
     with open(path, "w") as f:
         json.dump(candidate, f, indent=2)
+    _append_episodic_mirror(cid, claim, now, source)
     return cid, path
 
 
