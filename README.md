@@ -43,6 +43,24 @@ workspace into agentic-stack.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
+### New in v0.19.0 — bounded agentic loops
+
+Portable loop contracts live under `.agent/loops` and use a maker →
+deterministic verifier → independent checker lifecycle. Start with:
+
+```bash
+agentic-stack loop init /path/to/your-project
+agentic-stack loop validate /path/to/your-project
+agentic-stack loop run ci-sweeper "make the failing test green" /path/to/your-project --yes
+agentic-stack loop status /path/to/your-project
+```
+
+L2/L3 action loops use owned Git worktrees, finite attempts/runtime/output/token
+budgets, deny-path gates, resumable checkpoints, and privacy-safe local events.
+The supervisor bounds and audits child processes; it is not an operating-system sandbox. Use harness-native sandboxes and approvals for stronger isolation.
+Schedulers should invoke one bounded `loop run` command at a time and inspect
+its exit status before starting another run.
+
 ### v0.17.0 — adapters, Mission Control, and lesson retraction
 
 Minor release. Clears the open PR queue and ships the combined production

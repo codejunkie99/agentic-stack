@@ -6,4 +6,4 @@ dashboard, mission-control, brain, manage, transfer, upgrade, and sync-manifest.
 The "harness_manager" name is internal only and never appears in CLI help, docs,
 or error messages users see.
 """
-__version__ = "0.18.0"
+__version__ = "0.19.0"

@@ -5,6 +5,34 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] — 2026-07-18
+
+Adds portable, bounded agentic loops and a local meta-harness for resumable
+maker/verifier/checker work.
+
+### Added
+- Strict JSON loop contracts, executor profiles, constraints, budgets, and
+  portable seed skills.
+- Atomic checkpoints, privacy-safe events, shell-free bounded subprocesses,
+  owned Git worktrees, policy gates, stagnation breakers, and CLI lifecycle
+  verbs (`init`, `validate`, `run`, `resume`, `status`, `stop`, `cleanup`,
+  `audit`).
+- Read-only loop health in doctor/status/dashboard/Mission Control and hashed
+  loop-event ingestion in the local data layer.
+
+### Safety
+- L2/L3 action loops require worktree isolation, deterministic verification,
+  independent checker approval, finite budgets, and explicit approval before
+  mutating or external-write profiles.
+- Runtime events omit task/prompt/command/output content by construction. The
+  supervisor is not an operating-system sandbox; use harness-native isolation
+  for hostile child processes.
+
+### Migration
+Run `agentic-stack upgrade --dry-run`, then `agentic-stack upgrade --yes` in
+existing projects. Upgrade adds missing loop starters and skills but preserves
+authored contracts, runtime state, and existing loop skill directories.
+
 ## [0.18.0] — 2026-05-10
 
 Minor release. Adds first-class integration with the external Brain CLI/MCP
