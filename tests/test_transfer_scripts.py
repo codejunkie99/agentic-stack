@@ -29,6 +29,13 @@ class TransferScriptsTest(unittest.TestCase):
 
         self.assertIn('"scripts"', formula)
 
+    def test_formula_targets_v019_and_smokes_loop_validation(self):
+        formula = (ROOT / "Formula" / "agentic-stack.rb").read_text(encoding="utf-8")
+
+        self.assertIn("refs/tags/v0.19.0.tar.gz", formula)
+        self.assertIn("825d667153e4d0ff16282d8d86100d7254682d600ee535c36709a876106563f1", formula)
+        self.assertIn('"loop", "validate"', formula)
+
     def test_doctor_detects_modern_windsurf_rule(self):
         doctor = (ROOT / "harness_manager" / "doctor.py").read_text(encoding="utf-8")
 

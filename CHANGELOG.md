@@ -33,6 +33,17 @@ Run `agentic-stack upgrade --dry-run`, then `agentic-stack upgrade --yes` in
 existing projects. Upgrade adds missing loop starters and skills but preserves
 authored contracts, runtime state, and existing loop skill directories.
 
+### Release
+- Tag `v0.19.0` cut from the verified release commit.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.19.0>
+- Tarball sha256:
+  `825d667153e4d0ff16282d8d86100d7254682d600ee535c36709a876106563f1`.
+- Formula verification: `tests/test_transfer_scripts.py` passed 5 tests and
+  `ruby -c Formula/agentic-stack.rb` returned `Syntax OK`. This Homebrew
+  version rejected local-path audit, refused the untrusted tap name, and only
+  accepts installed formula names for `brew test`; no Homebrew audit/test pass
+  is claimed.
+
 ## [0.18.0] — 2026-05-10
 
 Minor release. Adds first-class integration with the external Brain CLI/MCP
