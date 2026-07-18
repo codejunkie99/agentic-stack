@@ -118,6 +118,34 @@ except ImportError:
     pytest = None
 
 if pytest is not None:
+    @pytest.fixture(scope="session", autouse=True)
+    def isolated_agent_tree(tmp_path_factory):
+        global PROJECT_ROOT, AGENT_DIR, HOOK_SCRIPT, EPISODIC
+        source_root = PROJECT_ROOT
+        isolated_root = str(tmp_path_factory.mktemp("claude-hook-project"))
+        shutil.copytree(
+            os.path.join(source_root, ".agent"),
+            os.path.join(isolated_root, ".agent"),
+        )
+        PROJECT_ROOT = isolated_root
+        AGENT_DIR = os.path.join(PROJECT_ROOT, ".agent")
+        HOOK_SCRIPT = os.path.join(AGENT_DIR, "harness", "hooks", "claude_code_post_tool.py")
+        EPISODIC = os.path.join(AGENT_DIR, "memory", "episodic", "AGENT_LEARNINGS.jsonl")
+        for rel in ("harness", "memory", "tools"):
+            path = os.path.join(AGENT_DIR, rel)
+            if path not in sys.path:
+                sys.path.insert(0, path)
+        yield
+
+    def test_pytest_uses_isolated_agent_tree():
+        import tempfile
+
+        actual = os.path.realpath(PROJECT_ROOT)
+        repository_root = os.path.realpath(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        expected = os.path.realpath(tempfile.gettempdir())
+        assert actual != repository_root
+        assert os.path.commonpath([actual, expected]) == expected
+
     @pytest.fixture
     def mod():
         return _load_hook()
