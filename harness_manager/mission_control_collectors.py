@@ -927,6 +927,24 @@ def _run_objects(model: dict[str, Any], target: Path) -> list[dict[str, Any]]:
                 payload,
             )
         )
+    latest_loop = model.get("loops", {}).get("latest")
+    if isinstance(latest_loop, dict) and latest_loop.get("run_id"):
+        objects.append(
+            _control_object(
+                f"loop-{latest_loop['run_id']}",
+                "loop_run",
+                str(latest_loop["run_id"]),
+                str(latest_loop.get("status", "recorded")),
+                str(latest_loop.get("reason") or latest_loop.get("status") or "recorded"),
+                _source(api="/api/runs", path=target / ".agent" / "runtime" / "loops"),
+                {
+                    "run_id": latest_loop["run_id"],
+                    "loop": latest_loop.get("loop"),
+                    "status": latest_loop.get("status"),
+                    "reason": latest_loop.get("reason"),
+                },
+            )
+        )
     return objects
 
 

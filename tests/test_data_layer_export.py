@@ -120,6 +120,34 @@ class DataLayerExportTest(unittest.TestCase):
             self.assertIn("◇", dashboard_tui)
             self.assertNotIn("\x1b[", dashboard_tui)
 
+    def test_exports_privacy_safe_loop_events_and_quality_counts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            events = work / ".agent" / "runtime" / "loops"
+            events.mkdir(parents=True)
+            (events / "events.jsonl").write_text(
+                json.dumps(
+                    {
+                        "run_id": "raw-loop-run",
+                        "loop": "ci-sweeper",
+                        "event": "completed",
+                        "task": "do not export",
+                    }
+                )
+                + "\n{broken\n",
+                encoding="utf-8",
+            )
+            result = self.run_export(work, "--window", "all", "--date", "2026-04-25")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            out = work / ".agent" / "data-layer" / "exports" / "2026-04-25"
+            summary = json.loads((out / "dashboard-summary.json").read_text())
+            self.assertEqual(summary["counts"]["agent_events"], 1)
+            self.assertEqual(summary["data_quality"]["loop_events"]["malformed_lines"], 1)
+            exported = (out / "agent-events.jsonl").read_text()
+            self.assertNotIn("raw-loop-run", exported)
+            self.assertNotIn("do not export", exported)
+            self.assertIn("agentic-loop", exported)
+
     def test_succeeds_with_empty_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)

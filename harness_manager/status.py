@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import state as state_mod
+from .loops.storage import collect_summary
 
 
 def show(target_root: Path | str, log: Callable[[str], None] | None = None) -> int:
@@ -16,9 +17,11 @@ def show(target_root: Path | str, log: Callable[[str], None] | None = None) -> i
         log = print
     target_root = Path(target_root).resolve()
     doc = state_mod.load(target_root)
+    loops = collect_summary(target_root)
 
     if doc is None:
         log(f"no install.json at {target_root / '.agent/install.json'}.")
+        log(f"loops:    {loops['valid']}/{loops['configured']} valid; paused={loops['paused']}")
         log("run `./install.sh <adapter>` to install one,")
         log("or `./install.sh doctor` to detect existing adapters.")
         return 0
@@ -28,6 +31,9 @@ def show(target_root: Path | str, log: Callable[[str], None] | None = None) -> i
     log(f"brain:    .agent/  ({_brain_summary(target_root)})")
     log(f"version:  agentic-stack {doc.get('agentic_stack_version', '?')}")
     log(f"updated:  {doc.get('installed_at', '?')}")
+    latest = loops.get("latest")
+    latest_text = "none" if latest is None else f"{latest['run_id']} {latest['status']}"
+    log(f"loops:    {loops['valid']}/{loops['configured']} valid; paused={loops['paused']}; latest={latest_text}")
     log("")
     log(f"adapters installed ({len(adapters)}):")
     if not adapters:

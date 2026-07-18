@@ -21,6 +21,7 @@ from typing import Callable
 from . import schema as schema_mod
 from . import state as state_mod
 from . import __version__
+from .loops.storage import collect_summary
 
 
 # Detection signals: (filename, signal_strength) tuples per adapter.
@@ -74,8 +75,14 @@ def audit(target_root: Path | str, log: Callable[[str], None] | None = None) -> 
     # remove has no agent_name to unregister, orphaning the entry.
     target_root = Path(os.path.abspath(str(target_root)))
     doc = state_mod.load(target_root)
+    loop_summary = collect_summary(target_root)
 
     if doc is None:
+        if loop_summary["configured"]:
+            log(
+                f"loops: {loop_summary['valid']}/{loop_summary['configured']} valid"
+                + (f"; invalid: {', '.join(loop_summary['invalid'])}" if loop_summary["invalid"] else "")
+            )
         return _audit_pre_v090(target_root, log)
 
     # install.json present → strict read-only audit
@@ -94,6 +101,11 @@ def audit(target_root: Path | str, log: Callable[[str], None] | None = None) -> 
 
     log("")
     log(f"summary: {_summary(doc, any_red)}")
+    if loop_summary["configured"]:
+        log(
+            f"loops: {loop_summary['valid']}/{loop_summary['configured']} valid"
+            + (f"; invalid: {', '.join(loop_summary['invalid'])}" if loop_summary["invalid"] else "")
+        )
     return 1 if any_red else 0
 
 

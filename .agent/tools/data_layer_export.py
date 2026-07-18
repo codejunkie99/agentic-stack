@@ -393,6 +393,21 @@ def normalize_agent_event(entry: dict[str, Any], idx: int, args: argparse.Namesp
     return base
 
 
+def normalize_loop_event(entry: dict[str, Any]) -> dict[str, Any]:
+    """Map the privacy-whitelisted loop event shape into data-layer fields."""
+    return {
+        "timestamp": entry.get("timestamp") or now_iso(),
+        "skill": "agentic-loop",
+        "action": str(entry.get("event") or "loop_event"),
+        "workflow": str(entry.get("loop") or "loop"),
+        "result": str(entry.get("status") or entry.get("decision") or "observed"),
+        "harness": "agentic-loop",
+        "source": {"run_id": entry.get("run_id")},
+        "privacy_level": "local_only",
+        "pii_level": "unknown",
+    }
+
+
 def normalize_cron_run(entry: dict[str, Any], idx: int, args: argparse.Namespace, rules: dict[str, Any]) -> dict[str, Any]:
     started = iso(entry.get("started_at") or entry.get("timestamp") or entry.get("created_at")) or now_iso()
     finished = iso(entry.get("finished_at") or entry.get("ended_at"))
@@ -1043,6 +1058,8 @@ def export(args: argparse.Namespace) -> Path:
     category_rules = load_category_rules(category_config)
     episodic, episodic_quality = read_jsonl(episodic_path)
     extras, extras_quality = read_jsonl(extra_events_path)
+    loop_raw, loop_quality = read_jsonl(agent_root / "runtime" / "loops" / "events.jsonl")
+    extras.extend(normalize_loop_event(item) for item in loop_raw)
     cron_raw, cron_quality = read_jsonl(cron_path)
 
     raw_agent = [r for r in episodic + extras if inside_window(r, cutoff)]
@@ -1057,6 +1074,7 @@ def export(args: argparse.Namespace) -> Path:
     quality = {
         "episodic": episodic_quality,
         "extra_events": extras_quality,
+        "loop_events": loop_quality,
         "cron_runs": cron_quality,
         "category_rules": category_quality,
         "note": "Local-only export. Review categories, token/cost estimates, and PII status before sharing.",

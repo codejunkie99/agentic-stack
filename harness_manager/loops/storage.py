@@ -8,6 +8,8 @@ import re
 import tempfile
 from pathlib import Path
 
+from .schema import ContractError, load_contracts
+
 RUNTIME_REL = Path(".agent/runtime/loops")
 EVENT_FIELDS = {
     "run_id",
@@ -152,3 +154,38 @@ def is_paused(target_root: Path) -> bool:
     if not isinstance(payload, dict) or not isinstance(payload.get("paused"), bool):
         raise CheckpointError(f"pause state is corrupt: {path}")
     return payload["paused"]
+
+
+def collect_summary(target_root: Path) -> dict:
+    """Read-only, privacy-safe loop summary for local integrations."""
+    target = Path(target_root)
+    loops = target / ".agent" / "loops"
+    configured = 0
+    invalid: list[str] = []
+    if loops.is_dir():
+        for path in sorted(loops.glob("*.json")):
+            if path.name in {"harnesses.json", "constraints.json", "budget.json"}:
+                continue
+            configured += 1
+            try:
+                load_contracts(target, path.stem)
+            except (ContractError, CheckpointError, OSError):
+                invalid.append(path.stem)
+    try:
+        paused = is_paused(target)
+    except CheckpointError:
+        paused = True
+    try:
+        runs = list_checkpoints(target)
+    except CheckpointError:
+        runs = []
+    latest = None
+    if runs:
+        item = runs[-1]
+        latest = {
+            "run_id": item.get("run_id"),
+            "loop": item.get("loop_name"),
+            "status": item.get("status"),
+            "reason": item.get("reason"),
+        }
+    return {"configured": configured, "valid": configured - len(invalid), "invalid": invalid, "paused": paused, "latest": latest}
