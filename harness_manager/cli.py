@@ -34,6 +34,7 @@ VERBS = {
     "mission",
     "mc",
     "brain",
+    "loop",
     "transfer",
     "upgrade",
     "sync-manifest",
@@ -306,6 +307,15 @@ def cmd_mission_control(args: list[str]) -> int:
 def cmd_brain(args: list[str]) -> int:
     from . import brain as brain_mod
     return brain_mod.run(args, target_root=Path.cwd(), stack_root=_stack_root())
+
+
+def cmd_loop(args: list[str], *, yes: bool = False) -> int:
+    from .loops import commands as loop_commands
+
+    loop_args = list(args)
+    if yes and "--approved" not in loop_args and "--yes" not in loop_args:
+        loop_args.append("--approved")
+    return loop_commands.run(loop_args, default_target=Path.cwd(), stack_root=_stack_root())
 
 
 def cmd_transfer(args: list[str], target: Path) -> int:
@@ -581,6 +591,8 @@ def main(argv: list[str] | None = None) -> int:
                 if "--reconfigure" in wizard_flags and "--reconfigure" not in brain_args:
                     brain_args.append("--reconfigure")
             return cmd_brain(brain_args)
+        if verb == "loop":
+            return cmd_loop(rest[1:], yes=yes)
         if verb == "transfer":
             return cmd_transfer(rest[1:], Path.cwd())
         if verb == "upgrade":
