@@ -182,11 +182,13 @@ def run(argv: list[str], *, default_target: Path, stack_root: Path) -> int:
 
     init = sub.add_parser("init")
     init.add_argument("target", nargs="?", default=str(default_target))
+    init.add_argument("--target", dest="target_opt")
     init.add_argument("--force", action="store_true")
     init.set_defaults(handler=cmd_init)
 
     validate = sub.add_parser("validate")
     validate.add_argument("target", nargs="?", default=str(default_target))
+    validate.add_argument("--target", dest="target_opt")
     validate.add_argument("--loop", dest="loop_name", default="ci-sweeper")
     validate.add_argument("--json", dest="as_json", action="store_true")
     validate.set_defaults(handler=cmd_validate)
@@ -195,6 +197,7 @@ def run(argv: list[str], *, default_target: Path, stack_root: Path) -> int:
     loop_run.add_argument("loop_name")
     loop_run.add_argument("task")
     loop_run.add_argument("target", nargs="?", default=str(default_target))
+    loop_run.add_argument("--target", dest="target_opt")
     loop_run.add_argument("--approved", "--yes", action="store_true")
     loop_run.add_argument("--json", dest="as_json", action="store_true")
     loop_run.set_defaults(handler=cmd_run)
@@ -202,18 +205,21 @@ def run(argv: list[str], *, default_target: Path, stack_root: Path) -> int:
     resume = sub.add_parser("resume")
     resume.add_argument("run_id")
     resume.add_argument("target", nargs="?", default=str(default_target))
+    resume.add_argument("--target", dest="target_opt")
     resume.add_argument("--approved", "--yes", action="store_true")
     resume.add_argument("--json", dest="as_json", action="store_true")
     resume.set_defaults(handler=cmd_resume)
 
     status = sub.add_parser("status")
     status.add_argument("target", nargs="?", default=str(default_target))
+    status.add_argument("--target", dest="target_opt")
     status.add_argument("--json", dest="as_json", action="store_true")
     status.set_defaults(handler=cmd_status)
 
     stop = sub.add_parser("stop")
     stop.add_argument("run_id", nargs="?")
     stop.add_argument("target", nargs="?", default=str(default_target))
+    stop.add_argument("--target", dest="target_opt")
     stop.add_argument("--all", action="store_true")
     stop.add_argument("--json", dest="as_json", action="store_true")
     stop.set_defaults(handler=cmd_stop)
@@ -221,18 +227,22 @@ def run(argv: list[str], *, default_target: Path, stack_root: Path) -> int:
     cleanup = sub.add_parser("cleanup")
     cleanup.add_argument("run_id")
     cleanup.add_argument("target", nargs="?", default=str(default_target))
+    cleanup.add_argument("--target", dest="target_opt")
     cleanup.add_argument("--force", action="store_true")
     cleanup.add_argument("--json", dest="as_json", action="store_true")
     cleanup.set_defaults(handler=cmd_cleanup)
 
     audit = sub.add_parser("audit")
     audit.add_argument("target", nargs="?", default=str(default_target))
+    audit.add_argument("--target", dest="target_opt")
     audit.add_argument("--loop", dest="loop_name", default="ci-sweeper")
     audit.add_argument("--strict", action="store_true")
     audit.add_argument("--json", dest="as_json", action="store_true")
     audit.set_defaults(handler=cmd_audit)
 
     ns = parser.parse_args(argv)
+    if getattr(ns, "target_opt", None):
+        ns.target = ns.target_opt
     if ns.command == "init":
         return ns.handler(ns, stack_root)
     return ns.handler(ns)
