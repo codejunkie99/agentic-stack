@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "max_attempts": 3,
+  "max_runtime_seconds": 3600,
+  "max_output_chars": 200000,
+  "estimated_token_budget": 200000,
+  "stagnation_threshold": 2
+}

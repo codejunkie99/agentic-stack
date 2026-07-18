@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "maker": {
+      "adapter": "custom",
+      "command": ["custom-agent", "run", "{prompt}"],
+      "timeout_seconds": 1200,
+      "mutates_workspace": true,
+      "capabilities": ["workspace_write"],
+      "usage_source": "none"
+    },
+    "checker": {
+      "adapter": "custom",
+      "command": ["custom-agent", "review", "{prompt}"],
+      "timeout_seconds": 600,
+      "mutates_workspace": false,
+      "capabilities": [],
+      "usage_source": "none"
+    },
+    "reporter": {
+      "adapter": "custom",
+      "command": ["custom-agent", "report", "{prompt}"],
+      "timeout_seconds": 600,
+      "mutates_workspace": false,
+      "capabilities": [],
+      "usage_source": "none"
+    }
+  }
+}

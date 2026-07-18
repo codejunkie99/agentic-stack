@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "name": "daily-triage",
+  "description": "Summarize one bounded set of local work items.",
+  "autonomy": "L1",
+  "executor": "reporter",
+  "state_file": ".agent/runtime/loops/daily-triage-state.json",
+  "isolation": {"mode": "current", "base": "HEAD"},
+  "instructions": {
+    "initial": "Read the task and report the highest-value next actions.",
+    "retry": "Refine the report using the available feedback.",
+    "check": "Check that the report is factual and bounded."
+  },
+  "limits": {
+    "max_attempts": 1,
+    "max_runtime_seconds": 300,
+    "max_output_chars": 20000,
+    "estimated_token_budget": 10000,
+    "stagnation_threshold": 1
+  },
+  "approval": {"before_first_mutating_run": true, "before_external_write": true},
+  "tags": ["report", "triage"]
+}

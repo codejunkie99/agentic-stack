@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "name": "ci-sweeper",
+  "description": "Repair one clear CI regression with deterministic verification.",
+  "autonomy": "L2",
+  "executor": "maker",
+  "checker": "checker",
+  "state_file": ".agent/runtime/loops/ci-sweeper-state.json",
+  "isolation": {"mode": "worktree", "base": "HEAD"},
+  "instructions": {
+    "initial": "Diagnose the task and make the smallest verified fix.",
+    "retry": "Use the verifier feedback and do not repeat the same failed approach.",
+    "check": "Review the outcome independently against the task and constraints."
+  },
+  "verification": {"command": ["python3", "-m", "pytest"], "timeout_seconds": 900},
+  "limits": {
+    "max_attempts": 3,
+    "max_runtime_seconds": 3600,
+    "max_output_chars": 200000,
+    "estimated_token_budget": 200000,
+    "stagnation_threshold": 2
+  },
+  "approval": {"before_first_mutating_run": true, "before_external_write": true},
+  "tags": ["engineering", "ci"]
+}

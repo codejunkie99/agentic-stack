@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "deny_paths": [".env", ".env.*", "**/secrets/**", "**/credentials/**", "auth/**", "payments/**", "billing/**", "**/migrations/**"],
+  "allow_paths": [],
+  "max_changed_files": 10,
+  "external_writes_require_approval": true
+}

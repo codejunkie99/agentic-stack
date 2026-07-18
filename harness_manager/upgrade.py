@@ -75,11 +75,40 @@ def _plan(src_agent: Path, dst_agent: Path) -> list[tuple[Path, Path]]:
     dst_skills = dst_agent / "skills"
     for skill_md in sorted(src_skills.glob("*/SKILL.md")):
         skill_dir = skill_md.parent
+        if skill_dir.name.startswith("loop-"):
+            continue
         if (dst_skills / skill_dir.name).exists():
             continue
         for src in sorted(p for p in skill_dir.rglob("*") if p.is_file() and not _ignored(p)):
             rel = src.relative_to(src_agent)
             actions.append((src, dst_agent / rel))
+    actions.extend(_new_loop_assets(src_agent, dst_agent))
+    return actions
+
+
+def _new_loop_assets(src_agent: Path, dst_agent: Path) -> list[tuple[Path, Path]]:
+    """Plan add-only bundled loop contracts, runtime ignore, and seed skills."""
+    actions: list[tuple[Path, Path]] = []
+    src_loops = src_agent / "loops"
+    dst_loops = dst_agent / "loops"
+    if src_loops.is_dir():
+        for src in sorted(p for p in src_loops.rglob("*") if p.is_file()):
+            dst = dst_loops / src.relative_to(src_loops)
+            if not dst.exists():
+                actions.append((src, dst))
+
+    runtime_ignore = src_agent / "runtime" / ".gitignore"
+    dst_runtime_ignore = dst_agent / "runtime" / ".gitignore"
+    if runtime_ignore.is_file() and not dst_runtime_ignore.exists():
+        actions.append((runtime_ignore, dst_runtime_ignore))
+
+    src_skills = src_agent / "skills"
+    dst_skills = dst_agent / "skills"
+    for skill_dir in sorted(src_skills.glob("loop-*")):
+        if not skill_dir.is_dir() or (dst_skills / skill_dir.name).exists():
+            continue
+        for src in sorted(p for p in skill_dir.rglob("*") if p.is_file()):
+            actions.append((src, dst_skills / src.relative_to(src_agent)))
     return actions
 
 

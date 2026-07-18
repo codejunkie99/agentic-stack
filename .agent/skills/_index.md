@@ -74,3 +74,10 @@ Triggers: "draw", "diagram", "sketch", "wireframe", "flowchart",
 Constraints: get_canvas before edits; max 200 shapes per create_shape call.
 Requires: tldraw MCP server wired in the harness's MCP config; user has
 http://localhost:3030 open. Opt-in via `.features.json` (`tldraw: true`).
+
+## Portable loop skills
+
+The loop skills read `.agent/loops` contracts and `.agent/runtime` state before
+acting. `loop-triage` is read-only reporting; `loop-verifier` runs configured
+deterministic checks; `loop-constraints` enforces path and approval gates; and
+`loop-guard` enforces pause, budget, and stagnation decisions.

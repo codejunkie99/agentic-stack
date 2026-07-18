@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "name": "pr-babysitter",
+  "description": "Report on one pull request without changing remote state.",
+  "autonomy": "L1",
+  "executor": "reporter",
+  "state_file": ".agent/runtime/loops/pr-babysitter-state.json",
+  "isolation": {"mode": "current", "base": "HEAD"},
+  "instructions": {
+    "initial": "Inspect the local pull-request evidence and report risks only.",
+    "retry": "Clarify the report using fresh read-only evidence.",
+    "check": "Confirm that no push, comment, merge, or other external write is requested."
+  },
+  "limits": {
+    "max_attempts": 2,
+    "max_runtime_seconds": 600,
+    "max_output_chars": 30000,
+    "estimated_token_budget": 20000,
+    "stagnation_threshold": 2
+  },
+  "approval": {"before_first_mutating_run": true, "before_external_write": true},
+  "tags": ["report", "pull-request"]
+}
