@@ -634,3 +634,5 @@ agent-engineering community. Built with the hypothesis that
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=codejunkie99/agentic-stack&type=Date)](https://star-history.com/#codejunkie99/agentic-stack&Date)
+
+<!-- octopatch capability test -->
