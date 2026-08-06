@@ -25,7 +25,9 @@ import argparse, json, os, re, sys
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(BASE, "harness"))
+sys.path.insert(0, os.path.join(BASE, "memory"))
 from text import word_set  # noqa: E402
+from render_lessons import superseded_by_map  # noqa: E402
 
 LESSONS_JSONL = os.path.join(BASE, "memory/semantic/lessons.jsonl")
 LESSONS_MD = os.path.join(BASE, "memory/semantic/LESSONS.md")
@@ -68,8 +70,17 @@ def _load_structured():
             order.append(lid)
         latest[lid] = row
 
+    # A lesson can stay status="accepted" on its own row even after being
+    # superseded -- supersession creates a NEW id, it never edits the old
+    # row. Exclude ids an accepted supersession retires, mirroring
+    # render_lessons.py's rendering rule, so recall doesn't return both the
+    # stale and replacement guidance for the same topic.
+    retired = superseded_by_map(latest.values())
+
     out = []
     for lid in order:
+        if lid in retired:
+            continue
         lesson = latest[lid]
         if lesson.get("status") != "accepted":
             continue
