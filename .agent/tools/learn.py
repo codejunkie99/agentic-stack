@@ -44,16 +44,17 @@ def _lesson_already_appended(cid):
         return False
     target = f"lesson_{cid}"
     try:
-        for line in open(lessons_path):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if row.get("id") == target:
-                return True
+        with open(lessons_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if row.get("id") == target:
+                    return True
     except OSError:
         return False
     return False
