@@ -35,6 +35,8 @@ stray directory; the correctly-placed skills are copied on the next upgrade.
 ### Release
 - Tag `v0.19.1` cut from the verified release commit.
 - GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.19.1>
+- Tarball sha256:
+  `a128f83f9734dd4341e9b9b22084944ab791b1d1321c4d0e5e3d60cbbc30e22c`.
 
 ## [0.19.0] — 2026-07-18
 
