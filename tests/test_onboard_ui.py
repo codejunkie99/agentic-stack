@@ -10,7 +10,9 @@ def test_onboarding_banner_uses_package_version():
 
 def test_v019_release_docs_describe_loops_and_safety():
     root = Path(__file__).resolve().parents[1]
-    assert __version__ == "0.19.0"
+    # Series pin, not an exact one: the v0.19.0 notes are immutable history and
+    # every 0.19.x patch must keep shipping the loop docs and safety caveat.
+    assert __version__.startswith("0.19.")
     readme = (root / "README.md").read_text(encoding="utf-8")
     getting_started = (root / "docs" / "getting-started.md").read_text(encoding="utf-8")
     changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
