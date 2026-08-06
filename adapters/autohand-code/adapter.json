@@ -1,0 +1,16 @@
+{
+  "name": "autohand-code",
+  "description": "Autohand Code CLI — AGENTS.md + .autohand/skills mirror (Autohand project-level skills directory per https://github.com/autohandai/code-cli).",
+  "files": [
+    {
+      "src": "AGENTS.md",
+      "dst": "AGENTS.md",
+      "merge_policy": "skip_if_exists"
+    }
+  ],
+  "skills_link": {
+    "target": ".agent/skills",
+    "dst": ".autohand/skills",
+    "fallback": "rsync_with_delete"
+  }
+}

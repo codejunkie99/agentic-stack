@@ -2,7 +2,7 @@
 
 **Keep one portable memory-and-skills layer across coding-agent harnesses, so switching tools doesn't reset how your agent works.**
 
-A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, GitHub Copilot CLI, Google Gemini CLI, Hermes, Pi Coding Agent, Codex, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
+A portable `.agent/` folder (memory + skills + protocols) that plugs into Claude Code, Cursor, Windsurf, OpenCode, OpenClaw, GitHub Copilot CLI, Google Gemini CLI, Hermes, Pi Coding Agent, Codex, Autohand Code CLI, Antigravity, or a DIY Python loop — and keeps its knowledge when you switch.
 
 It also includes a local data layer so you can monitor the whole suite of
 agents from one place: harness activity, cron runs, active agents, token/cost
@@ -160,7 +160,7 @@ brew install agentic-stack
 # drop the brain into any project — the onboarding wizard runs automatically
 cd your-project
 agentic-stack claude-code
-# or: cursor | windsurf | opencode | openclaw | copilot-cli | gemini | hermes | pi | codex | standalone-python | antigravity
+# or: cursor | windsurf | opencode | openclaw | copilot-cli | gemini | hermes | pi | codex | autohand-code | standalone-python | antigravity
 ```
 
 ### Windows (PowerShell)
@@ -185,7 +185,7 @@ agentic-stack dashboard
 git clone https://github.com/codejunkie99/agentic-stack.git
 cd agentic-stack && ./install.sh claude-code         # mac / linux / git-bash
 # or on Windows PowerShell: .\install.ps1 claude-code
-# adapters: claude-code | cursor | windsurf | opencode | openclaw | copilot-cli | gemini | hermes | pi | codex | standalone-python | antigravity
+# adapters: claude-code | cursor | windsurf | opencode | openclaw | copilot-cli | gemini | hermes | pi | codex | autohand-code | standalone-python | antigravity
 ```
 
 ### Once installed: manage what's wired
@@ -262,7 +262,7 @@ from installed `SKILL.md` files.
 ## Onboarding wizard
 
 If you ran bare `./install.sh` (no adapter name), the wizard starts
-with a **multi-select harness step**: it lists all 12 adapters, pre-
+with a **multi-select harness step**: it lists all 13 adapters, pre-
 checks any it detects on disk, and installs each one you confirm with
 space + enter. After the install(s), the preferences flow runs.
 
@@ -455,6 +455,7 @@ adapters/                       # one small shim per harness, each with adapter.
 ├── hermes/        (AGENTS.md)
 ├── pi/            (AGENTS.md + .pi/skills symlink)
 ├── codex/         (AGENTS.md + .agents/skills symlink)
+├── autohand-code/ (AGENTS.md + .autohand/skills symlink)
 ├── standalone-python/  (DIY conductor entrypoint)
 └── antigravity/   (ANTIGRAVITY.md)
 
@@ -513,6 +514,7 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
 | **Pi Coding Agent** | `AGENTS.md` + `.pi/skills/` + `.pi/extensions/` | yes (`tool_result` event) |
 | **Codex** | `AGENTS.md` + `.agents/skills/` | no (manual reflect calls) |
+| **Autohand Code CLI** | `AGENTS.md` + `.autohand/skills/` | no (manual reflect calls) |
 | **Standalone Python** | `run.py` (any LLM) | yes (full control) |
 | **Antigravity** | `ANTIGRAVITY.md` | yes (system context) |
 
