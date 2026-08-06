@@ -132,12 +132,19 @@ def _bullet_for(lesson, superseded_by):
     return f"- {claim}  <!-- {ann} -->"
 
 
-def _build_auto_section(lessons):
-    # Only accepted supersessions flip the old lesson to strikethrough.
-    # A provisional --supersedes would otherwise blank the active lesson
-    # before its replacement has been accepted, leaving no active guidance
-    # on that topic at all (retrieval skips both provisional and
-    # strikethrough).
+def superseded_by_map(lessons):
+    """Old lesson id -> id of the accepted lesson that supersedes it.
+
+    Only accepted supersessions retire the old lesson. A provisional
+    --supersedes would otherwise blank the active lesson before its
+    replacement has itself been accepted, leaving no active guidance on
+    that topic at all -- callers that skip provisional/strikethrough
+    entries would then surface nothing for that topic.
+
+    Shared with recall.py so retrieval and rendering never disagree on
+    which lessons are currently retired -- see its docstring for the bug
+    this fixed (recall returning both the stale and replacement guidance).
+    """
     superseded_by = {}
     for L in lessons:
         if L.get("status") != "accepted":
@@ -145,6 +152,11 @@ def _build_auto_section(lessons):
         sup = L.get("supersedes")
         if sup:
             superseded_by[sup] = L.get("id")
+    return superseded_by
+
+
+def _build_auto_section(lessons):
+    superseded_by = superseded_by_map(lessons)
 
     groups = defaultdict(list)
     for L in lessons:
