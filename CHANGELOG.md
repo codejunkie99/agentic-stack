@@ -5,6 +5,37 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.1] — 2026-08-07
+
+Patch release. Four correctness fixes in memory retrieval, project upgrade, and
+file I/O. No contract, CLI, or on-disk format changes; upgrading is optional.
+
+### Fixed
+- **Recall returned superseded lessons** (#60). Supersession appends a new id
+  and never edits the old row, so `recall._load_structured()` kept surfacing
+  retired guidance beside its replacement. `superseded_by_map()` moved to
+  `render_lessons.py` and is now shared, so retrieval and rendering can't
+  disagree about what is retired. Provisional supersessions still do not retire
+  the old lesson.
+- **`upgrade` copied new loop skills to a doubled path** (#63). A genuinely
+  missing `loop-*` skill landed at `.agent/skills/skills/loop-x/` instead of
+  `.agent/skills/loop-x/`, in both `--dry-run` reports and real copies.
+- **Locale-dependent encoding in `learn.py`** (#61). `stdout`/`stderr` are
+  forced to UTF-8, and candidate JSON is written with an explicit encoding, so
+  non-ASCII claims survive on hosts whose default codepage isn't UTF-8.
+- **Leaked file handle** (#62). `_lesson_already_appended()` now reads through a
+  context manager instead of relying on refcounting to close the file.
+
+### Migration
+None required. Run `agentic-stack upgrade --dry-run`, then
+`agentic-stack upgrade --yes`, to pick up the fixes in an installed project.
+Projects that previously upgraded into `.agent/skills/skills/` can delete that
+stray directory; the correctly-placed skills are copied on the next upgrade.
+
+### Release
+- Tag `v0.19.1` cut from the verified release commit.
+- GitHub release: <https://github.com/codejunkie99/agentic-stack/releases/tag/v0.19.1>
+
 ## [0.19.0] — 2026-07-18
 
 Adds portable, bounded agentic loops and a local meta-harness for resumable
