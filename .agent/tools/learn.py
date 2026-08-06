@@ -20,6 +20,10 @@ orphaned dead-ends.
 """
 import argparse, datetime, json, os, subprocess, sys
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CANDIDATES = os.path.join(BASE, "memory/candidates")
 sys.path.insert(0, os.path.join(BASE, "harness"))
@@ -105,7 +109,7 @@ def stage(claim, conditions, source="learn", importance=7):
         "rejection_count": 0,
     }
     path = os.path.join(CANDIDATES, f"{cid}.json")
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(candidate, f, indent=2)
     _append_episodic_mirror(cid, claim, now, source)
     return cid, path
