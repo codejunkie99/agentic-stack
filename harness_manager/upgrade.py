@@ -108,7 +108,7 @@ def _new_loop_assets(src_agent: Path, dst_agent: Path) -> list[tuple[Path, Path]
         if not skill_dir.is_dir() or (dst_skills / skill_dir.name).exists():
             continue
         for src in sorted(p for p in skill_dir.rglob("*") if p.is_file()):
-            actions.append((src, dst_skills / src.relative_to(src_agent)))
+            actions.append((src, dst_agent / src.relative_to(src_agent)))
     return actions
 
 

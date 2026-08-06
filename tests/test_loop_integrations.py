@@ -42,6 +42,21 @@ def test_upgrade_adds_missing_loop_assets_but_preserves_authored_contract(tmp_pa
     assert (target / ".agent" / "runtime" / ".gitignore").exists()
 
 
+def test_upgrade_copies_missing_loop_skills_to_the_correct_path(tmp_path: Path):
+    """A genuinely-missing loop-* skill must land at .agent/skills/loop-x/,
+    not .agent/skills/skills/loop-x/ (a doubled path segment regression:
+    the existing coverage above only ever pre-seeds loop-triage, so it
+    exercises the "already exists, skip" branch and never the fresh-copy
+    branch that builds the destination path).
+    """
+    target = make_installed_project(tmp_path)
+    assert upgrade(target, ROOT, yes=True) == 0
+    for name in ("loop-constraints", "loop-guard", "loop-triage", "loop-verifier"):
+        dst = target / ".agent" / "skills" / name / "SKILL.md"
+        assert dst.is_file(), f"expected {dst}, not doubled under skills/skills/"
+        assert not (target / ".agent" / "skills" / "skills").exists()
+
+
 def test_upgrade_does_not_copy_runtime_children_or_overwrite_loop_skills(tmp_path: Path):
     target = make_installed_project(tmp_path)
     skill = target / ".agent" / "skills" / "loop-triage"
