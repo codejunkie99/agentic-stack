@@ -30,6 +30,13 @@ export AGENT_MODEL=claude-sonnet-4-5
 # or
 export AGENT_PROVIDER=openai
 export AGENT_MODEL=gpt-4o
+
+# or
+export AGENT_PROVIDER=minimax
+export AGENT_MODEL=MiniMax-M3
+export MINIMAX_API_KEY=...
+# Optional: AGENT_MINIMAX_REGION=global_en|cn_zh (default global_en)
+# Optional: AGENT_MINIMAX_WIRE=openai|anthropic (default openai)
 ```
 
 ## Cron the dream cycle
