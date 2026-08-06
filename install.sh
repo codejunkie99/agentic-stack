@@ -25,7 +25,7 @@
 #                                                # installed interactive projects
 #
 # adapter-name: claude-code | copilot-cli | cursor | gemini | windsurf |
-#               opencode | openclaw | hermes | pi | codex |
+#               opencode | openclaw | hermes | pi | codex | autohand-code |
 #               standalone-python | antigravity
 #
 # All real logic lives in harness_manager/ (Python). This script is a

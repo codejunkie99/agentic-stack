@@ -39,6 +39,7 @@ DETECT_SIGNALS = {
     "openclaw": [(".openclaw-system.md", "strong")],
     "pi": [(".pi/extensions/memory-hook.ts", "strong")],
     "codex": [(".agents/skills", "strong")],
+    "autohand-code": [(".autohand/skills", "strong")],
     "antigravity": [("ANTIGRAVITY.md", "strong")],
     "opencode": [("opencode.json", "strong")],
     "hermes": [("AGENTS.md", "weak")],  # AGENTS.md alone is ambiguous
