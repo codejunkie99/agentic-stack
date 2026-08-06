@@ -29,11 +29,17 @@ class TransferScriptsTest(unittest.TestCase):
 
         self.assertIn('"scripts"', formula)
 
-    def test_formula_targets_v019_and_smokes_loop_validation(self):
+    def test_formula_targets_the_current_version_and_smokes_loop_validation(self):
+        from harness_manager import __version__
+
         formula = (ROOT / "Formula" / "agentic-stack.rb").read_text(encoding="utf-8")
 
-        self.assertIn("refs/tags/v0.19.0.tar.gz", formula)
-        self.assertIn("825d667153e4d0ff16282d8d86100d7254682d600ee535c36709a876106563f1", formula)
+        # Derived from __version__ so a version bump that forgets the formula
+        # fails here instead of shipping brew users the previous tarball.
+        self.assertIn(f"refs/tags/v{__version__}.tar.gz", formula)
+        # Literal on purpose: the hash is release evidence, not something a
+        # bump can compute, so it must be updated deliberately per release.
+        self.assertIn("a128f83f9734dd4341e9b9b22084944ab791b1d1321c4d0e5e3d60cbbc30e22c", formula)
         self.assertIn('"loop", "validate"', formula)
 
     def test_doctor_detects_modern_windsurf_rule(self):
