@@ -73,6 +73,7 @@ def _call_minimax(system, user, *, temperature, max_tokens, model):
         r = c.chat.completions.create(
             model=model,
             temperature=temperature,
+            max_completion_tokens=max_tokens,
             messages=[{"role": "system", "content": system},
                       {"role": "user", "content": user}],
         )
