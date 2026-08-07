@@ -102,6 +102,7 @@ class MiniMaxProviderTest(unittest.TestCase):
         wire, kwargs = rec.calls[0]
         self.assertEqual(wire, "openai")
         self.assertEqual(kwargs["model"], "MiniMax-M3")
+        self.assertEqual(kwargs["max_completion_tokens"], 4096)
 
     def test_call_model_anthropic_wire_cn(self):
         os.environ["AGENT_PROVIDER"] = "minimax"
