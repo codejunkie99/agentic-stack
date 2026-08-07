@@ -24,6 +24,21 @@ from typing import Any
 VALID_WINDOWS = {"7d", "30d", "90d", "all"}
 VALID_BUCKETS = {"hour", "day", "week", "month"}
 
+# Finite value sets the loop supervisor (harness_manager/loops/runner.py)
+# actually writes to runtime/loops/events.jsonl. normalize_loop_event must
+# redact anything outside these sets rather than copy arbitrary loop-event
+# content into the exported dashboard/analytics surface.
+VALID_LOOP_EVENTS = {
+    "created", "awaiting_approval", "worktree_created", "paused",
+    "interrupted", "maker_finished", "verifier_finished", "checker_finished",
+    "completed", "cancelled",
+}
+VALID_LOOP_STATUSES = {
+    "created", "awaiting_approval", "paused", "exhausted", "interrupted",
+    "completed", "cancelled", "audit_failed", "failed", "rejected",
+}
+VALID_LOOP_DECISIONS = {"APPROVE", "ESCALATE", "MALFORMED"}
+
 
 def _e(*codes: int) -> str:
     return f"\x1b[{';'.join(map(str, codes))}m"
@@ -393,14 +408,30 @@ def normalize_agent_event(entry: dict[str, Any], idx: int, args: argparse.Namesp
     return base
 
 
+def _allowed_or_unknown(value: Any, allowed: set[str]) -> str:
+    text = str(value) if value is not None else ""
+    return text if text in allowed else "unknown"
+
+
 def normalize_loop_event(entry: dict[str, Any]) -> dict[str, Any]:
-    """Map the privacy-whitelisted loop event shape into data-layer fields."""
+    """Map the privacy-whitelisted loop event shape into data-layer fields.
+
+    entry's `event`/`status`/`decision` values come from a supervisor-controlled
+    finite set (VALID_LOOP_EVENTS/STATUSES/DECISIONS); anything else is redacted
+    to "unknown" rather than copied through, so a malformed or unexpected
+    events.jsonl row can't smuggle arbitrary text into the exported surface.
+    """
+    status_or_decision = entry.get("status") or entry.get("decision")
     return {
         "timestamp": entry.get("timestamp") or now_iso(),
         "skill": "agentic-loop",
-        "action": str(entry.get("event") or "loop_event"),
+        "action": _allowed_or_unknown(entry.get("event"), VALID_LOOP_EVENTS),
         "workflow": str(entry.get("loop") or "loop"),
-        "result": str(entry.get("status") or entry.get("decision") or "observed"),
+        "result": (
+            _allowed_or_unknown(status_or_decision, VALID_LOOP_STATUSES | VALID_LOOP_DECISIONS)
+            if status_or_decision is not None
+            else "observed"
+        ),
         "harness": "agentic-loop",
         "source": {"run_id": entry.get("run_id")},
         "privacy_level": "local_only",
