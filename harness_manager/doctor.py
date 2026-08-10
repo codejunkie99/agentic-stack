@@ -14,6 +14,7 @@ import os
 import json
 import shlex
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Callable
@@ -100,6 +101,14 @@ def audit(target_root: Path | str, log: Callable[[str], None] | None = None) -> 
         if status == RED:
             any_red = True
 
+    brain_status, brain_lines = _audit_portable_brain(target_root)
+    glyph = {GREEN: "✓", YELLOW: "⚠", RED: "✗"}[brain_status]
+    log(f"{glyph} {'portable-brain':18s} {brain_status}")
+    for line in brain_lines:
+        log(f"    {line}")
+    if brain_status == RED:
+        any_red = True
+
     log("")
     log(f"summary: {_summary(doc, any_red)}")
     if loop_summary["configured"]:
@@ -108,6 +117,55 @@ def audit(target_root: Path | str, log: Callable[[str], None] | None = None) -> 
             + (f"; invalid: {', '.join(loop_summary['invalid'])}" if loop_summary["invalid"] else "")
         )
     return 1 if any_red else 0
+
+
+def _audit_portable_brain(target_root: Path) -> tuple[str, list[str]]:
+    """Validate managed artifacts with the trusted agentic-stack copy."""
+    stack_root = Path(__file__).resolve().parent.parent
+    trusted_validator = stack_root / ".agent" / "tools" / "validate_extracted_artifacts.py"
+    registry = target_root / ".agent" / "config" / "extracted-artifacts.json"
+    if not registry.is_file():
+        return YELLOW, [
+            "managed artifact registry is not installed; run agentic-stack upgrade"
+        ]
+    if not trusted_validator.is_file():
+        return RED, [
+            "trusted artifact validator is missing from agentic-stack"
+        ]
+
+    from .upgrade import _managed_artifact_files
+
+    drifted = []
+    for rel in _managed_artifact_files(stack_root / ".agent"):
+        trusted = stack_root / ".agent" / rel
+        installed = target_root / ".agent" / rel
+        try:
+            matches = installed.is_file() and installed.read_bytes() == trusted.read_bytes()
+        except OSError:
+            matches = False
+        if not matches:
+            drifted.append((Path(".agent") / rel).as_posix())
+    if drifted:
+        return RED, [
+            "managed artifacts are missing or changed; run agentic-stack upgrade: "
+            + ", ".join(drifted)
+        ]
+    try:
+        result = subprocess.run(
+            [sys.executable, str(trusted_validator), "--repo-root", str(target_root)],
+            cwd=target_root,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        return RED, [f"portable-brain validation could not run: {error}"]
+    output = (result.stdout + result.stderr).strip().splitlines()
+    if result.returncode == 0:
+        return GREEN, output[-1:] or ["registered artifacts validate"]
+    detail = output[-20:] or [f"validator exited with status {result.returncode}"]
+    return RED, detail
 
 
 def _audit_adapter(

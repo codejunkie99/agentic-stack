@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "name": "Portable brain extracted-artifact registry",
+  "observedAt": "2026-08-09T00:00:00Z",
+  "artifacts": [
+    {
+      "id": "fleet-management",
+      "type": "protocol",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/protocols/fleet-management.md",
+      "triggers": ["fleet audit", "fleet upgrade", "multi-repository profile rollout"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "fleet-manifest-schema",
+      "type": "schema",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/protocols/tool_schemas/fleet-manifest.schema.json",
+      "triggers": ["fleet manifest", "validate fleet ownership"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "portable-brain-system",
+      "type": "protocol",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/protocols/portable-brain-system.md",
+      "triggers": ["portable brain", "unified agent system", "system integrity"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "profile-layering",
+      "type": "protocol",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/protocols/profile-layering.md",
+      "triggers": ["profile resolution", "project identity", "global and local memory"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "tooling-extraction",
+      "type": "protocol",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/protocols/tooling-extraction.md",
+      "triggers": ["repetitive work", "automate repeated task", "extract tooling"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "workflow-templates",
+      "type": "protocol",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/protocols/workflow-templates.md",
+      "triggers": ["write workflow template", "workflow authoring", "workflow overlay"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "workflow-template-schema",
+      "type": "schema",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/protocols/tool_schemas/workflow-template.schema.json",
+      "triggers": ["validate workflow", "workflow schema"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "extract-repetitive-work",
+      "type": "workflow-template",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/templates/extract-repetitive-work.workflow.json",
+      "triggers": ["extract repetitive work", "create reusable tooling", "reduce repeated agent work"],
+      "sourceState": "managed"
+    },
+    {
+      "id": "validate-extracted-artifacts",
+      "type": "tool",
+      "scope": "global",
+      "version": "1.0.0",
+      "status": "active",
+      "owner": "portable-brain",
+      "path": ".agent/tools/validate_extracted_artifacts.py",
+      "triggers": ["validate portable brain", "validate workflow", "artifact registry integrity"],
+      "sourceState": "managed"
+    }
+  ]
+}

@@ -116,10 +116,12 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 ./install.sh add cursor          # add a second adapter (Claude Code + Cursor in same repo)
 ./install.sh status              # one-screen view: which adapters, brain stats
 ./install.sh doctor              # read-only audit; green / yellow / red per adapter
+./install.sh fleet audit agentic-stack.fleet.json  # audit all declared workspaces
+./install.sh fleet upgrade agentic-stack.fleet.json --dry-run  # preview fleet rollout
 ./install.sh manage              # interactive TUI: header pane + menu loop for add/remove/audit
 ./install.sh transfer            # onboarding-style wizard: export/import memory as a curl bridge
 ./install.sh upgrade --dry-run   # preview safe .agent infrastructure refresh
-./install.sh upgrade --yes       # copy latest harness/memory/tools + new skills
+./install.sh upgrade --yes       # refresh managed brain artifacts, infrastructure, and new skills
 ./install.sh sync-manifest       # rebuild .agent/skills/_manifest.jsonl from SKILL.md frontmatter
 ./install.sh remove cursor       # confirm prompt + delete; no quarantine, no undo
 ```
@@ -169,8 +171,10 @@ Upgrading an already-installed project after `brew upgrade`? Run
 `agentic-stack upgrade --dry-run` in the project first, then
 `agentic-stack upgrade --yes` to refresh only skeleton-owned `.agent`
 infrastructure (`harness/**/*.py`, top-level `memory/*.py`, `tools/*.py`,
-the generated skill index, and new skill directories). It does not rewrite
-`CLAUDE.md`, `.claude/settings.json`, personal/semantic/episodic/working
+registry-owned protocols, schemas, workflow templates, the generated skill
+index, and new skill directories). It updates only the bounded portable-brain
+block in `.agent/AGENTS.md`. It does not rewrite `CLAUDE.md`,
+`.claude/settings.json`, personal/semantic/episodic/working
 memory, candidates, or existing skill directories. `agentic-stack
 sync-manifest` is available as a repair command if `_manifest.jsonl` drifts
 from installed `SKILL.md` files.

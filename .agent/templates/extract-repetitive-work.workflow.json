@@ -1,0 +1,192 @@
+{
+  "$schema": "../protocols/tool_schemas/workflow-template.schema.json",
+  "schemaVersion": 1,
+  "id": "extract-repetitive-work",
+  "name": "Extract repetitive work",
+  "scope": "global",
+  "version": "1.0.0",
+  "status": "active",
+  "description": "Turn repeated agent work into a governed reusable artifact without bypassing permissions, evidence, or project identity.",
+  "identity": {
+    "requiresProfile": true,
+    "requiresProject": true,
+    "requiresComponent": false
+  },
+  "parameters": [
+    {
+      "name": "candidateId",
+      "type": "string",
+      "required": true,
+      "sensitive": false,
+      "description": "Stable identifier for the observed repeated-work candidate."
+    },
+    {
+      "name": "publicationScope",
+      "type": "string",
+      "required": true,
+      "sensitive": false,
+      "allowed": ["global", "project", "local"],
+      "description": "Requested publication layer. Evidence can reduce this scope."
+    }
+  ],
+  "preconditions": [
+    {
+      "id": "identity-resolved",
+      "check": "protocol:profile-layering#identity-model",
+      "onFailure": "stop",
+      "sideEffect": "none",
+      "evidence": "resolved-identity"
+    },
+    {
+      "id": "candidate-threshold-met",
+      "check": "protocol:tooling-extraction#candidate-thresholds",
+      "onFailure": "stop",
+      "sideEffect": "none",
+      "evidence": "candidate-observations"
+    }
+  ],
+  "steps": [
+    {
+      "id": "collect-evidence",
+      "use": "protocol:tooling-extraction#evidence-inputs",
+      "with": ["candidateId"],
+      "produces": ["redacted-evidence-set"],
+      "onFailure": "stop",
+      "sideEffect": "none",
+      "requiredEvidence": ["candidate-observations", "redaction-result"]
+    },
+    {
+      "id": "classify-artifact",
+      "use": "protocol:tooling-extraction#artifact-classification",
+      "with": ["redacted-evidence-set", "publicationScope"],
+      "produces": ["artifact-classification", "effective-scope"],
+      "onFailure": "stop",
+      "sideEffect": "none",
+      "requiredEvidence": ["classification-decision", "existing-artifact-search"]
+    },
+    {
+      "id": "draft-artifact",
+      "use": "protocol:tooling-extraction#drafting-process",
+      "with": ["artifact-classification", "effective-scope"],
+      "produces": ["draft-artifact", "draft-registry-entry"],
+      "onFailure": "stop",
+      "sideEffect": "local-write",
+      "requiredEvidence": ["draft-path", "source-provenance"]
+    },
+    {
+      "id": "validate-artifact",
+      "use": "tool:validate-extracted-artifacts",
+      "with": ["draft-artifact", "draft-registry-entry"],
+      "produces": ["structural-validation-result"],
+      "onFailure": "return-to-drafted",
+      "sideEffect": "none",
+      "requiredEvidence": ["validator-output"]
+    },
+    {
+      "id": "evaluate-artifact",
+      "use": "protocol:tooling-extraction#evaluation-matrix",
+      "with": ["draft-artifact"],
+      "produces": ["evaluation-results"],
+      "onFailure": "return-to-drafted",
+      "sideEffect": "none",
+      "requiredEvidence": ["fresh-context-results", "lower-model-result"]
+    },
+    {
+      "id": "approve-publication",
+      "use": "human:artifact-owner-approval",
+      "with": ["structural-validation-result", "evaluation-results", "effective-scope"],
+      "produces": ["publication-decision"],
+      "onFailure": "stop",
+      "sideEffect": "none",
+      "requiredEvidence": ["owner-decision"]
+    },
+    {
+      "id": "publish-artifact",
+      "use": "protocol:tooling-extraction#lifecycle",
+      "with": ["draft-artifact", "draft-registry-entry", "publication-decision"],
+      "produces": ["active-artifact", "active-registry-entry"],
+      "onFailure": "stop-and-preserve-draft",
+      "sideEffect": "local-write",
+      "requiredEvidence": ["published-version", "registry-validation-result"]
+    }
+  ],
+  "permissions": {
+    "maximumSideEffect": "local-write",
+    "requiresApprovalFor": ["global-publication", "dependency-installation", "remote-write"],
+    "forbids": ["secret-value-storage", "permission-bypass", "history-deletion"]
+  },
+  "budget": {
+    "maxToolCalls": 30,
+    "maxInputTokens": 50000,
+    "maxWallMinutes": 60
+  },
+  "memory": {
+    "reads": [
+      {"scope": "effective", "name": "preferences"},
+      {"scope": "effective", "name": "lessons"},
+      {"scope": "project", "name": "episodic evidence"}
+    ],
+    "writes": [
+      {"scope": "project", "name": "extraction result"},
+      {"scope": "requested", "name": "accepted artifact"}
+    ]
+  },
+  "evidence": {
+    "required": [
+      "resolved-identity",
+      "candidate-observations",
+      "redaction-result",
+      "classification-decision",
+      "existing-artifact-search",
+      "draft-path",
+      "source-provenance",
+      "validator-output",
+      "fresh-context-results",
+      "lower-model-result",
+      "owner-decision",
+      "published-version",
+      "registry-validation-result"
+    ],
+    "store": "project working memory with global project index"
+  },
+  "completion": {
+    "allOf": [
+      "all required steps completed",
+      "all required evidence exists",
+      "artifact and registry validate",
+      "publication decision matches effective scope",
+      "handoff and reflection are recorded"
+    ]
+  },
+  "rollback": {
+    "strategy": "Set the artifact to superseded, restore the prior active version, retain history, and rebuild the registry."
+  },
+  "handoff": {
+    "required": ["artifact id and version", "scope", "evidence", "known limits", "superseded artifact"],
+    "ownerActions": ["monitor first three uses", "return recurring failures to drafted"]
+  },
+  "evaluation": {
+    "scenarios": [
+      "valid-input",
+      "missing-input",
+      "stale-input",
+      "permission-denied",
+      "tool-failure",
+      "project-overlay",
+      "lower-capability-model",
+      "repeat-run"
+    ],
+    "requiresIndependentContext": true,
+    "requiresLowerCapabilityModel": true
+  },
+  "provenance": {
+    "author": "portable-brain",
+    "sources": [
+      ".agent/protocols/profile-layering.md",
+      ".agent/protocols/tooling-extraction.md",
+      ".agent/protocols/workflow-templates.md"
+    ],
+    "observedAt": "2026-08-09T00:00:00Z",
+    "supersedes": null
+  }
+}

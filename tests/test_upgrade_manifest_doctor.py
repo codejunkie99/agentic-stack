@@ -100,6 +100,9 @@ category: visualization
             (custom_skill / "SKILL.md").write_text("user debug skill\n", encoding="utf-8")
             (agent / "skills" / "_manifest.jsonl").write_text("", encoding="utf-8")
             (agent / "skills" / "_index.md").write_text("# old index\n", encoding="utf-8")
+            (agent / "protocols" / "project-local.md").write_text(
+                "# Project-only rule\n", encoding="utf-8"
+            )
 
             result = self.run_cli(project, "upgrade", project, "--yes")
 
@@ -134,6 +137,70 @@ category: visualization
             self.assertIn("draw", rows["tldraw"]["triggers"])
             self.assertIn("brain", (agent / "skills" / "_index.md").read_text(encoding="utf-8"))
             self.assertIn("tldraw", (agent / "skills" / "_index.md").read_text(encoding="utf-8"))
+            self.assertEqual(
+                (agent / "protocols" / "project-local.md").read_text(encoding="utf-8"),
+                "# Project-only rule\n",
+            )
+            agents_text = (agent / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertIn("# Brain", agents_text)
+            self.assertIn("agentic-stack:portable-brain:start", agents_text)
+            self.assertIn("protocols/profile-layering.md", agents_text)
+
+            artifact_registry = json.loads(
+                (agent / "config" / "extracted-artifacts.json").read_text(encoding="utf-8")
+            )
+            for artifact in artifact_registry["artifacts"]:
+                self.assertEqual(artifact["sourceState"], "managed")
+                self.assertTrue((project / artifact["path"]).is_file(), artifact["path"])
+
+            validation = subprocess.run(
+                [
+                    "python3",
+                    str(agent / "tools" / "validate_extracted_artifacts.py"),
+                    "--repo-root",
+                    str(project),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(validation.returncode, 0, validation.stdout + validation.stderr)
+
+            second = self.run_cli(project, "upgrade", project, "--dry-run")
+            self.assertEqual(second.returncode, 0, second.stderr)
+            self.assertIn("already current", second.stdout)
+
+    def test_doctor_fails_when_registered_workflow_is_corrupt(self):
+        from harness_manager import doctor
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            self.make_brain(project)
+            result = self.run_cli(project, "upgrade", project, "--yes")
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            workflow = project / ".agent" / "templates" / "extract-repetitive-work.workflow.json"
+            workflow.write_text("{}\n", encoding="utf-8")
+
+            status, lines = doctor._audit_portable_brain(project)
+            self.assertEqual(status, doctor.RED, lines)
+            self.assertTrue(any("workflow" in line for line in lines), lines)
+
+    def test_doctor_does_not_trust_the_installed_validator(self):
+        from harness_manager import doctor
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            self.make_brain(project)
+            result = self.run_cli(project, "upgrade", project, "--yes")
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            validator = project / ".agent" / "tools" / "validate_extracted_artifacts.py"
+            validator.write_text("raise SystemExit(0)\n", encoding="utf-8")
+
+            status, lines = doctor._audit_portable_brain(project)
+            self.assertEqual(status, doctor.RED, lines)
+            self.assertTrue(any("validate_extracted_artifacts.py" in line for line in lines), lines)
 
     def test_doctor_warns_for_missing_and_unwired_claude_hook_files(self):
         from harness_manager import doctor
