@@ -93,3 +93,14 @@ Daily driver, highest-leverage first:
 6. Follow `protocols/permissions.md`. Blocked means blocked.
 7. When a self-rewrite hook fires, propose conservative edits only.
 8. The harness is dumb on purpose. Reasoning lives in skills + the host agent.
+
+## Cursor model split (Fable parent, Grok subagents)
+
+When running under Cursor (local or cloud), the root `.cursor/` directory
+installs a model split on top of this brain:
+- Parent agent: Claude Fable 5.1. Judgment, scoping, synthesis only.
+- Subagents: Grok 4.6, pinned via `model: grok-4.6` in `.cursor/agents/cavecrew-{investigator,builder,reviewer}.md`.
+- Rules: `.cursor/rules/fable-grok-subagents.mdc`, `.cursor/rules/caveman.mdc` (both `alwaysApply`).
+- Skills: `.cursor/skills/caveman/SKILL.md`, `.cursor/skills/cavecrew/SKILL.md` (MIT, from JuliusBrussee/caveman).
+Locate, bulk grep, 1-2 file edits, and diff review go to the cavecrew
+subagents. See `protocols/delegation.md` for general sub-agent handoff rules.
