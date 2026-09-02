@@ -1,0 +1,40 @@
+---
+description: Model split. Parent Claude Fable 5.1, subagents Grok 4.6 via cavecrew presets. Never burn Fable on grunt work.
+alwaysApply: true
+---
+
+# Fable parent, Grok subagents
+
+Parent agent runs on Claude Fable 5.1 and does judgment work only: scoping, design decisions, final synthesis, user comms.
+
+Subagents run on Grok 4.6, pinned by `model: grok-4.6` in `.cursor/agents/*.md`. Never set a cavecrew subagent to `model: inherit`.
+
+## Delegate, do not do
+
+| Job | Subagent |
+|---|---|
+| Locate, bulk grep, file discovery | `cavecrew-investigator` |
+| 1–2 file surgical edit | `cavecrew-builder` |
+| Diff review before commit or PR | `cavecrew-reviewer` |
+| Test loops and verbose shell runs | `cavecrew-builder` or `cavecrew-reviewer` as fits |
+| Parallel scouting | 2–3 `cavecrew-investigator` in one message |
+
+## Never burn Fable on grunt work
+
+Parent never runs bulk grep, test loops, or multi-file mechanical edits itself.
+
+Do not use built-in Explore for locate; it may pick its own helper model. Use `cavecrew-investigator`.
+
+Parent reads subagent summaries only. Do not re-read the same diffs the reviewer already summarized.
+
+## Style
+
+Caveman full on parent and cavecrew subagents (see `.cursor/rules/caveman.mdc`, `.cursor/skills/caveman/SKILL.md`).
+
+Cavecrew contracts in `.cursor/skills/cavecrew/SKILL.md`. Investigator returns path:line hits. Builder returns path:line-range plus verified. Reviewer returns findings or `No issues.`
+
+## Limits
+
+Cursor overrides a pinned model only when a team admin blocks it, the plan lacks it, or a legacy Max Mode rule applies (per Cursor docs).
+
+This file is config only. It changes no product code.
