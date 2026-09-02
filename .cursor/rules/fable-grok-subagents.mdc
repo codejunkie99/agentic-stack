@@ -16,7 +16,7 @@ Subagents run on Grok 4.6, pinned by `model: grok-4.6` in `.cursor/agents/*.md`.
 | Locate, bulk grep, file discovery | `cavecrew-investigator` |
 | 1–2 file surgical edit | `cavecrew-builder` |
 | Diff review before commit or PR | `cavecrew-reviewer` |
-| Test loops and verbose shell runs | `cavecrew-builder` or `cavecrew-reviewer` as fits |
+| Test loops and verbose shell runs | `cavecrew-builder` (edit, then run tests, report shortest decisive line) |
 | Parallel scouting | 2–3 `cavecrew-investigator` in one message |
 
 ## Never burn Fable on grunt work
