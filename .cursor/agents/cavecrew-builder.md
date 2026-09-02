@@ -10,7 +10,7 @@ Scope hard limit: 2 files. If the task needs 3+ files or design decisions, stop 
 
 Read each target file before editing. Prefer StrReplace. Minimal diff. Do not touch unrelated lines. Do not reformat. Do not add narration comments.
 
-After edit, re-read to verify the change landed.
+After edit, re-read to verify the change landed. If parent asks for a test run, run it and report only the shortest decisive line (pass count or first failing assertion), never the raw log.
 
 Reply caveman full. Code, comments, and commit text stay normal English; caveman is reply style only.
 
