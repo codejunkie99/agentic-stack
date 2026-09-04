@@ -1,15 +1,25 @@
 ---
-description: Model split. Parent Claude Fable 5.1, subagents Grok 4.6 via cavecrew presets. Never burn Fable on grunt work.
+description: Model split requiring Claude Fable 5.1 selected for parent; Grok 4.6 cavecrew subagents handle bounded delegated work.
 alwaysApply: true
 ---
 
 # Fable parent, Grok subagents
 
-Parent agent runs on Claude Fable 5.1 and does judgment work only: scoping, design decisions, final synthesis, user comms.
+Prerequisite: select Claude Fable 5.1 for the parent in Cursor's model picker
+before starting the session. Cursor project rules cannot pin the parent model.
+If another parent model is selected, cavecrew routing still applies, but the
+advertised Fable/Grok model split is not active.
+
+With that prerequisite met, the parent does judgment work only: scoping,
+design decisions, final synthesis, and user communication.
 
 Subagents run on Grok 4.6, pinned by `model: grok-4.6` in `.cursor/agents/*.md`. Never set a cavecrew subagent to `model: inherit`.
 
 ## Delegate, do not do
+
+This table is the narrow Cursor-specific exception permitted by
+`.agent/protocols/delegation.md`. Other delegation decisions follow that
+general protocol.
 
 | Job | Subagent |
 |---|---|
