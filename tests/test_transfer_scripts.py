@@ -46,9 +46,17 @@ class TransferScriptsTest(unittest.TestCase):
         self.assertTrue(expected.issubset(entries))
         for path in expected:
             self.assertTrue(entries[path].get("from_stack"), path)
+            self.assertEqual("skip_if_exists", entries[path]["merge_policy"], path)
 
         with tempfile.TemporaryDirectory() as target:
-            install.install(manifest, target, adapter_dir, ROOT, log=lambda _line: None)
+            existing = Path(target) / ".cursor" / "agents" / "cavecrew-builder.md"
+            existing.parent.mkdir(parents=True)
+            existing.write_text("user-owned agent\n", encoding="utf-8")
+
+            result = install.install(manifest, target, adapter_dir, ROOT, log=lambda _line: None)
+
+            self.assertEqual("user-owned agent\n", existing.read_text(encoding="utf-8"))
+            self.assertNotIn(".cursor/agents/cavecrew-builder.md", result["files_written"])
             for path in expected:
                 self.assertTrue((Path(target) / path).is_file(), path)
 
