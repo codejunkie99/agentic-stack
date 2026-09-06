@@ -1,4 +1,5 @@
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -23,6 +24,41 @@ class TransferScriptsTest(unittest.TestCase):
         self.assertIn(".windsurf/rules/agentic-stack.md", dsts)
         self.assertIn(".windsurfrules", dsts)
         self.assertTrue((ROOT / "adapters" / "windsurf" / ".windsurf" / "rules" / "agentic-stack.md").exists())
+
+    def test_cursor_manifest_installs_cavecrew_stack(self):
+        from harness_manager import install, schema
+
+        adapter_dir = ROOT / "adapters" / "cursor"
+        manifest = schema.validate(adapter_dir / "adapter.json")
+        expected = {
+            ".cursor/agents/cavecrew-builder.md",
+            ".cursor/agents/cavecrew-investigator.md",
+            ".cursor/agents/cavecrew-reviewer.md",
+            ".cursor/rules/caveman.mdc",
+            ".cursor/rules/fable-grok-subagents.mdc",
+            ".cursor/skills/cavecrew/SKILL.md",
+            ".cursor/skills/cavecrew/LICENSE",
+            ".cursor/skills/caveman/SKILL.md",
+            ".cursor/skills/caveman/LICENSE",
+        }
+        entries = {entry["dst"]: entry for entry in manifest["files"]}
+
+        self.assertTrue(expected.issubset(entries))
+        for path in expected:
+            self.assertTrue(entries[path].get("from_stack"), path)
+            self.assertEqual("skip_if_exists", entries[path]["merge_policy"], path)
+
+        with tempfile.TemporaryDirectory() as target:
+            existing = Path(target) / ".cursor" / "agents" / "cavecrew-builder.md"
+            existing.parent.mkdir(parents=True)
+            existing.write_text("user-owned agent\n", encoding="utf-8")
+
+            result = install.install(manifest, target, adapter_dir, ROOT, log=lambda _line: None)
+
+            self.assertEqual("user-owned agent\n", existing.read_text(encoding="utf-8"))
+            self.assertNotIn(".cursor/agents/cavecrew-builder.md", result["files_written"])
+            for path in expected:
+                self.assertTrue((Path(target) / path).is_file(), path)
 
     def test_formula_packages_scripts_directory(self):
         formula = (ROOT / "Formula" / "agentic-stack.rb").read_text(encoding="utf-8")

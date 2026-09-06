@@ -93,3 +93,19 @@ Daily driver, highest-leverage first:
 6. Follow `protocols/permissions.md`. Blocked means blocked.
 7. When a self-rewrite hook fires, propose conservative edits only.
 8. The harness is dumb on purpose. Reasoning lives in skills + the host agent.
+
+## Cursor model split (Fable parent, Grok subagents)
+
+When running under Cursor (local or cloud), the Cursor adapter installs a model
+split on top of this brain. Before starting the session, select Claude Fable
+5.1 for the parent in Cursor's model picker; project rules cannot pin the
+parent model:
+- Parent agent: Claude Fable 5.1 when selected at session start. Judgment,
+  scoping, and synthesis only.
+- Subagents: Grok 4.6, pinned via `model: grok-4.6` in `.cursor/agents/cavecrew-{investigator,builder,reviewer}.md`.
+- Rules: `.cursor/rules/fable-grok-subagents.mdc`, `.cursor/rules/caveman.mdc` (both `alwaysApply`).
+- Skills: `.cursor/skills/caveman/SKILL.md`, `.cursor/skills/cavecrew/SKILL.md`
+  (adapted from JuliusBrussee/caveman under the adjacent MIT license notices).
+Locate, bulk grep, 1-2 file edits, and diff review go to the cavecrew
+subagents. This is the narrow Cursor exception defined by
+`protocols/delegation.md`; its general handoff rules still apply elsewhere.

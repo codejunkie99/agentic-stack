@@ -6,6 +6,60 @@
       "src": ".cursor/rules/agentic-stack.mdc",
       "dst": ".cursor/rules/agentic-stack.mdc",
       "merge_policy": "overwrite"
+    },
+    {
+      "src": ".cursor/agents/cavecrew-builder.md",
+      "dst": ".cursor/agents/cavecrew-builder.md",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/agents/cavecrew-investigator.md",
+      "dst": ".cursor/agents/cavecrew-investigator.md",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/agents/cavecrew-reviewer.md",
+      "dst": ".cursor/agents/cavecrew-reviewer.md",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/rules/caveman.mdc",
+      "dst": ".cursor/rules/caveman.mdc",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/rules/fable-grok-subagents.mdc",
+      "dst": ".cursor/rules/fable-grok-subagents.mdc",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/skills/cavecrew/SKILL.md",
+      "dst": ".cursor/skills/cavecrew/SKILL.md",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/skills/cavecrew/LICENSE",
+      "dst": ".cursor/skills/cavecrew/LICENSE",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/skills/caveman/SKILL.md",
+      "dst": ".cursor/skills/caveman/SKILL.md",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
+    },
+    {
+      "src": ".cursor/skills/caveman/LICENSE",
+      "dst": ".cursor/skills/caveman/LICENSE",
+      "merge_policy": "skip_if_exists",
+      "from_stack": true
     }
   ]
 }
