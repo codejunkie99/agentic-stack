@@ -12,6 +12,14 @@ Rules for when and how to hand work off to a sub-agent.
 - The context needed by the sub-agent overlaps heavily with the parent's.
 - The sub-agent would need to write to memory that the parent is actively editing.
 
+## Harness-specific exceptions
+- An adapter may define a narrow, always-applied delegation rule for named
+  specialist agents. That adapter rule overrides the general thresholds above
+  only for the jobs it lists.
+- Cursor's `fable-grok-subagents.mdc` uses this exception for code location,
+  bounded 1-2 file edits, diff review, and test loops handled by the named
+  `cavecrew-*` agents. All other work follows this protocol.
+
 ## Handoff contract
 Every delegation includes:
 1. **Goal** — what success looks like, in one sentence.
