@@ -24,12 +24,18 @@ def _load_learn(base_dir):
     """Load .agent/tools/learn.py with BASE/CANDIDATES pointed at base_dir.
 
     Sibling modules (text.word_set, cluster.pattern_id) are stubbed so the
-    test needs no part of the harness beyond learn.py itself.
+    test needs no part of the harness beyond learn.py itself. The stubs are
+    process-wide (sys.modules), so any previous entry for "text"/"cluster"
+    is saved and restored (or removed, if there was none) once exec_module
+    finishes -- otherwise a later test or import in the same process would
+    silently pick up these throwaway stand-ins instead of the real modules.
     """
+    previous_modules = {}
     for name, attrs in [
         ("text", {"word_set": lambda *a, **k: set()}),
         ("cluster", {"pattern_id": lambda claim, cond: "testcid" + str(abs(hash((claim, tuple(cond)))))[:6]}),
     ]:
+        previous_modules[name] = sys.modules.pop(name, None)
         m = types.ModuleType(name)
         for k, v in attrs.items():
             setattr(m, k, v)
@@ -38,7 +44,14 @@ def _load_learn(base_dir):
     module_path = Path(__file__).with_name("learn.py")
     spec = importlib.util.spec_from_file_location("learn_under_test", module_path)
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        for name, previous in previous_modules.items():
+            if previous is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = previous
     mod.BASE = base_dir
     mod.CANDIDATES = os.path.join(base_dir, "memory", "candidates")
     os.makedirs(mod.CANDIDATES, exist_ok=True)
@@ -68,7 +81,7 @@ class EpisodicMirrorTest(unittest.TestCase):
     def test_evidence_id_resolves_to_the_mirror(self):
         mod = _load_learn(self.tmp)
         cid, path = mod.stage("Serialize timestamps in UTC", ["timestamps", "utc"])
-        candidate = json.loads(Path(path).read_text())
+        candidate = json.loads(Path(path).read_text(encoding="utf-8"))
         evidence_ts = candidate["evidence_ids"][0]
         matching = [e for e in _episodic(self.tmp) if e["timestamp"] == evidence_ts]
         self.assertEqual(len(matching), 1)
