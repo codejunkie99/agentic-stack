@@ -340,6 +340,65 @@ def test_failure_write(mod):
     for label, passed in checks:
         (ok if passed else fail)(f"  entry.{label}")
 
+def test_no_raw_content_or_paths_persisted(mod):
+    section("10b. Privacy — no raw content, no raw absolute paths persisted")
+
+    home_file = os.path.join(os.path.expanduser("~"), "supabase", "secrets.env")
+    payload = {
+        "tool_name": "Edit",
+        "tool_input": {
+            "file_path": home_file,
+            "old_string": "STRIPE_SECRET_KEY=sk_live_topsecretvalue12345",
+            "new_string": "STRIPE_SECRET_KEY=sk_live_rotatedvalue67890",
+        },
+        "tool_response": {"output": "", "exit_code": 0, "error": ""},
+    }
+    rc, entry, stderr = run_hook(payload)
+    if entry is None:
+        fail("no entry written for privacy-check Edit case")
+        return
+    ok("privacy-check Edit entry written")
+
+    blob = json.dumps(entry)
+    checks = [
+        ("no raw home directory in entry",
+         os.path.expanduser("~") not in blob),
+        ("action uses normalized path, not raw home path",
+         home_file not in entry.get("action", "")),
+        ("reflection does not contain old secret value",
+         "sk_live_topsecretvalue12345" not in blob),
+        ("reflection does not contain new secret value",
+         "sk_live_rotatedvalue67890" not in blob),
+        ("detail carries char counts, not the raw strings",
+         "old_string_chars" in entry.get("detail", "")
+         or "chars ->" in entry.get("reflection", "")),
+    ]
+    for label, passed in checks:
+        (ok if passed else fail)(f"  entry.{label}")
+
+    write_payload = {
+        "tool_name": "Write",
+        "tool_input": {
+            "file_path": os.path.join(os.path.expanduser("~"), "notes", "private.md"),
+            "content": "API_KEY=super-secret-value-should-not-leak\n",
+        },
+        "tool_response": {"output": "", "exit_code": 0, "error": ""},
+    }
+    rc, entry, stderr = run_hook(write_payload)
+    if entry is None:
+        fail("no entry written for privacy-check Write case")
+        return
+    blob = json.dumps(entry)
+    checks = [
+        ("Write entry has no raw home path",
+         os.path.expanduser("~") not in blob),
+        ("Write entry does not contain file content",
+         "super-secret-value-should-not-leak" not in blob),
+    ]
+    for label, passed in checks:
+        (ok if passed else fail)(f"  entry.{label}")
+
+
 def test_dream_cycle():
     section("11. Dream cycle produces staged candidates from rich entries")
     # Use a universally high-stakes command so importance=9 / pain_score=5
@@ -509,6 +568,7 @@ def main():
     test_reflection_non_empty(mod)
     test_full_write(mod)
     test_failure_write(mod)
+    test_no_raw_content_or_paths_persisted(mod)
     test_dream_cycle()
     test_memory_reflect_pain_flag()
     test_post_execution_pain_param()

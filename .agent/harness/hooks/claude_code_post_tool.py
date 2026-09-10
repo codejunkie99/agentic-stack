@@ -34,12 +34,36 @@ import json, os, re, sys
 #   UP 3      = .agent/
 HERE = os.path.dirname(os.path.abspath(__file__))
 AGENT_ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+PROJECT_ROOT = os.path.dirname(AGENT_ROOT)
 
 sys.path.insert(0, os.path.join(AGENT_ROOT, "harness"))
 sys.path.insert(0, os.path.join(AGENT_ROOT, "tools"))
 
 from hooks.post_execution import log_execution   # noqa: E402
 from hooks.on_failure import on_failure          # noqa: E402
+
+
+def _normalize_path(value):
+    """Return a portable path label for anything persisted to episodic memory.
+
+    Episodic entries are meant to be shared, diffed, and eventually exported
+    via the data flywheel — a raw absolute path bakes the operator's
+    username into every entry that touches a file. Normalize to a
+    project-relative or home-relative form instead.
+    """
+    if not isinstance(value, str) or not value:
+        return "?"
+    expanded = os.path.abspath(os.path.expanduser(value))
+    try:
+        rel = os.path.relpath(expanded, PROJECT_ROOT)
+    except ValueError:
+        rel = None
+    if rel is not None and not rel.startswith(".."):
+        return rel
+    home = os.path.expanduser("~")
+    if home and expanded.startswith(home + os.sep):
+        return "~" + expanded[len(home):]
+    return rel if rel is not None else "<external>"
 
 
 # ---------------------------------------------------------------------------
@@ -386,15 +410,15 @@ def _action_label(tool_name: str, tool_input: dict) -> str:
                 or tool_input.get("path")
                 or tool_input.get("new_path")
                 or "?")
-        return f"edit: {path}"
+        return f"edit: {_normalize_path(path)}"
 
     if tool_name == "Write":
         path = tool_input.get("file_path") or tool_input.get("path") or "?"
-        return f"write: {path}"
+        return f"write: {_normalize_path(path)}"
 
     if tool_name == "Read":
         path = tool_input.get("file_path") or tool_input.get("path") or "?"
-        return f"read: {path}"
+        return f"read: {_normalize_path(path)}"
 
     if tool_name == "TodoWrite":
         todos = tool_input.get("todos", [])
@@ -435,7 +459,11 @@ def _reflection(tool_name: str, tool_input: dict,
       4. Keep under ~200 chars so detail field carries the rest.
     """
     parts = []
-    inp_str = json.dumps(tool_input)
+    _fallback_input = dict(tool_input) if isinstance(tool_input, dict) else {}
+    for _key in ("file_path", "path", "new_path"):
+        if isinstance(_fallback_input.get(_key), str):
+            _fallback_input[_key] = _normalize_path(_fallback_input[_key])
+    inp_str = json.dumps(_fallback_input)
 
     # --- Bash ---
     if tool_name == "Bash":
@@ -462,13 +490,12 @@ def _reflection(tool_name: str, tool_input: dict,
 
     # --- Edit ---
     elif tool_name in ("Edit", "MultiEdit"):
-        path = tool_input.get("file_path") or tool_input.get("path") or "?"
-        old = (tool_input.get("old_string") or "")[:50]
-        new = (tool_input.get("new_string") or "")[:50]
+        path = _normalize_path(tool_input.get("file_path") or tool_input.get("path") or "?")
+        old = tool_input.get("old_string") or ""
+        new = tool_input.get("new_string") or ""
         if old and new:
             parts.append(
-                f"Edited {path}: replaced {repr(old[:30])} "
-                f"with {repr(new[:30])}"
+                f"Edited {path}: {len(old)} chars -> {len(new)} chars"
             )
         else:
             parts.append(f"Edited {path}")
@@ -477,7 +504,7 @@ def _reflection(tool_name: str, tool_input: dict,
 
     # --- Write ---
     elif tool_name == "Write":
-        path = tool_input.get("file_path") or tool_input.get("path") or "?"
+        path = _normalize_path(tool_input.get("file_path") or tool_input.get("path") or "?")
         content = tool_input.get("content") or ""
         lines = content.count("\n") + 1 if content else 0
         parts.append(f"Wrote {path} ({lines} lines)")
@@ -521,9 +548,12 @@ def _detail(tool_name: str, tool_input: dict,
     """
     Stored in `detail`. More verbose than reflection. Truncated to 500 chars
     by log_execution anyway.
+
+    Persists normalized metadata only — never a raw dump of tool_input.
+    A raw dump embeds file contents, edit diffs, and absolute paths
+    verbatim into a log meant to be shared, diffed, and exported.
     """
     output = _extract_output(tool_response)
-    inp_str = json.dumps(tool_input, separators=(",", ":"))[:300]
 
     if tool_name == "Bash":
         cmd = tool_input.get("command", "")[:120]
@@ -532,6 +562,20 @@ def _detail(tool_name: str, tool_input: dict,
             return f"cmd={cmd!r} | exit≠0 | err={err[:200]}"
         out_snip = output[:200] if output else ""
         return f"cmd={cmd!r}" + (f" | out={out_snip}" if out_snip else "")
+
+    path = tool_input.get("file_path") or tool_input.get("path")
+    meta = {"tool": tool_name}
+    if path:
+        meta["path"] = _normalize_path(path)
+    content = tool_input.get("content")
+    if isinstance(content, str):
+        meta["content_chars"] = len(content)
+    old = tool_input.get("old_string")
+    new = tool_input.get("new_string")
+    if isinstance(old, str) or isinstance(new, str):
+        meta["old_string_chars"] = len(old or "")
+        meta["new_string_chars"] = len(new or "")
+    inp_str = json.dumps(meta, separators=(",", ":"))
 
     return inp_str + (f" | {output[:150]}" if output else "")
 
