@@ -538,7 +538,10 @@ See [docs/data-layer.md](docs/data-layer.md).
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Original Agentic Stack code and documentation authored by Avidlive are licensed
+under the [Apache License 2.0](LICENSE). Third-party components remain under
+their own licenses and are not relicensed by this repository. See the
+[licensing guide](docs/licensing.md) and [NOTICE](NOTICE).
 
 ## Credits
 
