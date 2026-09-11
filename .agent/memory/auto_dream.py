@@ -35,18 +35,25 @@ SEMANTIC = os.path.join(ROOT, "semantic")
 REVIEW_QUEUE = os.path.join(ROOT, "working/REVIEW_QUEUE.md")
 PROMOTION_THRESHOLD = 7.0
 CLUSTER_SIMILARITY = 0.3
+# Cluster only the most recent entries. Clustering is pairwise, so its cost
+# grows quadratically with the episodic file (29k entries ≈ 50 s even with
+# the token index in cluster.py; unindexed it was ≈ 160 s). Candidates
+# persist across cycles via their lifecycle records (_find_prior in
+# promote.py), so entries that age out of the window keep every decision,
+# rejection count, and graduation state they already staged.
+DREAM_WINDOW_ENTRIES = 10_000
 
 
 @contextlib.contextmanager
 def _episodic_locked():
-    """Hold an exclusive flock on AGENT_LEARNINGS.jsonl across the entire
-    dream-cycle read-modify-write window.
+    """Hold an exclusive flock on AGENT_LEARNINGS.jsonl for a SHORT window.
 
-    Without a window-spanning lock, an `append_jsonl()` call that lands
-    between `_load_entries_locked()` and `_write_entries_locked(kept)` is
-    silently truncated away by the rewrite. With this context manager,
-    every appender (`_episodic_io.append_jsonl`, which takes LOCK_EX on
-    the same file) blocks until the dream cycle releases the lock.
+    The lock exists for the read-modify-write of the episodic file itself:
+    an `append_jsonl()` call that lands between a read and the truncate-
+    rewrite is silently truncated away. Callers must therefore hold it only
+    around file I/O — never around clustering, which is O(n²) on ~30k
+    entries (minutes). A dream that holds the lock across its whole cycle
+    starves every harness hook into its 60 s timeout and drops telemetry.
 
     Yields the open file descriptor so callers can read/write without
     racing on a second open(). On Windows (no fcntl) yields None and
@@ -65,6 +72,27 @@ def _episodic_locked():
             fcntl.flock(fd, fcntl.LOCK_UN)
         finally:
             os.close(fd)
+
+
+def _claim_cycle_lock():
+    """Try-lock a dedicated lockfile for the WHOLE cycle (not the episodic
+    file). Prevents detached dream instances from piling up when several
+    sessions stop around the same time: the second dream exits at once
+    instead of burning minutes of CPU duplicating the first.
+
+    Returns an fd to release/close, or None if another dream is running
+    (or on Windows, where concurrent shutdown hooks are rare).
+    """
+    if fcntl is None:
+        return None, True
+    path = os.path.join(ROOT, ".dream.lock")
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return fd, True
+    except BlockingIOError:
+        os.close(fd)
+        return None, False
 
 
 def _load_entries_locked(fd):
@@ -163,12 +191,16 @@ def _heuristic_prefilter(candidates_dir, semantic_dir):
 
 
 def run_dream_cycle():
-    # Hold the lock across the FULL read-modify-write window. Any
-    # append_jsonl() call from another harness blocks until we release.
-    # Without this, an append landing between read and rewrite would be
-    # truncated away.
-    with _episodic_locked() as fd:
-        entries = _load_entries_locked(fd)
+    lock_fd, won = _claim_cycle_lock()
+    if not won:
+        print("dream cycle: deferred (another dream is running)")
+        return
+    try:
+        # Snapshot read under a SHORT lock, then release before any
+        # clustering: live append_jsonl() callers must never queue behind
+        # minutes of O(n²) work.
+        with _episodic_locked() as fd:
+            entries = _load_entries_locked(fd)
         if not entries:
             # Still refresh the review queue — candidates may have been staged
             # in a previous cycle and the host agent loads REVIEW_QUEUE.md
@@ -178,7 +210,8 @@ def run_dream_cycle():
             print(f"dream cycle: no entries (queue has {pending} pending)")
             return
 
-        patterns = cluster_and_extract(entries, threshold=CLUSTER_SIMILARITY)
+        patterns = cluster_and_extract(
+            entries[-DREAM_WINDOW_ENTRIES:], threshold=CLUSTER_SIMILARITY)
         promotable = {k: p for k, p in patterns.items()
                       if p.get("canonical_salience", 0) >= PROMOTION_THRESHOLD}
 
@@ -187,12 +220,31 @@ def run_dream_cycle():
 
         kept, archived = decay_old_entries(
             entries, archive_dir=os.path.join(ROOT, "episodic/snapshots"))
-        _write_entries_locked(fd, kept)
+
+        if archived:
+            # Merge under a SHORT lock: entries appended while we clustered
+            # must survive the rewrite, so re-read and drop only what decay
+            # marked (matched by canonical JSON, never by position).
+            drop = {json.dumps(e, sort_keys=True) for e in archived}
+            with _episodic_locked() as fd:
+                current = _load_entries_locked(fd)
+                kept = [e for e in current
+                        if json.dumps(e, sort_keys=True) not in drop]
+                _write_entries_locked(fd, kept)
+        else:
+            kept = entries
+
         archive_stale_workspace(
             working_dir=os.path.join(ROOT, "working"),
             archive_dir=os.path.join(ROOT, "episodic/snapshots"))
 
         pending = write_review_queue_summary(CANDIDATES, REVIEW_QUEUE)
+    finally:
+        if lock_fd is not None:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            finally:
+                os.close(lock_fd)
 
     print(
         f"dream cycle: patterns={len(patterns)} staged={staged} "

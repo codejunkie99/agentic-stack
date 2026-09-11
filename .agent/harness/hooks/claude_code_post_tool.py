@@ -373,6 +373,18 @@ def _extract_error(resp: dict) -> str:
 # Action label (short, searchable)
 # ---------------------------------------------------------------------------
 
+def _skill_name(tool_name: str, tool_input: dict) -> str:
+    """Skill tag for the episodic entry. data_layer_export buckets activity
+    by this field, so a Bash command that drives a known CLI must be tagged
+    with that CLI, not with the harness. The harness itself is ZCode when
+    ZCode injected its project dir into the hook environment."""
+    if tool_name == "Bash":
+        cmd = _extract_bash_command(tool_input)
+        if "stele-context" in cmd:
+            return "stele-context"
+    return "zcode" if os.environ.get("ZCODE_PROJECT_DIR") else "claude-code"
+
+
 def _action_label(tool_name: str, tool_input: dict) -> str:
     """First-word summary. Ends up in the `action` field of the episodic entry."""
     if tool_name == "Bash":
@@ -596,9 +608,10 @@ def main() -> None:
 
     # --- write episodic entry ---
     pscore = _pain_score(importance, success)
+    skill = _skill_name(tool_name, tool_input)
     if success:
         log_execution(
-            skill_name="claude-code",
+            skill_name=skill,
             action=action,
             result=detail,
             success=True,
@@ -609,7 +622,7 @@ def main() -> None:
         )
     else:
         on_failure(
-            skill_name="claude-code",
+            skill_name=skill,
             action=action,
             error=reflection,
             context=detail,
