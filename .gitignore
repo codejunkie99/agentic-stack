@@ -49,3 +49,4 @@ venv/
 .agent/skills/tldraw/INDEX.md
 .agent/skills/tldraw/snapshots/
 .agent/skills/tldraw/snapshots.jsonl
+.stele-context/

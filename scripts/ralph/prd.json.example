@@ -1,0 +1,26 @@
+{
+  "project": "example-project",
+  "branchName": "ralph/example-feature",
+  "description": "One-line goal for this Ralph run.",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Short imperative story title",
+      "acceptanceCriteria": [
+        "Observable behaviour that proves the story is done",
+        "Quality gates (build, lint, tests) pass"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-002",
+      "title": "Next story, implemented in a later iteration",
+      "acceptanceCriteria": [
+        "Each story is small enough for one iteration"
+      ],
+      "priority": 2,
+      "passes": false
+    }
+  ]
+}
