@@ -41,7 +41,11 @@ ztk stats
 ## Hook locations (auto-managed by `ztk init [-g] [--skip-permissions]`)
 
 - Claude Code: `.claude/settings.json` PreToolUse -> `ztk rewrite --skip-permissions`
-- ZCode: `~/.zcode/cli/config.json` hooks.PreToolUse (same command)
+- ZCode: `~/.zcode/cli/config.json` hooks.PreToolUse -> the brain's
+  `ztk_rewrite_safe.py` front, which delegates single-line commands to
+  `ztk rewrite --skip-permissions` and passes multi-line commands (heredocs,
+  embedded newlines) through untouched — ztk's single-line rewriter drops
+  heredoc bodies and its permission rules refuse multi-line one-shots.
 - OpenCode: `~/.config/opencode/plugin/ztk.js` (tool.execute.before)
 - Cursor: `.cursor/hooks.json` -> `ztk cursor-rewrite`
 - Gemini CLI: `.gemini/settings.json` BeforeTool -> `ztk gemini-rewrite`

@@ -1,7 +1,27 @@
 """Runs before every tool call. Enforces permissions and tool schemas."""
-import json, os
+import json, os, sys
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
+
+
+def _stele_blocked(command):
+    """The user-scope brain's stele-first rule, imported rather than copied.
+
+    Repo-wide content search over an indexed tree must go through the
+    stele-context index; the rule lives in ~/.agent so every harness on the
+    machine shares one implementation. Fail open: no brain installed, no
+    block — this file must never be the reason a command did not run.
+    """
+    if not command:
+        return False, ""
+    try:
+        hooks = os.path.join(os.path.expanduser("~"), ".agent", "harness", "hooks")
+        if hooks not in sys.path:
+            sys.path.insert(0, hooks)
+        from stele_first import is_redirected
+        return is_redirected(command)
+    except Exception:
+        return False, ""
 
 
 def _schema(tool_name):
@@ -18,6 +38,10 @@ def _perms_text():
 
 def check_tool_call(tool_name, operation, args):
     """Returns (allowed, reason). allowed may be True, False, or 'approval_needed'."""
+    blocked, reason = _stele_blocked(args.get("command") if isinstance(args, dict) else "")
+    if blocked:
+        return False, reason
+
     schema = _schema(tool_name)
     op = schema.get("operations", {}).get(operation, {})
 
