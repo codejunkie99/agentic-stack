@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "computer_use",
+  "description": "Accessibility-first desktop control: observe app UI state, act on semantic elements or raster coordinates, verify outcomes. Read the computer-use SKILL.md for the full policy; these tools never bypass platform safety refusals.",
+  "type": "object",
+  "properties": {
+    "observe": {
+      "type": "object",
+      "description": "Read-only observation. Always the first call and the call before any retry.",
+      "properties": {
+        "list_apps": {"type": "object", "description": "Running apps; no arguments."},
+        "get_app_state": {
+          "type": "object",
+          "required": ["app_ref"],
+          "properties": {
+            "app_ref": {"type": "object", "properties": {"pid": {"type": "integer"}, "bundle_id": {"type": "string"}}, "description": "Canonical identity; never a translated name."},
+            "include_screenshot": {"type": "boolean", "default": false}
+          }
+        },
+        "screenshot": {"type": "object", "description": "Full or window raster; read-only."},
+        "zoom": {"type": "object", "properties": {"region": {"type": "array", "items": {"type": "integer"}, "minItems": 4, "maxItems": 4}}}
+      }
+    },
+    "act": {
+      "type": "object",
+      "description": "Mutating actions. Prefer element targets; coordinates only from the latest returned raster. Never replay an action with action_sent=true.",
+      "properties": {
+        "target": {
+          "oneOf": [
+            {"type": "object", "properties": {"type": {"const": "element"}, "state_id": {"type": "string"}, "index": {"type": "integer"}}, "required": ["type", "state_id", "index"]},
+            {"type": "object", "properties": {"type": {"const": "coordinate"}, "x": {"type": "integer"}, "y": {"type": "integer"}}, "required": ["type", "x", "y"]}
+          ]
+        },
+        "left_click": {"type": "object"},
+        "double_click": {"type": "object"},
+        "right_click": {"type": "object"},
+        "scroll": {"type": "object", "properties": {"direction": {"type": "string"}, "amount": {"type": "integer"}}},
+        "type": {"type": "object", "properties": {"text": {"type": "string"}}, "description": "Targetless type is forbidden; scope via element or app_ref."},
+        "set_value": {"type": "object", "properties": {"value": {"type": "string"}}, "description": "Preferred for editable elements."},
+        "key": {"type": "object", "properties": {"chord": {"type": "string"}}, "description": "macOS uses cmd."},
+        "perform_action": {"type": "object", "description": "Semantic AX action on an element."}
+      }
+    },
+    "confirmations_required": {
+      "type": "array",
+      "description": "Never execute without explicit user confirmation in the current conversation.",
+      "items": {"type": "string"},
+      "enum": [
+        "sending messages or notifications",
+        "purchases and payment credentials",
+        "deleting files, folders, emails; destructive git/filesystem ops",
+        "account settings changes",
+        "uploading or attaching files",
+        "submitting forms with real personal/financial/confidential data",
+        "granting OS permissions; installing software"
+      ]
+    }
+  }
+}
