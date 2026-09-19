@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-stack.local/schemas/workflow-template.schema.json",
+  "title": "Portable brain workflow template",
+  "type": "object",
+  "required": [
+    "schemaVersion", "id", "name", "scope", "version", "status", "description",
+    "identity", "parameters", "preconditions", "steps", "permissions", "budget",
+    "memory", "evidence", "completion", "rollback", "handoff", "evaluation", "provenance"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}[a-z0-9]$"},
+    "name": {"type": "string", "minLength": 3},
+    "scope": {"enum": ["global", "project", "component", "local"]},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "status": {"enum": ["drafted", "validated", "evaluated", "accepted", "active", "superseded", "archived"]},
+    "description": {"type": "string", "minLength": 20},
+    "identity": {
+      "type": "object",
+      "required": ["requiresProfile", "requiresProject", "requiresComponent"],
+      "properties": {
+        "requiresProfile": {"type": "boolean"},
+        "requiresProject": {"type": "boolean"},
+        "requiresComponent": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "parameters": {"type": "array", "items": {"$ref": "#/$defs/parameter"}},
+    "preconditions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/precondition"}},
+    "steps": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/step"}},
+    "permissions": {
+      "type": "object",
+      "required": ["maximumSideEffect", "requiresApprovalFor", "forbids"],
+      "properties": {
+        "maximumSideEffect": {"$ref": "#/$defs/sideEffect"},
+        "requiresApprovalFor": {"type": "array", "items": {"type": "string"}},
+        "forbids": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["maxToolCalls", "maxInputTokens", "maxWallMinutes"],
+      "properties": {
+        "maxToolCalls": {"type": "integer", "minimum": 1},
+        "maxInputTokens": {"type": "integer", "minimum": 1},
+        "maxWallMinutes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "memory": {
+      "type": "object",
+      "required": ["reads", "writes"],
+      "properties": {
+        "reads": {"type": "array", "items": {"$ref": "#/$defs/memoryRef"}},
+        "writes": {"type": "array", "items": {"$ref": "#/$defs/memoryRef"}}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["required", "store"],
+      "properties": {
+        "required": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "store": {"type": "string", "minLength": 3}
+      }
+    },
+    "completion": {
+      "type": "object",
+      "required": ["allOf"],
+      "properties": {
+        "allOf": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "oneOf": [
+        {"required": ["strategy"]},
+        {"required": ["notApplicable"]}
+      ]
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["required", "ownerActions"],
+      "properties": {
+        "required": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "ownerActions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["scenarios", "requiresIndependentContext", "requiresLowerCapabilityModel"],
+      "properties": {
+        "scenarios": {"type": "array", "minItems": 8, "items": {"type": "string"}},
+        "requiresIndependentContext": {"const": true},
+        "requiresLowerCapabilityModel": {"const": true}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["author", "sources", "observedAt", "supersedes"],
+      "properties": {
+        "author": {"type": "string", "minLength": 1},
+        "sources": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "supersedes": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "$defs": {
+    "sideEffect": {"enum": ["none", "local-write", "remote-read", "remote-write", "destructive"]},
+    "parameter": {
+      "type": "object",
+      "required": ["name", "type", "required", "sensitive", "description"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$"},
+        "type": {"enum": ["string", "integer", "number", "boolean", "array", "object"]},
+        "required": {"type": "boolean"},
+        "sensitive": {"type": "boolean"},
+        "allowed": {"type": "array"},
+        "description": {"type": "string", "minLength": 3}
+      }
+    },
+    "precondition": {
+      "type": "object",
+      "required": ["id", "check", "onFailure", "sideEffect", "evidence"],
+      "properties": {
+        "id": {"type": "string"},
+        "check": {"type": "string"},
+        "onFailure": {"type": "string"},
+        "sideEffect": {"const": "none"},
+        "evidence": {"type": "string"}
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["id", "use", "with", "produces", "onFailure", "sideEffect", "requiredEvidence"],
+      "properties": {
+        "id": {"type": "string"},
+        "use": {"type": "string", "pattern": "^(protocol|skill|tool|workflow|template|human):"},
+        "with": {"type": "array", "items": {"type": "string"}},
+        "produces": {"type": "array", "items": {"type": "string"}},
+        "onFailure": {"type": "string", "minLength": 1},
+        "sideEffect": {"$ref": "#/$defs/sideEffect"},
+        "requiredEvidence": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "memoryRef": {
+      "type": "object",
+      "required": ["scope", "name"],
+      "properties": {
+        "scope": {"enum": ["global", "project", "component", "local", "session", "effective", "requested"]},
+        "name": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

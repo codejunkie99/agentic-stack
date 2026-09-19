@@ -5,6 +5,26 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- A managed portable-brain artifact registry, layered-profile protocol,
+  repetitive-work extraction protocol, typed workflow contract and schema,
+  reference extraction workflow, and dependency-free integrity validator.
+- `doctor` now runs the installed artifact validator and reports missing or
+  invalid managed artifacts.
+- A manifest-driven `fleet audit` and transactional `fleet upgrade` command
+  with explicit workspace ownership, profile identity, trusted verification,
+  preservation snapshots, and automatic per-workspace rollback.
+
+### Changed
+- `upgrade` now refreshes registry-owned protocols, schemas, templates, and
+  tools. It merges a bounded discovery block into `.agent/AGENTS.md` and
+  preserves unrelated project instructions and user memory.
+
+### Fixed
+- Empty JSON objects can no longer bypass workflow or registry validation.
+
 ## [0.19.1] — 2026-08-07
 
 Patch release. Four correctness fixes in memory retrieval, project upgrade, and

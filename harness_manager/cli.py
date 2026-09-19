@@ -6,12 +6,14 @@ Anything else in first position → treated as an adapter name (existing
 `./install.sh <adapter>` UX preserved).
 """
 import argparse
+import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
 from . import doctor as doctor_mod
+from . import fleet as fleet_mod
 from . import install as install_mod
 from . import remove as remove_mod
 from . import schema as schema_mod
@@ -26,6 +28,7 @@ VERBS = {
     "add",
     "remove",
     "doctor",
+    "fleet",
     "status",
     "manage",
     "dashboard",
@@ -243,6 +246,55 @@ def cmd_remove(adapter_name: str, target: Path, yes: bool) -> int:
 
 def cmd_doctor(target: Path) -> int:
     return doctor_mod.audit(target_root=target)
+
+
+def cmd_fleet(args: list[str], yes: bool) -> int:
+    parser = argparse.ArgumentParser(
+        prog="./install.sh fleet",
+        description="Audit or upgrade every workspace declared in a fleet manifest.",
+    )
+    parser.add_argument("action", choices=("audit", "upgrade"))
+    parser.add_argument("manifest", nargs="?", default="agentic-stack.fleet.json")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    namespace = parser.parse_args(args)
+    manifest, errors = fleet_mod.load_manifest(namespace.manifest)
+    if errors or manifest is None:
+        if namespace.json:
+            print(json.dumps({"status": "FAIL", "errors": errors}, indent=2))
+        else:
+            for error in errors:
+                print(f"error: {error}", file=sys.stderr)
+        return 2
+    if namespace.action == "audit":
+        findings = fleet_mod.audit_fleet(manifest, _stack_root())
+        if namespace.json:
+            print(
+                json.dumps(
+                    {
+                        "status": "PASS"
+                        if not any(item.severity == "error" for item in findings)
+                        else "FAIL",
+                        "profile": manifest.profile,
+                        "fleetRoot": str(manifest.root),
+                        "findings": [item.__dict__ for item in findings],
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            for finding in findings:
+                print(f"{finding.severity:7s} {finding.workspace}: {finding.message}")
+        return 1 if any(item.severity == "error" for item in findings) else 0
+    if namespace.json:
+        print("error: --json is supported only for fleet audit", file=sys.stderr)
+        return 2
+    return fleet_mod.upgrade_fleet(
+        manifest,
+        _stack_root(),
+        dry_run=namespace.dry_run,
+        yes=yes,
+    )
 
 
 def cmd_status(target: Path) -> int:
@@ -561,6 +613,8 @@ def main(argv: list[str] | None = None) -> int:
         if verb == "doctor":
             target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
             return cmd_doctor(target)
+        if verb == "fleet":
+            return cmd_fleet(rest[1:], yes=yes)
         if verb == "status":
             target = Path(rest[1]) if len(rest) >= 2 else Path.cwd()
             return cmd_status(target)

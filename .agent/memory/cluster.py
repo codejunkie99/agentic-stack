@@ -96,29 +96,83 @@ def content_cluster(entries, threshold=0.3, min_size=2):
     Entries with empty feature sets are dropped (jaccard of two empty
     sets would otherwise be 1.0). Clusters smaller than min_size are
     filtered so singletons don't create candidate churn.
+
+    Performance: a token inverted index (token -> live cluster indices)
+    prunes candidate clusters before any Jaccard call — jaccard(a, b)
+    >= threshold > 0 requires at least one shared token, so a cluster
+    carrying none of the entry's tokens can never contain a matching
+    member. Surviving candidates get a size-bound guard (min(|a|,|b|)
+    must reach threshold*(|a|+|b|)/(1+threshold)) before the set
+    intersection is computed. Both filters are exact: the member-level
+    any() verification and the ascending-index target selection are
+    unchanged, so clustering output is identical to the all-pairs scan.
+    Absorbed clusters become tombstones instead of being deleted, which
+    keeps token_index references stable.
     """
     featured = [(e, _entry_features(e)) for e in entries]
     featured = [(e, fs) for e, fs in featured if fs]
 
-    clusters = []  # each: list of (entry, feature_set)
+    def similar(a, b):
+        """Exact jaccard >= threshold with a conservative size shortcut.
+
+        The shortcut only skips when even the best case (intersection =
+        min(|a|,|b|)) lands a float slack below threshold, so the
+        division below stays the sole authority at the boundary —
+        boundary pairs like inter=3/union=10 are common and must resolve
+        exactly as the all-pairs scan would.
+        """
+        la, lb = len(a), len(b)
+        m = la if la < lb else lb
+        if m < threshold * (la + lb - m) - 1e-9:
+            return False
+        inter = len(a & b)
+        return inter / (la + lb - inter) >= threshold
+
+    clusters = []       # live: list of (entry, feature_set); absorbed: None
+    cluster_tokens = []  # parallel to clusters: union of member tokens
+    token_index = {}    # token -> set of live cluster indices carrying it
+
     for item in featured:
         e_i, fs_i = item
+        candidate_ids = set()
+        for tok in fs_i:
+            hits = token_index.get(tok)
+            if hits:
+                candidate_ids |= hits
         matching_indices = [
-            i for i, c in enumerate(clusters)
-            if any(jaccard(fs_i, fs_j) >= threshold for _, fs_j in c)
+            i for i in sorted(candidate_ids)
+            if clusters[i] is not None
+            and any(similar(fs_i, fs_j) for _, fs_j in clusters[i])
         ]
         if not matching_indices:
+            new_idx = len(clusters)
             clusters.append([item])
+            cluster_tokens.append(set(fs_i))
+            for tok in fs_i:
+                token_index.setdefault(tok, set()).add(new_idx)
             continue
         # Merge the new item + every cluster it connects to into one.
-        target = clusters[matching_indices[0]]
-        target.append(item)
-        # Absorb the rest, tail-first so indexing stays valid.
+        target = matching_indices[0]
+        clusters[target].append(item)
+        cluster_tokens[target] |= fs_i
+        for tok in fs_i:
+            token_index.setdefault(tok, set()).add(target)
+        # Absorb the rest. Tombstone instead of deleting so token_index
+        # references above the absorbed slot stay valid.
         for idx in reversed(matching_indices[1:]):
-            target.extend(clusters[idx])
-            del clusters[idx]
+            clusters[target].extend(clusters[idx])
+            for tok in cluster_tokens[idx]:
+                token_index[tok].discard(idx)
+                token_index[tok].add(target)
+            cluster_tokens[target] |= cluster_tokens[idx]
+            clusters[idx] = None
+            cluster_tokens[idx] = None
 
-    return [[e for e, _ in c] for c in clusters if len(c) >= min_size]
+    return [
+        [e for e, _ in c]
+        for c in clusters
+        if c is not None and len(c) >= min_size
+    ]
 
 
 def extract_pattern(cluster):

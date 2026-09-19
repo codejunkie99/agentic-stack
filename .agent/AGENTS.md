@@ -56,8 +56,25 @@ are the exact failure mode this layer prevents.
 
 ## Protocols
 - `protocols/permissions.md` — read before any tool call
+<!-- agentic-stack:portable-brain:start -->
+- `protocols/portable-brain-system.md` — canonical map for layered profiles, reusable tooling, workflow templates, and integrity
+- `protocols/fleet-management.md` — manifest-driven fleet ownership, audit, transactional rollout, and rollback
+- `protocols/profile-layering.md` — global, named-project, local, and session composition for every profile category
+- `protocols/tooling-extraction.md` — governed extraction of repeated work into reusable artifacts
+- `protocols/workflow-templates.md` — typed workflow authoring, evaluation, publication, and retirement
+<!-- agentic-stack:portable-brain:end -->
 - `protocols/tool_schemas/` — typed interfaces for external tools
 - `protocols/delegation.md` — rules for sub-agent handoff
+
+## Portable brain artifacts
+
+For repeated-work automation or workflow-template authoring, follow the
+portable-brain protocols above. Validate all registered artifacts before
+publication and after an upgrade:
+
+```bash
+python3 .agent/tools/validate_extracted_artifacts.py
+```
 
 ## Host-agent CLI tools (in `tools/`)
 Daily driver, highest-leverage first:
