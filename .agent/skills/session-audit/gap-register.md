@@ -1,7 +1,9 @@
 # Gap Register
 
-**Status:** Live — the single list of everything known to be wrong, missing or
-mis-stated. Update it in the same change that closes a row.
+**Status:** Template — this copy ships with the skill and holds no live rows.
+Start a project's live register by copying this file into that project's
+`docs/`, setting **Status:** to Live there, and updating the copy in the same
+change that closes a row. Never edit this template copy with real findings.
 
 The delivery status file answers "is this ticket done?". The traceability file
 answers "is this requirement tested?". This file answers "what do we know is
