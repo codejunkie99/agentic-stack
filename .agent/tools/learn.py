@@ -18,7 +18,7 @@ If graduation fails (e.g., exact-duplicate heuristic reject), the staged
 candidate file is removed so `show.py` / `REVIEW_QUEUE.md` don't show
 orphaned dead-ends.
 """
-import argparse, datetime, json, os, subprocess, sys
+import argparse, datetime, json, os, subprocess, sys, tempfile
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -28,6 +28,7 @@ BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CANDIDATES = os.path.join(BASE, "memory/candidates")
 sys.path.insert(0, os.path.join(BASE, "harness"))
 sys.path.insert(0, os.path.join(BASE, "memory"))
+from hooks._episodic_io import append_jsonl  # noqa: E402
 from text import word_set  # noqa: E402
 from cluster import pattern_id  # noqa: E402
 
@@ -63,9 +64,10 @@ def _lesson_already_appended(cid):
 def _append_episodic_mirror(cid, claim, ts, source="learn"):
     """Mirror a manual stage into AGENT_LEARNINGS.jsonl so evidence_ids
     referencing `ts` resolve to a real episodic record — matching the
-    auto-derived candidate path's existing behavior. Never raises; a
-    failure here must not block staging (same fail-open posture as
-    _lesson_already_appended's read-only probe).
+    auto-derived candidate path's existing behavior.
+
+    Raises OSError on write failure. ``stage()`` must not publish a
+    candidate that references ``ts`` until this succeeds.
     """
     episodic_path = os.path.join(BASE, "memory/episodic/AGENT_LEARNINGS.jsonl")
     entry = {
@@ -81,11 +83,9 @@ def _append_episodic_mirror(cid, claim, ts, source="learn"):
         "source": {"skill": "learn", "profile": "manual", "run_id": f"manual_{cid[:6]}"},
         "evidence_ids": [ts],
     }
-    try:
-        with open(episodic_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
-    except OSError:
-        pass  # fail-open: staging must succeed even if the mirror write fails
+    # append_jsonl acquires the episodic sidecar lock — required so
+    # concurrent auto_dream os.replace cycles cannot orphan this write.
+    append_jsonl(episodic_path, entry)
 
 
 def stage(claim, conditions, source="learn", importance=7):
@@ -110,9 +110,32 @@ def stage(claim, conditions, source="learn", importance=7):
         "rejection_count": 0,
     }
     path = os.path.join(CANDIDATES, f"{cid}.json")
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(candidate, f, indent=2)
-    _append_episodic_mirror(cid, claim, now, source)
+    # Publish the candidate only after the episodic mirror succeeds, so a
+    # visible staged file never carries a dangling evidence_id. Temp file
+    # stays in CANDIDATES so os.replace stays same-filesystem.
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=CANDIDATES,
+            prefix=f".{cid}.",
+            suffix=".tmp",
+            delete=False,
+        ) as stream:
+            temp_path = stream.name
+            json.dump(candidate, stream, indent=2)
+            stream.flush()
+            os.fsync(stream.fileno())
+        _append_episodic_mirror(cid, claim, now, source)
+        os.replace(temp_path, path)
+        temp_path = None
+    finally:
+        if temp_path is not None:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
     return cid, path
 
 

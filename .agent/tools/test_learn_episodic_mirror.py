@@ -24,8 +24,12 @@ def _load_learn(base_dir):
     """Load .agent/tools/learn.py with BASE/CANDIDATES pointed at base_dir.
 
     Sibling modules (text.word_set, cluster.pattern_id) are stubbed so the
-    test needs no part of the harness beyond learn.py itself.
+    test needs no part of the harness beyond learn.py itself. hooks._episodic_io
+    is imported from the real tree (stdlib-only locked append helper).
     """
+    harness_dir = str(Path(__file__).resolve().parents[1] / "harness")
+    if harness_dir not in sys.path:
+        sys.path.insert(0, harness_dir)
     for name, attrs in [
         ("text", {"word_set": lambda *a, **k: set()}),
         ("cluster", {"pattern_id": lambda claim, cond: "testcid" + str(abs(hash((claim, tuple(cond)))))[:6]}),
@@ -74,11 +78,19 @@ class EpisodicMirrorTest(unittest.TestCase):
         self.assertEqual(len(matching), 1)
         self.assertEqual(matching[0]["evidence_ids"], [evidence_ts])
 
-    def test_append_mirror_fails_open_on_write_error(self):
+    def test_stage_fails_closed_when_mirror_write_errors(self):
         mod = _load_learn(self.tmp)
-        mod.BASE = os.path.join(self.tmp, "does-not-exist")
-        # Must not raise even though the target directory is missing.
-        mod._append_episodic_mirror("deadbeef", "claim", "2026-01-01T00:00:00+00:00")
+
+        def _boom(*_a, **_k):
+            raise OSError("forced mirror-write failure")
+
+        mod._append_episodic_mirror = _boom
+        with self.assertRaises(OSError):
+            mod.stage("Serialize timestamps in UTC", ["timestamps", "utc"])
+        candidates = Path(mod.CANDIDATES)
+        self.assertEqual(list(candidates.glob("*.json")), [])
+        self.assertEqual(list(candidates.glob("*.tmp")), [])
+        self.assertEqual(_episodic(self.tmp), [])
 
 
 if __name__ == "__main__":
