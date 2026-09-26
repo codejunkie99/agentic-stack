@@ -18,7 +18,7 @@ If graduation fails (e.g., exact-duplicate heuristic reject), the staged
 candidate file is removed so `show.py` / `REVIEW_QUEUE.md` don't show
 orphaned dead-ends.
 """
-import argparse, datetime, json, os, subprocess, sys, tempfile
+import argparse, datetime, errno, json, os, subprocess, sys, tempfile
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -69,7 +69,7 @@ def _append_episodic_mirror(cid, claim, ts, source="learn"):
     Raises OSError on write failure. ``stage()`` must not publish a
     candidate that references ``ts`` until this succeeds.
     """
-    episodic_path = os.path.join(BASE, "memory/episodic/AGENT_LEARNINGS.jsonl")
+    episodic_path = _episodic_path()
     entry = {
         "timestamp": ts,
         "skill": "learn",
@@ -88,9 +88,200 @@ def _append_episodic_mirror(cid, claim, ts, source="learn"):
     append_jsonl(episodic_path, entry)
 
 
+def _episodic_path():
+    return os.path.join(BASE, "memory/episodic/AGENT_LEARNINGS.jsonl")
+
+
+def _fsync_dir(directory):
+    """Best-effort directory fsync. Portability failures are ignored.
+
+    Directory durability is not part of the evidence invariant. EINVAL,
+    ENOTSUP, EBADF, and EPERM (Windows and some filesystems) must not
+    decide whether a candidate is published.
+    """
+    try:
+        fd = os.open(directory, os.O_RDONLY)
+    except OSError as err:
+        if err.errno in (errno.EINVAL, errno.ENOTSUP, errno.EBADF, errno.EPERM):
+            return
+        raise
+    try:
+        try:
+            os.fsync(fd)
+        except OSError as err:
+            if err.errno not in (errno.EINVAL, errno.ENOTSUP, errno.EBADF, errno.EPERM):
+                raise
+    finally:
+        os.close(fd)
+
+
+def _leftover_temps(cid):
+    """Absolute paths of `.{cid}.*.tmp` files in CANDIDATES, sorted."""
+    if not os.path.isdir(CANDIDATES):
+        return []
+    prefix = f".{cid}."
+    found = []
+    for name in os.listdir(CANDIDATES):
+        if name.startswith(prefix) and name.endswith(".tmp"):
+            found.append(os.path.join(CANDIDATES, name))
+    return sorted(found)
+
+
+def _evidence_landed(episodic_path, timestamp):
+    """True when a parsed JSONL row has this exact timestamp field.
+
+    Raw substring search is intentionally not used. A timestamp that
+    appears only inside another string must not count as evidence.
+    """
+    if not timestamp or not os.path.isfile(episodic_path):
+        return False
+    with open(episodic_path, encoding="utf-8") as stream:
+        for line in stream:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict) and row.get("timestamp") == timestamp:
+                return True
+    return False
+
+
+def _load_json_object(path):
+    """Load a JSON object. ``None`` means corrupt or the wrong shape.
+
+    ``OSError`` propagates. A transient read error must not look like
+    corrupt JSON, or recovery will delete a fsynced temp.
+    """
+    try:
+        with open(path, encoding="utf-8") as stream:
+            payload = json.load(stream)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def _one_evidence_id(payload):
+    evidence = payload.get("evidence_ids")
+    if (
+        not isinstance(evidence, list)
+        or len(evidence) != 1
+        or not isinstance(evidence[0], str)
+        or not evidence[0]
+    ):
+        return None
+    return evidence[0]
+
+
+def _keep_unproven_temp(temp_path, cid):
+    """True when unlink would risk destroying a mirrored payload."""
+    try:
+        payload = _load_json_object(temp_path)
+    except OSError:
+        return True
+    if payload is None or payload.get("id") != cid:
+        return False
+    evidence = _one_evidence_id(payload)
+    if evidence is None:
+        return False
+    try:
+        return _evidence_landed(_episodic_path(), evidence)
+    except OSError:
+        return True
+
+
+def _resumable_evidence(temp_path, cid):
+    """Evidence timestamp if this temp is safe to publish, else None."""
+    payload = _load_json_object(temp_path)
+    if payload is None or payload.get("id") != cid:
+        return None
+    evidence = _one_evidence_id(payload)
+    if evidence is None:
+        return None
+    if not _evidence_landed(_episodic_path(), evidence):
+        return None
+    return evidence
+
+
+def _remove_or_raise(temp_path):
+    try:
+        os.remove(temp_path)
+    except OSError as err:
+        raise OSError(f"failed to remove temp {temp_path}: {err}") from err
+
+
+def _resume_temp(temp_path, path):
+    try:
+        os.replace(temp_path, path)
+    except OSError as err:
+        raise OSError(
+            f"{err}; candidate publish failed; fsynced temp kept at {temp_path}"
+        ) from err
+    # The rename already published the candidate. A directory fsync
+    # failure must not make the caller retry and append a second mirror.
+    try:
+        _fsync_dir(CANDIDATES)
+    except OSError:
+        pass
+
+
+def _resolve_leftovers(cid, path):
+    """Finish or discard a prior transaction before a new one starts.
+
+    Returns True when `{cid}.json` is already the file the caller should
+    return. Returns False when the caller must start a fresh publish.
+
+    A resumable temp (valid JSON, matching id, evidence timestamp present
+    as a JSONL `timestamp` field) is published with `os.replace` and no
+    second mirror. If the published evidence timestamp is the same or
+    newer, that temp is stale and is removed instead. An evidence-less
+    or corrupt temp is
+    never published.
+
+    No cross-process single-flight. Two processes can both see zero
+    leftovers and each append a mirror. This function does not add a lock.
+    """
+    leftovers = _leftover_temps(cid)
+    if not leftovers:
+        return False
+    if len(leftovers) > 1:
+        raise OSError(
+            "ambiguous leftover temps for {cid}; refusing to publish: {paths}".format(
+                cid=cid,
+                paths=", ".join(leftovers),
+            )
+        )
+    temp_path = leftovers[0]
+    evidence = _resumable_evidence(temp_path, cid)
+    if evidence is None:
+        _remove_or_raise(temp_path)
+        return os.path.isfile(path)
+    published = None
+    if os.path.isfile(path):
+        published_payload = _load_json_object(path)
+        if published_payload is not None and published_payload.get("id") == cid:
+            published = _one_evidence_id(published_payload)
+    # ISO-8601 timestamps from datetime.isoformat() sort lexicographically.
+    if published is not None and published >= evidence:
+        _remove_or_raise(temp_path)
+        return True
+    _resume_temp(temp_path, path)
+    return True
+
+
 def stage(claim, conditions, source="learn", importance=7):
     os.makedirs(CANDIDATES, exist_ok=True)
     cid = pattern_id(claim, conditions)
+    path = os.path.join(CANDIDATES, f"{cid}.json")
+    # Resolve any prior temp before creating another one, so a retry
+    # cannot append a second mirror while the first payload is still
+    # recoverable.
+    if _resolve_leftovers(cid, path):
+        return cid, path
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     candidate = {
         "id": cid,
@@ -109,7 +300,6 @@ def stage(claim, conditions, source="learn", importance=7):
         "decisions": [{"ts": now, "action": "staged", "reviewer": source}],
         "rejection_count": 0,
     }
-    path = os.path.join(CANDIDATES, f"{cid}.json")
     # Publish the candidate only after the episodic mirror succeeds, so a
     # visible staged file never carries a dangling evidence_id. Temp file
     # stays in CANDIDATES so os.replace stays same-filesystem.
@@ -128,21 +318,49 @@ def stage(claim, conditions, source="learn", importance=7):
             json.dump(candidate, stream, indent=2)
             stream.flush()
             os.fsync(stream.fileno())
+        _fsync_dir(CANDIDATES)
         _append_episodic_mirror(cid, claim, now, source)
         mirror_succeeded = True
         os.replace(temp_path, path)
         temp_path = None
-    finally:
-        # If the mirror failed, no durable evidence should remain.
-        #
-        # If the mirror succeeded but publication failed, keep the fsynced
-        # staged payload. The episodic record then has a recoverable candidate
-        # on disk instead of claiming a stage whose payload was destroyed.
-        if temp_path is not None and not mirror_succeeded:
+        # Rename already published. Directory fsync must not fail the call.
+        try:
+            _fsync_dir(CANDIDATES)
+        except OSError:
+            pass
+    except BaseException as primary:
+        # Mirror succeeded: keep the fsynced temp. The episodic row then
+        # points at a payload that still exists.
+        if mirror_succeeded:
+            if temp_path is not None and isinstance(primary, OSError):
+                raise OSError(
+                    f"{primary}; candidate publish failed; "
+                    f"fsynced temp kept at {temp_path}"
+                ) from primary
+            raise
+        # append_jsonl can write the line and then fail in fsync. If that
+        # timestamp is already a JSONL row, keep the temp. Deleting it
+        # would leave an evidence row with no payload. A read error on
+        # the temp also keeps it: we cannot prove it is debris.
+        if temp_path is not None and _keep_unproven_temp(temp_path, cid):
+            if isinstance(primary, OSError):
+                raise OSError(
+                    f"{primary}; candidate publish failed; "
+                    f"fsynced temp kept at {temp_path}"
+                ) from primary
+            raise
+        # Mirror did not succeed. Remove the temp. Never replace
+        # KeyboardInterrupt or SystemExit with an OSError, even if unlink
+        # also fails.
+        if temp_path is not None:
             try:
                 os.remove(temp_path)
-            except OSError:
-                pass
+            except OSError as cleanup:
+                if isinstance(primary, OSError):
+                    raise OSError(
+                        f"{primary}; failed to remove temp {temp_path}: {cleanup}"
+                    ) from primary
+        raise
     return cid, path
 
 
@@ -178,7 +396,11 @@ def main():
         # in ways Codex caught. Fixed list here is the stable signature.
         conditions = sorted(word_set(claim))
 
-    cid, path = stage(claim, conditions)
+    try:
+        cid, path = stage(claim, conditions)
+    except OSError as err:
+        print(f"ERROR: {err}", file=sys.stderr)
+        sys.exit(1)
     print(f"staged candidate {cid}")
     print(f"  path: {path}")
     print(f"  conditions: {conditions}")

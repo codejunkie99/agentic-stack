@@ -39,6 +39,11 @@ def append_jsonl(path: str, entry: dict) -> dict:
         try:
             f.write(payload)
             f.flush()
+            # Durability must finish before the flock drops. auto_dream
+            # rewrites this file under the same lock as soon as it can
+            # acquire it, so a later fsync in the caller can sync the
+            # wrong generation.
+            os.fsync(f.fileno())
         finally:
             if _HAVE_FLOCK:
                 fcntl.flock(f.fileno(), fcntl.LOCK_UN)
