@@ -584,16 +584,15 @@ def _detail(tool_name: str, tool_input: dict,
         meta["old_string_chars"] = len(old or "")
         meta["new_string_chars"] = len(new or "")
 
-    # Tool output (a Read of a secrets file, Grep matches) is content too:
-    # persist its size, and the first error line only on failure.
+    # Tool output and errors (a Read of a secrets file, Grep matches, an
+    # error echoing a path) are content too: persist their size only.
     if output:
         meta["output_chars"] = len(output)
-    inp_str = json.dumps(meta, separators=(",", ":"))
     if not success:
         err = _extract_error(tool_response)
         if err:
-            inp_str += f" | err={err[:150]}"
-    return inp_str
+            meta["error_chars"] = len(err)
+    return json.dumps(meta, separators=(",", ":"))
 
 
 # ---------------------------------------------------------------------------

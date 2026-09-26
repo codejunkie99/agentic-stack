@@ -11,7 +11,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Claude Code hook leaked home paths and file content** (#66, #67). Episodic
   entries now store project- or `~`-relative paths (`<external>` otherwise),
   input key names, and character counts in place of raw edit/write content,
-  raw `tool_input` dumps, and raw Read/Grep output.
+  raw `tool_input` dumps, and raw tool output or error text.
 - **Loop event export copied arbitrary text** (#64). `data_layer_export.py`
   redacts loop `event`/`status`/`decision` values outside the set the loop
   supervisor and agentic-stack-desktop write (including `exhausted`,

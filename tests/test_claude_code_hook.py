@@ -414,6 +414,12 @@ def test_no_raw_content_or_paths_persisted(mod):
             "tool_input": {"file_path": os.path.join(os.path.expanduser("~"), ".env")},
             "tool_response": {"output": "DB_PASSWORD=read-output-secret", "exit_code": 0},
         }, "read-output-secret"),
+        ("failed Read error", {
+            "tool_name": "Read",
+            "tool_input": {"file_path": os.path.join(os.path.expanduser("~"), ".env")},
+            "tool_response": {"output": "", "is_error": True,
+                              "error": "cannot parse: DB_PASSWORD=read-error-secret"},
+        }, "read-error-secret"),
     ]
     for label, case_payload, secret in cases:
         rc, entry, stderr = run_hook(case_payload)
