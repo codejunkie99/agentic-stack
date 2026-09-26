@@ -92,6 +92,30 @@ class EpisodicMirrorTest(unittest.TestCase):
         self.assertEqual(list(candidates.glob("*.tmp")), [])
         self.assertEqual(_episodic(self.tmp), [])
 
+    def test_stage_keeps_fsynced_candidate_when_publish_fails(self):
+        mod = _load_learn(self.tmp)
+        original_replace = mod.os.replace
+
+        def _boom(*_a, **_k):
+            raise OSError("forced publish failure")
+
+        mod.os.replace = _boom
+        try:
+            with self.assertRaises(OSError):
+                mod.stage("Serialize timestamps in UTC", ["timestamps", "utc"])
+        finally:
+            mod.os.replace = original_replace
+
+        candidates = Path(mod.CANDIDATES)
+        self.assertEqual(list(candidates.glob("*.json")), [])
+        staged = list(candidates.glob("*.tmp"))
+        self.assertEqual(len(staged), 1)
+        self.assertIn('"claim": "Serialize timestamps in UTC"', staged[0].read_text())
+
+        entries = _episodic(self.tmp)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["result"], "success")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -114,6 +114,7 @@ def stage(claim, conditions, source="learn", importance=7):
     # visible staged file never carries a dangling evidence_id. Temp file
     # stays in CANDIDATES so os.replace stays same-filesystem.
     temp_path = None
+    mirror_succeeded = False
     try:
         with tempfile.NamedTemporaryFile(
             mode="w",
@@ -128,10 +129,16 @@ def stage(claim, conditions, source="learn", importance=7):
             stream.flush()
             os.fsync(stream.fileno())
         _append_episodic_mirror(cid, claim, now, source)
+        mirror_succeeded = True
         os.replace(temp_path, path)
         temp_path = None
     finally:
-        if temp_path is not None:
+        # If the mirror failed, no durable evidence should remain.
+        #
+        # If the mirror succeeded but publication failed, keep the fsynced
+        # staged payload. The episodic record then has a recoverable candidate
+        # on disk instead of claiming a stage whose payload was destroyed.
+        if temp_path is not None and not mirror_succeeded:
             try:
                 os.remove(temp_path)
             except OSError:
