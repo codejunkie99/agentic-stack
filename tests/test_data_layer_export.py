@@ -168,6 +168,15 @@ class DataLayerExportTest(unittest.TestCase):
                             "decision": "leaked prompt content here",
                         },
                         {"run_id": "run-c", "loop": "ci-sweeper", "event": "completed"},
+                        # Real values the runner emits: breaker stop uses the
+                        # run status as the event name; process.py statuses.
+                        {"run_id": "run-d", "loop": "ci-sweeper", "event": "exhausted"},
+                        {
+                            "run_id": "run-e",
+                            "loop": "ci-sweeper",
+                            "event": "maker_finished",
+                            "status": "timed_out",
+                        },
                     ]
                 )
                 + "\n",
@@ -181,6 +190,9 @@ class DataLayerExportTest(unittest.TestCase):
             self.assertNotIn("leaked prompt content", exported)
             self.assertNotIn("<script>", exported)
             self.assertIn("completed", exported)
+            rows = [json.loads(line) for line in exported.splitlines()]
+            self.assertIn("exhausted", {row["action"] for row in rows})
+            self.assertIn("timed_out", {row["result"] for row in rows})
 
     def test_succeeds_with_empty_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
