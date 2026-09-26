@@ -5,6 +5,27 @@ All notable changes to this project.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Claude Code hook leaked home paths and file content** (#66, #67). Episodic
+  entries now store project- or `~`-relative paths and character counts in
+  place of raw edit/write content and raw `tool_input` dumps.
+- **Loop event export copied arbitrary text** (#64). `data_layer_export.py`
+  redacts loop `event`/`status`/`decision` values outside the set the loop
+  supervisor writes (including `exhausted`, `failed_to_start`, `timed_out`)
+  to `unknown`.
+- **MiniMax ignored `max_tokens`** (#65). The OpenAI-wire call now forwards it
+  as `max_completion_tokens`.
+- **`test_learn_episodic_mirror.py` leaked module stubs** (#65). Stubbed
+  `sys.modules` entries are restored after import; candidate JSON is read as
+  UTF-8.
+
+### Docs
+- README: seed-skill list and count (15), repo layout (`loops/`, Copilot/Pi
+  hooks, `tests/`), Windsurf rule path, and install notes moved under
+  "Once installed".
+
 ## [0.19.1] — 2026-08-07
 
 Patch release. Four correctness fixes in memory retrieval, project upgrade, and

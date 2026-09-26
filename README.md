@@ -126,6 +126,29 @@ verb-style subcommands (works with both `install.sh` and `install.ps1`):
 
 PowerShell uses the same verbs, for example `.\install.ps1 dashboard`.
 
+Bare `./install.sh` (no arguments) opens a **multi-select wizard** on
+a fresh project — check every harness you actually use, hit enter,
+each one gets installed. The wizard auto-detects harnesses already on
+disk and pre-checks them. On a project that already has an
+`install.json`, bare interactive `./install.sh` opens the dashboard.
+In non-TTY shells (CI), it stays script-safe and prints the available
+subcommands instead of opening a TUI.
+
+Upgrading from pre-v0.9? Run `./install.sh doctor` first — it
+synthesizes `install.json` from on-disk adapter signals so the new
+backend can track them. Installing on top without migration would
+orphan the prior installs.
+
+Upgrading an already-installed project after `brew upgrade`? Run
+`agentic-stack upgrade --dry-run` in the project first, then
+`agentic-stack upgrade --yes` to refresh only skeleton-owned `.agent`
+infrastructure (`harness/**/*.py`, top-level `memory/*.py`, `tools/*.py`,
+the generated skill index, and new skill directories). It does not rewrite
+`CLAUDE.md`, `.claude/settings.json`, personal/semantic/episodic/working
+memory, candidates, or existing skill directories. `agentic-stack
+sync-manifest` is available as a repair command if `_manifest.jsonl` drifts
+from installed `SKILL.md` files.
+
 ### Optional: external Brain integration
 
 [`codejunkie99/brain`](https://github.com/codejunkie99/brain) is the
@@ -151,29 +174,6 @@ agentic-stack brain mcp-command
 Installed `.agent/` projects also get `python3 .agent/tools/brain_bridge.py`
 and a `brain` seed skill so host agents can query or write Brain memory when a
 task needs cross-harness long-term recall.
-
-Bare `./install.sh` (no arguments) opens a **multi-select wizard** on
-a fresh project — check every harness you actually use, hit enter,
-each one gets installed. The wizard auto-detects harnesses already on
-disk and pre-checks them. On a project that already has an
-`install.json`, bare interactive `./install.sh` opens the dashboard.
-In non-TTY shells (CI), it stays script-safe and prints the available
-subcommands instead of opening a TUI.
-
-Upgrading from pre-v0.9? Run `./install.sh doctor` first — it
-synthesizes `install.json` from on-disk adapter signals so the new
-backend can track them. Installing on top without migration would
-orphan the prior installs.
-
-Upgrading an already-installed project after `brew upgrade`? Run
-`agentic-stack upgrade --dry-run` in the project first, then
-`agentic-stack upgrade --yes` to refresh only skeleton-owned `.agent`
-infrastructure (`harness/**/*.py`, top-level `memory/*.py`, `tools/*.py`,
-the generated skill index, and new skill directories). It does not rewrite
-`CLAUDE.md`, `.claude/settings.json`, personal/semantic/episodic/working
-memory, candidates, or existing skill directories. `agentic-stack
-sync-manifest` is available as a repair command if `_manifest.jsonl` drifts
-from installed `SKILL.md` files.
 
 ## Onboarding wizard
 
@@ -279,7 +279,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full lifecycle.
 
 Every guide shows the folder structure. This repo gives you the folder
 structure **plus the files that actually go inside**: a working portable
-brain with nine seed skills, four memory layers, enforced permissions, a
+brain with fifteen seed skills, four memory layers, enforced permissions, a
 nightly staging cycle, host-agent review tools, and adapters for multiple
 harnesses.
 
@@ -305,11 +305,6 @@ harnesses.
   context cards, eval cases, training-ready JSONL, and readiness metrics
   without training a model or sending telemetry.
 
-## Releases & changelog
-
-Per-version release notes live in [CHANGELOG.md](CHANGELOG.md). The
-latest release, what broke, what's new, upgrade path, all there.
-
 ## Memory search `[BETA]`
 
 Opt-in FTS5 keyword search over all memory documents:
@@ -333,6 +328,8 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 ├── harness/                    # conductor + hooks (standalone path)
 │   └── hooks/
 │       ├── claude_code_post_tool.py  # rich PostToolUse logging (v0.8+)
+│       ├── copilot_cli_post_tool.py  # Copilot CLI postToolUse logging
+│       ├── pi_post_tool.py     # Pi tool_result logging
 │       ├── pre_tool_call.py    # permissions enforcement
 │       ├── post_execution.py   # log_execution() entry point
 │       └── on_failure.py       # failure write + repeated-failure rewrite flag
@@ -344,6 +341,7 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 │   ├── review_state.py         # candidate lifecycle + decision log
 │   ├── render_lessons.py       # lessons.jsonl → LESSONS.md
 │   └── memory_search.py        # [BETA] FTS5 search (opt-in)
+├── loops/                      # bounded loop contracts (budget, constraints, loops)
 ├── skills/                     # _index.md + _manifest.jsonl + SKILL.md files
 ├── protocols/                  # permissions + tool schemas + delegation
 │   └── hook_patterns.json      # user-owned high/medium-stakes regex (v0.8+)
@@ -395,9 +393,12 @@ harness_manager/                # v0.9.0 manifest-driven Python backend
 ├── transfer_bundle.py          # export/import bundle codec + merge logic
 ├── skill_manifest.py           # rebuilds skills/_manifest.jsonl from SKILL.md
 ├── upgrade.py                  # safe .agent infrastructure refresh
+├── status.py                   # one-screen installed-adapter view
+├── loops/                      # loop supervisor: runner, process, worktrees, storage
 └── cli.py                      # argparse dispatcher for install.sh / install.ps1
 
 docs/                           # architecture, getting-started, per-harness
+tests/                          # pytest suite, incl. test_claude_code_hook.py (62 checks)
 schemas/data-layer/             # local dashboard/event schemas
 examples/data-layer/            # sanitized data-layer shapes
 schemas/flywheel/               # data-flywheel artifact schemas
@@ -412,8 +413,7 @@ onboard_ui.py                   # ANSI palette, banner, clack-style layout
 onboard_widgets.py              # arrow-key prompts (text, select, confirm)
 onboard_render.py               # answers → PREFERENCES.md content
 onboard_write.py                # atomic file write with backup
-test_claude_code_hook.py        # hook validation suite (54 checks)
-verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
+verify_codex_fixes.py           # v0.8.0 regression checks
 ```
 
 ## Supported harnesses
@@ -424,7 +424,7 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
 | **GitHub Copilot CLI** | `AGENTS.md` + `.github/instructions/*.instructions.md` | yes (postToolUse, sessionEnd) |
 | **Cursor** | `.cursor/rules/*.mdc` | no (manual reflect calls) |
 | **Google Gemini CLI** | `gemini.md` + `.gemini/skills/` | no (manual reflect calls) |
-| **Windsurf** | `.windsurfrules` | no (manual reflect calls) |
+| **Windsurf** | `.windsurf/rules/*.md` + legacy `.windsurfrules` | no (manual reflect calls) |
 | **OpenCode** | `AGENTS.md` + `opencode.json` | partial (permission rules) |
 | **OpenClaw** | `AGENTS.md` (auto-injected) + per-project `openclaw agents add --workspace` | varies by fork |
 | **Hermes Agent** | `AGENTS.md` (agentskills.io compatible) | partial (own memory) |
@@ -449,6 +449,11 @@ verify_codex_fixes.py           # v0.8.0 regression checks (33 checks)
   training-ready JSONL, and flywheel metrics
 - **tldraw** — opt-in beta skill for live canvas diagrams with a local
   snapshot store under `.agent/skills/tldraw/`
+- **brain** — queries and writes the optional external Brain memory through
+  `brain_bridge.py`
+- **loop-triage / loop-verifier / loop-constraints / loop-guard** — read
+  `.agent/loops` contracts: read-only triage, deterministic verification,
+  path and approval gates, and pause/budget/stagnation decisions
 
 ## How it compounds
 
