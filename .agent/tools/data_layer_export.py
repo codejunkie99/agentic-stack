@@ -24,18 +24,19 @@ from typing import Any
 VALID_WINDOWS = {"7d", "30d", "90d", "all"}
 VALID_BUCKETS = {"hour", "day", "week", "month"}
 
-# Finite value sets the loop supervisor (harness_manager/loops/runner.py)
-# actually writes to runtime/loops/events.jsonl. normalize_loop_event must
+# Finite value sets the loop supervisor (harness_manager/loops/runner.py and
+# process.py) actually writes to runtime/loops/events.jsonl. normalize_loop_event must
 # redact anything outside these sets rather than copy arbitrary loop-event
 # content into the exported dashboard/analytics surface.
 VALID_LOOP_EVENTS = {
     "created", "awaiting_approval", "worktree_created", "paused",
     "interrupted", "maker_finished", "verifier_finished", "checker_finished",
-    "completed", "cancelled",
+    "exhausted", "completed", "cancelled",
 }
 VALID_LOOP_STATUSES = {
     "created", "awaiting_approval", "paused", "exhausted", "interrupted",
     "completed", "cancelled", "audit_failed", "failed", "rejected",
+    "failed_to_start", "timed_out",
 }
 VALID_LOOP_DECISIONS = {"APPROVE", "ESCALATE", "MALFORMED"}
 
