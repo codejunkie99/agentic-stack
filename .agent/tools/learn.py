@@ -28,7 +28,7 @@ BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CANDIDATES = os.path.join(BASE, "memory/candidates")
 sys.path.insert(0, os.path.join(BASE, "harness"))
 sys.path.insert(0, os.path.join(BASE, "memory"))
-from hooks._episodic_io import append_jsonl  # noqa: E402
+from hooks._episodic_io import append_jsonl_once, has_jsonl_timestamp  # noqa: E402
 from text import word_set  # noqa: E402
 from cluster import pattern_id  # noqa: E402
 
@@ -61,19 +61,23 @@ def _lesson_already_appended(cid):
     return False
 
 
-def _append_episodic_mirror(cid, claim, ts, source="learn"):
-    """Mirror a manual stage into AGENT_LEARNINGS.jsonl so evidence_ids
-    referencing `ts` resolve to a real episodic record — matching the
-    auto-derived candidate path's existing behavior.
+def _append_episodic_mirror(cid, claim, source="learn"):
+    """Return the canonical timestamp for `manual-stage:{cid}`.
+
+    Inserts one episodic row when that action is absent. A later call
+    returns the earliest existing row's timestamp and does not append.
+    The check and the insert share the episodic flock inside
+    ``append_jsonl_once``. This does not lock ``CANDIDATES``.
 
     Raises OSError on write failure. ``stage()`` must not publish a
-    candidate that references ``ts`` until this succeeds.
+    candidate that references a timestamp until this returns.
     """
-    episodic_path = _episodic_path()
+    ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    action = f"manual-stage:{cid}"
     entry = {
         "timestamp": ts,
         "skill": "learn",
-        "action": f"manual-stage:{cid}",
+        "action": action,
         "result": "success",
         "detail": f"Manually staged lesson {cid} via .agent/tools/learn.py: {claim!r}",
         "pain_score": 1,
@@ -83,9 +87,11 @@ def _append_episodic_mirror(cid, claim, ts, source="learn"):
         "source": {"skill": "learn", "profile": "manual", "run_id": f"manual_{cid[:6]}"},
         "evidence_ids": [ts],
     }
-    # append_jsonl acquires the episodic sidecar lock — required so
-    # concurrent auto_dream os.replace cycles cannot orphan this write.
-    append_jsonl(episodic_path, entry)
+    canonical = append_jsonl_once(_episodic_path(), entry, match_action=action)
+    canonical_ts = canonical.get("timestamp")
+    if not isinstance(canonical_ts, str) or not canonical_ts:
+        raise OSError(f"episodic mirror for {cid} has no timestamp")
+    return canonical_ts
 
 
 def _episodic_path():
@@ -131,22 +137,11 @@ def _evidence_landed(episodic_path, timestamp):
     """True when a parsed JSONL row has this exact timestamp field.
 
     Raw substring search is intentionally not used. A timestamp that
-    appears only inside another string must not count as evidence.
+    appears only inside another string must not count as evidence. The
+    complete read holds the episodic LOCK_EX. Without fcntl that lock
+    is a no-op.
     """
-    if not timestamp or not os.path.isfile(episodic_path):
-        return False
-    with open(episodic_path, encoding="utf-8") as stream:
-        for line in stream:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(row, dict) and row.get("timestamp") == timestamp:
-                return True
-    return False
+    return has_jsonl_timestamp(episodic_path, timestamp)
 
 
 def _load_json_object(path):
@@ -175,23 +170,6 @@ def _one_evidence_id(payload):
     ):
         return None
     return evidence[0]
-
-
-def _keep_unproven_temp(temp_path, cid):
-    """True when unlink would risk destroying a mirrored payload."""
-    try:
-        payload = _load_json_object(temp_path)
-    except OSError:
-        return True
-    if payload is None or payload.get("id") != cid:
-        return False
-    evidence = _one_evidence_id(payload)
-    if evidence is None:
-        return False
-    try:
-        return _evidence_landed(_episodic_path(), evidence)
-    except OSError:
-        return True
 
 
 def _resumable_evidence(temp_path, cid):
@@ -229,6 +207,40 @@ def _resume_temp(temp_path, path):
         pass
 
 
+def _published_evidence(path, cid):
+    if not os.path.isfile(path):
+        return None
+    payload = _load_json_object(path)
+    if payload is None or payload.get("id") != cid:
+        return None
+    return _one_evidence_id(payload)
+
+
+def _shared_resumable_evidence(leftovers, cid):
+    """One timestamp when every temp is resumable with that same value."""
+    stamps = []
+    for temp_path in leftovers:
+        evidence = _resumable_evidence(temp_path, cid)
+        if evidence is None:
+            return None
+        stamps.append(evidence)
+    if len(set(stamps)) != 1:
+        return None
+    return stamps[0]
+
+
+def _publish_shared_temps(leftovers, cid, path, evidence):
+    published = _published_evidence(path, cid)
+    if published is not None and published >= evidence:
+        for temp_path in leftovers:
+            _remove_or_raise(temp_path)
+        return True
+    _resume_temp(leftovers[0], path)
+    for temp_path in leftovers[1:]:
+        _remove_or_raise(temp_path)
+    return True
+
+
 def _resolve_leftovers(cid, path):
     """Finish or discard a prior transaction before a new one starts.
 
@@ -242,19 +254,25 @@ def _resolve_leftovers(cid, path):
     or corrupt temp is
     never published.
 
-    No cross-process single-flight. Two processes can both see zero
-    leftovers and each append a mirror. This function does not add a lock.
+    The episodic flock makes the mirror row single-flight for one action.
+    Temp files are not locked. Two callers can still each leave a temp
+    with the same evidence timestamp. Those twins are one transaction:
+    publish one and delete the rest. Temps whose evidence differs stay
+    fail-closed. This function does not add a lock.
     """
     leftovers = _leftover_temps(cid)
     if not leftovers:
         return False
     if len(leftovers) > 1:
-        raise OSError(
-            "ambiguous leftover temps for {cid}; refusing to publish: {paths}".format(
-                cid=cid,
-                paths=", ".join(leftovers),
+        shared = _shared_resumable_evidence(leftovers, cid)
+        if shared is None:
+            raise OSError(
+                "ambiguous leftover temps for {cid}; refusing to publish: {paths}".format(
+                    cid=cid,
+                    paths=", ".join(leftovers),
+                )
             )
-        )
+        return _publish_shared_temps(leftovers, cid, path, shared)
     temp_path = leftovers[0]
     evidence = _resumable_evidence(temp_path, cid)
     if evidence is None:
@@ -282,7 +300,9 @@ def stage(claim, conditions, source="learn", importance=7):
     # recoverable.
     if _resolve_leftovers(cid, path):
         return cid, path
-    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    # The mirror assigns the evidence id. A repeat call returns the
+    # earliest row's timestamp and does not append another line.
+    now = _append_episodic_mirror(cid, claim, source)
     candidate = {
         "id": cid,
         "key": f"manual_{cid[:6]}",
@@ -304,7 +324,6 @@ def stage(claim, conditions, source="learn", importance=7):
     # visible staged file never carries a dangling evidence_id. Temp file
     # stays in CANDIDATES so os.replace stays same-filesystem.
     temp_path = None
-    mirror_succeeded = False
     try:
         with tempfile.NamedTemporaryFile(
             mode="w",
@@ -319,8 +338,6 @@ def stage(claim, conditions, source="learn", importance=7):
             stream.flush()
             os.fsync(stream.fileno())
         _fsync_dir(CANDIDATES)
-        _append_episodic_mirror(cid, claim, now, source)
-        mirror_succeeded = True
         os.replace(temp_path, path)
         temp_path = None
         # Rename already published. Directory fsync must not fail the call.
@@ -329,37 +346,14 @@ def stage(claim, conditions, source="learn", importance=7):
         except OSError:
             pass
     except BaseException as primary:
-        # Mirror succeeded: keep the fsynced temp. The episodic row then
-        # points at a payload that still exists.
-        if mirror_succeeded:
-            if temp_path is not None and isinstance(primary, OSError):
-                raise OSError(
-                    f"{primary}; candidate publish failed; "
-                    f"fsynced temp kept at {temp_path}"
-                ) from primary
-            raise
-        # append_jsonl can write the line and then fail in fsync. If that
-        # timestamp is already a JSONL row, keep the temp. Deleting it
-        # would leave an evidence row with no payload. A read error on
-        # the temp also keeps it: we cannot prove it is debris.
-        if temp_path is not None and _keep_unproven_temp(temp_path, cid):
-            if isinstance(primary, OSError):
-                raise OSError(
-                    f"{primary}; candidate publish failed; "
-                    f"fsynced temp kept at {temp_path}"
-                ) from primary
-            raise
-        # Mirror did not succeed. Remove the temp. Never replace
-        # KeyboardInterrupt or SystemExit with an OSError, even if unlink
-        # also fails.
-        if temp_path is not None:
-            try:
-                os.remove(temp_path)
-            except OSError as cleanup:
-                if isinstance(primary, OSError):
-                    raise OSError(
-                        f"{primary}; failed to remove temp {temp_path}: {cleanup}"
-                    ) from primary
+        # The mirror already returned. Keep a temp that was written so
+        # the next call can publish it. Do not turn KeyboardInterrupt
+        # into OSError.
+        if temp_path is not None and isinstance(primary, OSError):
+            raise OSError(
+                f"{primary}; candidate publish failed; "
+                f"fsynced temp kept at {temp_path}"
+            ) from primary
         raise
     return cid, path
 
