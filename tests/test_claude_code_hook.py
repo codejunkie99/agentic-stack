@@ -398,6 +398,38 @@ def test_no_raw_content_or_paths_persisted(mod):
     for label, passed in checks:
         (ok if passed else fail)(f"  entry.{label}")
 
+    # Fallback branch (no explicit handler) and tool output.
+    cases = [
+        ("NotebookEdit fallback", {
+            "tool_name": "NotebookEdit",
+            "tool_input": {
+                # Short on purpose: the old fallback dumped inputs < 80 chars.
+                "notebook_path": os.path.join(os.path.expanduser("~"), "n"),
+                "new_source": "K=nb-sec",
+            },
+            "tool_response": {"output": "", "exit_code": 0, "error": ""},
+        }, "nb-sec"),
+        ("Read output", {
+            "tool_name": "Read",
+            "tool_input": {"file_path": os.path.join(os.path.expanduser("~"), ".env")},
+            "tool_response": {"output": "DB_PASSWORD=read-output-secret", "exit_code": 0},
+        }, "read-output-secret"),
+    ]
+    for label, case_payload, secret in cases:
+        rc, entry, stderr = run_hook(case_payload)
+        if entry is None:
+            fail(f"no entry written for privacy-check {label} case")
+            continue
+        blob = json.dumps(entry)
+        (ok if os.path.expanduser("~") not in blob else fail)(
+            f"  entry.{label} has no raw home path")
+        (ok if secret not in blob else fail)(
+            f"  entry.{label} does not contain raw content")
+
+    outside = os.path.join(os.sep, "nonexistent-root", "bob", "secrets.env")
+    (ok if mod._normalize_path(outside) == "<external>" else fail)(
+        "  _normalize_path labels paths outside project and home <external>")
+
 
 def test_dream_cycle():
     section("11. Dream cycle produces staged candidates from rich entries")
