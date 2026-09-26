@@ -177,6 +177,12 @@ class DataLayerExportTest(unittest.TestCase):
                             "event": "maker_finished",
                             "status": "timed_out",
                         },
+                        {
+                            "run_id": "run-f",
+                            "loop": "ci-sweeper",
+                            "event": "phase_started",
+                            "status": "running",
+                        },
                     ]
                 )
                 + "\n",
@@ -193,6 +199,8 @@ class DataLayerExportTest(unittest.TestCase):
             rows = [json.loads(line) for line in exported.splitlines()]
             self.assertIn("exhausted", {row["action"] for row in rows})
             self.assertIn("timed_out", {row["result"] for row in rows})
+            self.assertIn("phase_started", {row["action"] for row in rows})
+            self.assertIn("running", {row["result"] for row in rows})
 
     def test_succeeds_with_empty_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:

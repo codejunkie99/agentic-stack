@@ -9,20 +9,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 - **Claude Code hook leaked home paths and file content** (#66, #67). Episodic
-  entries now store project- or `~`-relative paths and character counts in
-  place of raw edit/write content and raw `tool_input` dumps.
+  entries now store project- or `~`-relative paths (`<external>` otherwise),
+  input key names, and character counts in place of raw edit/write content,
+  raw `tool_input` dumps, and raw Read/Grep output.
 - **Loop event export copied arbitrary text** (#64). `data_layer_export.py`
   redacts loop `event`/`status`/`decision` values outside the set the loop
-  supervisor writes (including `exhausted`, `failed_to_start`, `timed_out`)
-  to `unknown`.
+  supervisor and agentic-stack-desktop write (including `exhausted`,
+  `failed_to_start`, `timed_out`, `phase_started`, `running`) to `unknown`.
 - **MiniMax ignored `max_tokens`** (#65). The OpenAI-wire call now forwards it
-  as `max_completion_tokens`.
+  as `max_tokens` (`max_completion_tokens` does not exist in the minimum
+  supported `openai==1.40.0`).
 - **`test_learn_episodic_mirror.py` leaked module stubs** (#65). Stubbed
   `sys.modules` entries are restored after import; candidate JSON is read as
   UTF-8.
 
 ### Docs
-- README: seed-skill list and count (15), repo layout (`loops/`, Copilot/Pi
+- README: seed-skill list and count (14), repo layout (`loops/`, Copilot/Pi
   hooks, `tests/`), Windsurf rule path, and install notes moved under
   "Once installed".
 

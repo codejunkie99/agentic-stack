@@ -32,11 +32,13 @@ VALID_LOOP_EVENTS = {
     "created", "awaiting_approval", "worktree_created", "paused",
     "interrupted", "maker_finished", "verifier_finished", "checker_finished",
     "exhausted", "completed", "cancelled",
+    # written by the agentic-stack-desktop supervisor
+    "phase_started",
 }
 VALID_LOOP_STATUSES = {
     "created", "awaiting_approval", "paused", "exhausted", "interrupted",
     "completed", "cancelled", "audit_failed", "failed", "rejected",
-    "failed_to_start", "timed_out",
+    "failed_to_start", "timed_out", "running",
 }
 VALID_LOOP_DECISIONS = {"APPROVE", "ESCALATE", "MALFORMED"}
 

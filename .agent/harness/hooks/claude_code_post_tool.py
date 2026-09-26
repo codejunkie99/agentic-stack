@@ -63,7 +63,16 @@ def _normalize_path(value):
     home = os.path.expanduser("~")
     if home and expanded.startswith(home + os.sep):
         return "~" + expanded[len(home):]
-    return rel if rel is not None else "<external>"
+    return "<external>"
+
+
+def _input_path(tool_input):
+    if not isinstance(tool_input, dict):
+        return None
+    for key in ("file_path", "path", "new_path", "notebook_path"):
+        if isinstance(tool_input.get(key), str) and tool_input[key]:
+            return tool_input[key]
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -459,11 +468,6 @@ def _reflection(tool_name: str, tool_input: dict,
       4. Keep under ~200 chars so detail field carries the rest.
     """
     parts = []
-    _fallback_input = dict(tool_input) if isinstance(tool_input, dict) else {}
-    for _key in ("file_path", "path", "new_path"):
-        if isinstance(_fallback_input.get(_key), str):
-            _fallback_input[_key] = _normalize_path(_fallback_input[_key])
-    inp_str = json.dumps(_fallback_input)
 
     # --- Bash ---
     if tool_name == "Bash":
@@ -533,8 +537,12 @@ def _reflection(tool_name: str, tool_input: dict,
     else:
         status = "successfully" if success else "with failure"
         parts.append(f"Tool {tool_name} completed {status}")
-        if inp_str and len(inp_str) < 80:
-            parts.append(inp_str)
+        # Input values can carry content or paths; persist key names only.
+        path = _input_path(tool_input)
+        if path:
+            parts.append(f"on {_normalize_path(path)}")
+        if isinstance(tool_input, dict) and tool_input:
+            parts.append(f"keys: {', '.join(sorted(map(str, tool_input)))}")
 
     return ". ".join(parts) if parts else f"Tool {tool_name} ran"
 
@@ -563,7 +571,7 @@ def _detail(tool_name: str, tool_input: dict,
         out_snip = output[:200] if output else ""
         return f"cmd={cmd!r}" + (f" | out={out_snip}" if out_snip else "")
 
-    path = tool_input.get("file_path") or tool_input.get("path")
+    path = _input_path(tool_input)
     meta = {"tool": tool_name}
     if path:
         meta["path"] = _normalize_path(path)
@@ -575,9 +583,17 @@ def _detail(tool_name: str, tool_input: dict,
     if isinstance(old, str) or isinstance(new, str):
         meta["old_string_chars"] = len(old or "")
         meta["new_string_chars"] = len(new or "")
-    inp_str = json.dumps(meta, separators=(",", ":"))
 
-    return inp_str + (f" | {output[:150]}" if output else "")
+    # Tool output (a Read of a secrets file, Grep matches) is content too:
+    # persist its size, and the first error line only on failure.
+    if output:
+        meta["output_chars"] = len(output)
+    inp_str = json.dumps(meta, separators=(",", ":"))
+    if not success:
+        err = _extract_error(tool_response)
+        if err:
+            inp_str += f" | err={err[:150]}"
+    return inp_str
 
 
 # ---------------------------------------------------------------------------
