@@ -1,5 +1,5 @@
 """Failures are learning. High pain score + rewrite flag after repeat offenses."""
-import json, datetime, os
+import json, datetime, os, sys
 from ._provenance import build_source
 from ._episodic_io import append_jsonl
 
@@ -73,4 +73,10 @@ def on_failure(skill_name, action, error, context="", confidence=0.9,
             f"Flag for rewrite."
         )
         entry["pain_score"] = 10
-    return append_jsonl(EPISODIC, entry)
+    try:
+        return append_jsonl(EPISODIC, entry)
+    except OSError as err:
+        # Failure telemetry must not mask the original failure or terminate
+        # the hook process when the filesystem rejects fsync.
+        print(f"WARNING: episodic failure log write failed: {err}", file=sys.stderr)
+        return entry
