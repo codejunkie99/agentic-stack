@@ -214,27 +214,40 @@ class EpisodicMirrorTest(unittest.TestCase):
         candidate = json.loads(Path(path).read_text())
         self.assertEqual(candidate["evidence_ids"], [failed[0]["timestamp"]])
 
-    def test_newer_temp_replaces_older_published_json(self):
+    def test_repeat_stage_reuses_the_first_mirror(self):
         mod = _load_learn(self.tmp)
-        mod.stage(CLAIM, CONDITIONS)
-        original_replace = mod.os.replace
-
-        def _boom(*_a, **_k):
-            raise OSError("forced publish failure")
-
-        mod.os.replace = _boom
-        try:
-            with self.assertRaises(OSError):
-                mod.stage(CLAIM, CONDITIONS)
-        finally:
-            mod.os.replace = original_replace
-
-        entries = _episodic(self.tmp)
-        self.assertEqual(len(entries), 2)
         cid, path = mod.stage(CLAIM, CONDITIONS)
-        candidate = json.loads(Path(path).read_text())
-        self.assertEqual(candidate["evidence_ids"], [entries[1]["timestamp"]])
-        self.assertEqual(_names(mod.CANDIDATES, ".json"), [f"{cid}.json"])
+        first = json.loads(Path(path).read_text())
+        before = _episodic(self.tmp)
+        self.assertEqual(len(before), 1)
+        cid2, path2 = mod.stage(CLAIM, CONDITIONS)
+        second = json.loads(Path(path2).read_text())
+        self.assertEqual(cid2, cid)
+        self.assertEqual(second["evidence_ids"], first["evidence_ids"])
+        self.assertEqual(second["evidence_ids"], [before[0]["timestamp"]])
+        self.assertEqual(_episodic(self.tmp), before)
+        self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
+
+    def test_planted_newer_temp_replaces_older_json_without_a_third_mirror(self):
+        mod = _load_learn(self.tmp)
+        cid, path = mod.stage(CLAIM, CONDITIONS)
+        published = json.loads(Path(path).read_text())
+        later = "2099-01-01T00:00:00+00:00"
+        newer = dict(published)
+        newer["evidence_ids"] = [later]
+        newer["staged_at"] = later
+        Path(os.path.join(mod.CANDIDATES, f".{cid}.later.tmp")).write_text(
+            json.dumps(newer))
+        episodic_path = os.path.join(
+            self.tmp, "memory", "episodic", "AGENT_LEARNINGS.jsonl")
+        with open(episodic_path, "a", encoding="utf-8") as stream:
+            stream.write(json.dumps({
+                "timestamp": later,
+                "action": f"manual-stage:{cid}",
+                "result": "success",
+            }) + "\n")
+        mod.stage(CLAIM, CONDITIONS)
+        self.assertEqual(json.loads(Path(path).read_text())["evidence_ids"], [later])
         self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
         self.assertEqual(len(_episodic(self.tmp)), 2)
 
@@ -302,51 +315,30 @@ class EpisodicMirrorTest(unittest.TestCase):
         self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
         self.assertEqual(len(_episodic(self.tmp)), 1)
 
-    def test_unlink_failure_after_mirror_failure_stays_visible(self):
+    def test_mirror_failure_before_temp_leaves_no_candidate(self):
         mod = _load_learn(self.tmp)
 
         def _mirror(*_a, **_k):
             raise OSError("forced mirror-write failure")
 
-        def _unlink(*_a, **_k):
-            raise OSError("forced unlink failure")
-
         mod._append_episodic_mirror = _mirror
-        original_remove = mod.os.remove
-        mod.os.remove = _unlink
-        try:
-            with self.assertRaises(OSError) as caught:
-                mod.stage(CLAIM, CONDITIONS)
-        finally:
-            mod.os.remove = original_remove
-        message = str(caught.exception)
-        self.assertIn("forced mirror-write failure", message)
-        self.assertIn("forced unlink failure", message)
-        self.assertIn("failed to remove temp", message)
+        with self.assertRaises(OSError) as caught:
+            mod.stage(CLAIM, CONDITIONS)
+        self.assertIn("forced mirror-write failure", str(caught.exception))
         self.assertEqual(_names(mod.CANDIDATES, ".json"), [])
-        staged = _names(mod.CANDIDATES, ".tmp")
-        self.assertEqual(len(staged), 1)
-        self.assertIn(os.path.join(mod.CANDIDATES, staged[0]), message)
+        self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
         self.assertEqual(_episodic(self.tmp), [])
 
-    def test_keyboard_interrupt_is_not_replaced_when_unlink_fails(self):
+    def test_keyboard_interrupt_from_mirror_is_not_an_oserror(self):
         mod = _load_learn(self.tmp)
 
         def _mirror(*_a, **_k):
             raise KeyboardInterrupt
 
-        def _unlink(*_a, **_k):
-            raise OSError("forced unlink failure")
-
         mod._append_episodic_mirror = _mirror
-        original_remove = mod.os.remove
-        mod.os.remove = _unlink
-        try:
-            with self.assertRaises(KeyboardInterrupt):
-                mod.stage(CLAIM, CONDITIONS)
-        finally:
-            mod.os.remove = original_remove
-        self.assertEqual(len(_names(mod.CANDIDATES, ".tmp")), 1)
+        with self.assertRaises(KeyboardInterrupt):
+            mod.stage(CLAIM, CONDITIONS)
+        self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
         self.assertEqual(_names(mod.CANDIDATES, ".json"), [])
 
     def test_ambiguous_leftovers_fail_closed(self):
@@ -364,11 +356,11 @@ class EpisodicMirrorTest(unittest.TestCase):
         self.assertEqual(len(_names(mod.CANDIDATES, ".tmp")), 2)
         self.assertEqual(_episodic(self.tmp), [])
 
-    def test_fsync_failure_after_mirror_write_keeps_temp(self):
+    def test_fsync_failure_after_mirror_line_retries_without_a_second_row(self):
         mod = _load_learn(self.tmp)
         real_append = mod._append_episodic_mirror
 
-        def _append(cid, claim, ts, source="learn"):
+        def _append(*args, **kwargs):
             real_fsync = mod.os.fsync
 
             def _boom(_fd):
@@ -376,7 +368,7 @@ class EpisodicMirrorTest(unittest.TestCase):
 
             mod.os.fsync = _boom
             try:
-                return real_append(cid, claim, ts, source)
+                return real_append(*args, **kwargs)
             finally:
                 mod.os.fsync = real_fsync
 
@@ -384,10 +376,19 @@ class EpisodicMirrorTest(unittest.TestCase):
         with self.assertRaises(OSError) as caught:
             mod.stage(CLAIM, CONDITIONS)
         self.assertIn("forced fsync failure", str(caught.exception))
-        self.assertIn("fsynced temp kept at", str(caught.exception))
         self.assertEqual(_names(mod.CANDIDATES, ".json"), [])
-        self.assertEqual(len(_names(mod.CANDIDATES, ".tmp")), 1)
+        self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
         self.assertEqual(len(_episodic(self.tmp)), 1)
+        mod._append_episodic_mirror = real_append
+        cid, path = mod.stage(CLAIM, CONDITIONS)
+        self.assertEqual(_names(mod.CANDIDATES, ".json"), [f"{cid}.json"])
+        self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
+        self.assertEqual(len(_episodic(self.tmp)), 1)
+        candidate = json.loads(Path(path).read_text())
+        self.assertEqual(
+            candidate["evidence_ids"],
+            [_episodic(self.tmp)[0]["timestamp"]],
+        )
 
     def test_published_read_error_does_not_clobber_json(self):
         mod = _load_learn(self.tmp)
@@ -433,7 +434,7 @@ class EpisodicMirrorTest(unittest.TestCase):
         mod._append_episodic_mirror = _append
         with self.assertRaises(KeyboardInterrupt):
             mod.stage(CLAIM, CONDITIONS)
-        self.assertEqual(len(_names(mod.CANDIDATES, ".tmp")), 1)
+        self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
         self.assertEqual(len(_episodic(self.tmp)), 1)
         mod._append_episodic_mirror = real_append
         cid, resumed = mod.stage(CLAIM, CONDITIONS)
@@ -445,6 +446,44 @@ class EpisodicMirrorTest(unittest.TestCase):
             candidate["evidence_ids"],
             [_episodic(self.tmp)[0]["timestamp"]],
         )
+
+    def test_append_jsonl_once_reuses_the_first_row(self):
+        import hooks._episodic_io as episodic_io
+
+        path = os.path.join(self.tmp, "once.jsonl")
+        first = {"timestamp": "t1", "action": "manual-stage:abc"}
+        second = {"timestamp": "t2", "action": "manual-stage:abc"}
+        self.assertEqual(
+            episodic_io.append_jsonl_once(
+                path, first, match_action="manual-stage:abc")["timestamp"],
+            "t1",
+        )
+        self.assertEqual(
+            episodic_io.append_jsonl_once(
+                path, second, match_action="manual-stage:abc")["timestamp"],
+            "t1",
+        )
+        episodic_io.append_jsonl(path, second)
+        rows = [
+            json.loads(line)
+            for line in Path(path).read_text().splitlines()
+            if line.strip()
+        ]
+        self.assertEqual([row["timestamp"] for row in rows], ["t1", "t2"])
+
+    def test_identical_resumable_temps_publish_once(self):
+        mod = _load_learn(self.tmp)
+        cid, path = mod.stage(CLAIM, CONDITIONS)
+        published = Path(path).read_text()
+        os.remove(path)
+        for suffix in ("a", "b"):
+            Path(os.path.join(mod.CANDIDATES, f".{cid}.{suffix}.tmp")).write_text(
+                published)
+        before = _episodic(self.tmp)
+        mod.stage(CLAIM, CONDITIONS)
+        self.assertEqual(Path(path).read_text(), published)
+        self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
+        self.assertEqual(_episodic(self.tmp), before)
 
 
 if __name__ == "__main__":
