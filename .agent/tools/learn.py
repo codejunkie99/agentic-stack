@@ -28,7 +28,7 @@ BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CANDIDATES = os.path.join(BASE, "memory/candidates")
 sys.path.insert(0, os.path.join(BASE, "harness"))
 sys.path.insert(0, os.path.join(BASE, "memory"))
-from hooks._episodic_io import append_jsonl_once  # noqa: E402
+from hooks._episodic_io import append_jsonl_once, has_jsonl_timestamp  # noqa: E402
 from text import word_set  # noqa: E402
 from cluster import pattern_id  # noqa: E402
 
@@ -137,22 +137,11 @@ def _evidence_landed(episodic_path, timestamp):
     """True when a parsed JSONL row has this exact timestamp field.
 
     Raw substring search is intentionally not used. A timestamp that
-    appears only inside another string must not count as evidence.
+    appears only inside another string must not count as evidence. The
+    complete read holds the episodic LOCK_EX. Without fcntl that lock
+    is a no-op.
     """
-    if not timestamp or not os.path.isfile(episodic_path):
-        return False
-    with open(episodic_path, encoding="utf-8") as stream:
-        for line in stream:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(row, dict) and row.get("timestamp") == timestamp:
-                return True
-    return False
+    return has_jsonl_timestamp(episodic_path, timestamp)
 
 
 def _load_json_object(path):

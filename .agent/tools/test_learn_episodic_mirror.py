@@ -485,6 +485,69 @@ class EpisodicMirrorTest(unittest.TestCase):
         self.assertEqual(_names(mod.CANDIDATES, ".tmp"), [])
         self.assertEqual(_episodic(self.tmp), before)
 
+    def test_evidence_landed_reads_under_exclusive_lock(self):
+        mod = _load_learn(self.tmp)
+        import hooks._episodic_io as episodic_io
+
+        path = os.path.join(
+            self.tmp, "memory", "episodic", "AGENT_LEARNINGS.jsonl"
+        )
+        row = {"timestamp": "2026-09-26T00:00:00+00:00", "action": "test"}
+        Path(path).write_text(json.dumps(row) + "\n")
+        if not episodic_io._HAVE_FLOCK:
+            self.skipTest("fcntl flock not available")
+
+        order = []
+        real_flock = episodic_io.fcntl.flock
+
+        def _record_flock(fd, operation):
+            if operation == episodic_io.fcntl.LOCK_UN:
+                order.append("unlock")
+            else:
+                order.append("lock")
+            return real_flock(fd, operation)
+
+        episodic_io.fcntl.flock = _record_flock
+        try:
+            self.assertTrue(mod._evidence_landed(path, row["timestamp"]))
+        finally:
+            episodic_io.fcntl.flock = real_flock
+
+        self.assertEqual(order, ["lock", "unlock"])
+
+    def test_evidence_read_error_keeps_resumable_temp(self):
+        mod = _load_learn(self.tmp)
+        cid = mod.pattern_id(CLAIM, CONDITIONS)
+        temp_path = os.path.join(mod.CANDIDATES, f".{cid}.pending.tmp")
+        timestamp = "2026-09-26T00:00:00+00:00"
+        Path(temp_path).write_text(json.dumps({
+            "id": cid,
+            "claim": CLAIM,
+            "evidence_ids": [timestamp],
+        }))
+        real_check = mod.has_jsonl_timestamp
+        mod.has_jsonl_timestamp = lambda *_a, **_k: (_ for _ in ()).throw(
+            OSError("forced locked-read failure")
+        )
+        try:
+            with self.assertRaises(OSError) as caught:
+                mod.stage(CLAIM, CONDITIONS)
+        finally:
+            mod.has_jsonl_timestamp = real_check
+        self.assertIn("forced locked-read failure", str(caught.exception))
+        self.assertTrue(os.path.isfile(temp_path))
+        self.assertEqual(_episodic(self.tmp), [])
+
+    def test_missing_episodic_file_is_not_created(self):
+        import hooks._episodic_io as episodic_io
+
+        path = os.path.join(self.tmp, "memory", "episodic", "absent.jsonl")
+        self.assertFalse(os.path.exists(path))
+        self.assertFalse(
+            episodic_io.has_jsonl_timestamp(path, "2026-09-26T00:00:00+00:00")
+        )
+        self.assertFalse(os.path.exists(path))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -103,3 +103,40 @@ def append_jsonl_once(path: str, entry: dict, *, match_action: str) -> dict:
         finally:
             if _HAVE_FLOCK:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def has_jsonl_timestamp(path: str, timestamp: str) -> bool:
+    """Return whether a JSONL row has this exact timestamp under LOCK_EX.
+
+    The lock is held for the complete read. auto_dream rewrites the episodic
+    file while holding the same lock, so recovery must not inspect a truncated
+    generation between its truncate and rewrite.
+
+    A missing file is absence, not an error. This probe does not create the
+    JSONL or its parent directory. FileNotFoundError during open is the same
+    absence. Any other OSError propagates so recovery does not treat a failed
+    read as missing evidence and delete a resumable temp.
+
+    Without fcntl the lock is a no-op, matching the pre-lock baseline.
+    """
+    if not timestamp or not os.path.isfile(path):
+        return False
+    try:
+        handle = open(path, "rb")
+    except FileNotFoundError:
+        return False
+    with handle:
+        if _HAVE_FLOCK:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            for line in handle:
+                try:
+                    row = json.loads(line.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
+                if isinstance(row, dict) and row.get("timestamp") == timestamp:
+                    return True
+            return False
+        finally:
+            if _HAVE_FLOCK:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
