@@ -1,5 +1,5 @@
 """Runs after every action. Appends a structured entry to episodic memory."""
-import datetime, os
+import datetime, os, sys
 from ._provenance import build_source
 from ._episodic_io import append_jsonl
 
@@ -31,4 +31,10 @@ def log_execution(skill_name, action, result, success, reflection="",
         "source": build_source(skill_name),
         "evidence_ids": list(evidence_ids) if evidence_ids else [],
     }
-    return append_jsonl(EPISODIC, entry)
+    try:
+        return append_jsonl(EPISODIC, entry)
+    except OSError as err:
+        # Episodic logging is observability. A sync failure must not turn
+        # a completed tool action into a failed hook.
+        print(f"WARNING: episodic log write failed: {err}", file=sys.stderr)
+        return entry

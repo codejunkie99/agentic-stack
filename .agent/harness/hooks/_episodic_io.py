@@ -39,7 +39,104 @@ def append_jsonl(path: str, entry: dict) -> dict:
         try:
             f.write(payload)
             f.flush()
+            # Durability must finish before the flock drops. auto_dream
+            # rewrites this file under the same lock as soon as it can
+            # acquire it, so a later fsync in the caller can sync the
+            # wrong generation.
+            os.fsync(f.fileno())
         finally:
             if _HAVE_FLOCK:
                 fcntl.flock(f.fileno(), fcntl.LOCK_UN)
     return entry
+
+
+def _first_matching_action(raw: bytes, match_action: str) -> dict | None:
+    """First JSON object whose action equals `match_action`.
+
+    File order is the canonical order. Blank lines and corrupt lines
+    are skipped. A row with an empty timestamp does not count.
+    """
+    for line in raw.decode("utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict) or row.get("action") != match_action:
+            continue
+        timestamp = row.get("timestamp")
+        if isinstance(timestamp, str) and timestamp:
+            return row
+    return None
+
+
+def append_jsonl_once(path: str, entry: dict, *, match_action: str) -> dict:
+    """Append `entry` unless `match_action` is already present.
+
+    The read and the optional append share one `LOCK_EX` on `path`, the
+    same flock `append_jsonl` and `auto_dream` already take. This is
+    episodic serialization, not a candidate-directory lock. No second
+    lock file is created.
+
+    Returns the earliest existing row with that action, or `entry` when
+    this call appended it. Older duplicate rows are left in place.
+
+    Without `fcntl` the check-and-append is best-effort, matching the
+    pre-lock baseline. `O_APPEND` keeps the write at end of file.
+    """
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a+b") as handle:
+        if _HAVE_FLOCK:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            handle.seek(0)
+            existing = _first_matching_action(handle.read(), match_action)
+            if existing is not None:
+                return existing
+            payload = (json.dumps(entry) + "\n").encode("utf-8")
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+            return entry
+        finally:
+            if _HAVE_FLOCK:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def has_jsonl_timestamp(path: str, timestamp: str) -> bool:
+    """Return whether a JSONL row has this exact timestamp under LOCK_EX.
+
+    The lock is held for the complete read. auto_dream rewrites the episodic
+    file while holding the same lock, so recovery must not inspect a truncated
+    generation between its truncate and rewrite.
+
+    A missing file is absence, not an error. This probe does not create the
+    JSONL or its parent directory. FileNotFoundError during open is the same
+    absence. Any other OSError propagates so recovery does not treat a failed
+    read as missing evidence and delete a resumable temp.
+
+    Without fcntl the lock is a no-op, matching the pre-lock baseline.
+    """
+    if not timestamp or not os.path.isfile(path):
+        return False
+    try:
+        handle = open(path, "rb")
+    except FileNotFoundError:
+        return False
+    with handle:
+        if _HAVE_FLOCK:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            for line in handle:
+                try:
+                    row = json.loads(line.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
+                if isinstance(row, dict) and row.get("timestamp") == timestamp:
+                    return True
+            return False
+        finally:
+            if _HAVE_FLOCK:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
