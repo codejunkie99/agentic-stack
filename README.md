@@ -25,6 +25,21 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
+### Desktop memory evaluation preview
+
+The main macOS app now includes project memory, source review, Jev context selection,
+conversation continuity, and a retrieval demo that uses the production context path.
+Build with `bash scripts/build-macos-app.sh --output /tmp/agentic-stack-preview`
+(macOS 14+, Apple Silicon, Swift 6). Add `--python-root /path/to/standalone-python`
+for a portable bundle; otherwise Python 3 is required on the destination Mac.
+
+See [desktop guide and repeatable demo](docs/desktop-memory-demo.md),
+[Jev provider setup](docs/jev-provider-setup.md),
+[benchmark protocol and measured results](docs/memory-benchmarks.md),
+and [full feature guide](docs/features.md).
+The 99.9% benchmark goal is aspirational; retrieval recall, latency, and answer
+accuracy are separate metrics. Published reports retain failures and abstentions.
+
 ### New in v0.19.1 — memory and upgrade fixes
 
 Patch release. Four correctness fixes:

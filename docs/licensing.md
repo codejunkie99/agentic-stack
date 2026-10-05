@@ -15,6 +15,9 @@ license. Agentic Stack does not claim ownership of third-party work.
 | Component | Location or use | License record |
 | --- | --- | --- |
 | Cavecrew and Caveman skills | `.cursor/skills/cavecrew` and `.cursor/skills/caveman` | Adjacent MIT `LICENSE` files, copyright Julius Brussee |
+| Native terminal | SwiftTerm 1.19.0 | MIT; `apps/macos/THIRD-PARTY-NOTICES.md` |
+| Native updater | Sparkle 2.9.6 | Sparkle license; `apps/macos/THIRD-PARTY-NOTICES.md` |
+| Bundled Python runtime | Optional relocatable CPython | Python license in runtime distribution |
 | Python dependencies | Installed from `requirements.txt`; not relicensed by Agentic Stack | Each dependency's published license and installed package metadata |
 | Remotion and demo dependencies | `docs/demo` development tooling | Licenses declared by `docs/demo/package-lock.json`, including Remotion's separate license |
 

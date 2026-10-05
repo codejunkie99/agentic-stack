@@ -1,5 +1,6 @@
 ---
 name: brain
+description: "Recall and store durable cross-tool memory through the external Brain CLI."
 version: 2026-05-10
 triggers: ["brain", "long-term memory", "shared memory", "cross-agent memory", "mcp memory", "remember across tools", "git-backed memory"]
 tools: [bash]

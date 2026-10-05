@@ -1,5 +1,6 @@
 ---
 name: debug-investigator
+description: "Reproduce, isolate, and verify the root cause of a software failure."
 version: 2026-01-01
 triggers: ["debug", "why is this failing", "investigate", "stack trace", "bug"]
 tools: [bash, memory_reflect]

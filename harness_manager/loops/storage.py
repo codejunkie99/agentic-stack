@@ -6,6 +6,7 @@ import json
 import os
 import re
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 from .schema import ContractError, load_contracts
@@ -30,6 +31,33 @@ _RUN_ID = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")
 _PAUSE_FILE = "_pause-all.json"
 
 
+@contextmanager
+def execution_lock(target_root: Path, run_id: str):
+    """A loop can have only one live coordinator, including across CLI/app."""
+    path = runtime_dir(target_root) / f"_owner-{_run_id(run_id)}.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('a+b') as handle:
+        if os.name == 'nt':
+            import msvcrt
+            if path.stat().st_size == 0:
+                handle.write(b'0'); handle.flush()
+            handle.seek(0)
+            lock = lambda: msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            unlock = lambda: (handle.seek(0), msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1))
+        else:
+            import fcntl
+            lock = lambda: fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            unlock = lambda: fcntl.flock(handle, fcntl.LOCK_UN)
+        try:
+            lock()
+        except OSError as exc:
+            raise CheckpointError('This loop already has a live coordinator.') from exc
+        try:
+            yield
+        finally:
+            unlock()
+
+
 class CheckpointError(RuntimeError):
     """Raised when durable local loop state cannot be read or written."""
 
@@ -46,6 +74,14 @@ def _run_id(value: object) -> str:
 
 def checkpoint_path(target_root: Path, run_id: str) -> Path:
     return runtime_dir(target_root) / f"{_run_id(run_id)}.json"
+
+
+def request_cancel(target_root: Path, run_id: str) -> None:
+    _atomic_text(runtime_dir(target_root) / f"_cancel-{_run_id(run_id)}.json", '{"cancelled":true}\n')
+
+
+def cancellation_requested(target_root: Path, run_id: str) -> bool:
+    return (runtime_dir(target_root) / f"_cancel-{_run_id(run_id)}.json").exists()
 
 
 def _json_text(payload: object, context: str) -> str:

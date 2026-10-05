@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">Agentic Stack</title>
+  <desc id="desc">A connected stack forming one shared knowledge graph across Claude Code, Codex, OpenCode, and Cursor.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111319"/>
+      <stop offset="1" stop-color="#1B1E27"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF9A6C"/>
+      <stop offset="1" stop-color="#E15E35"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="360" rx="34" fill="url(#bg)"/>
+  <path d="M0 280C190 236 334 332 522 288C720 242 865 164 1200 232V360H0Z" fill="#FFFFFF" opacity=".025"/>
+
+  <g transform="translate(78 48)">
+    <rect width="264" height="264" rx="64" fill="#0B0D11" stroke="#FFFFFF" stroke-opacity=".08"/>
+    <circle cx="132" cy="132" r="94" fill="#E46F44" opacity=".07"/>
+
+    <g fill="none" stroke="#687080" stroke-width="3" stroke-linecap="round" opacity=".72">
+      <path d="M72 85L132 55L192 85L132 115Z"/>
+      <path d="M72 125L132 95L192 125L132 155Z"/>
+      <path d="M72 165L132 135L192 165L132 195Z"/>
+      <path d="M72 85V165M192 85V165M132 55V195" opacity=".35"/>
+    </g>
+
+    <g fill="url(#accent)" filter="url(#glow)">
+      <circle cx="72" cy="85" r="7"/>
+      <circle cx="132" cy="55" r="7"/>
+      <circle cx="192" cy="85" r="7"/>
+      <circle cx="72" cy="165" r="7"/>
+      <circle cx="132" cy="195" r="7"/>
+      <circle cx="192" cy="165" r="7"/>
+      <circle cx="132" cy="135" r="11"/>
+    </g>
+  </g>
+
+  <g transform="translate(398 82)">
+    <text x="0" y="82" fill="#F7F5F2" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="68" font-weight="700" letter-spacing="-2.5">Agentic Stack</text>
+    <text x="2" y="132" fill="#AEB4C0" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" font-weight="450">one local graph across every coding conversation</text>
+
+    <g transform="translate(2 168)" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="600">
+      <rect width="136" height="40" rx="20" fill="#FFFFFF" opacity=".07"/>
+      <circle cx="21" cy="20" r="5" fill="#E46F44"/>
+      <text x="35" y="26" fill="#D9DCE3">Claude Code</text>
+
+      <rect x="148" width="96" height="40" rx="20" fill="#FFFFFF" opacity=".07"/>
+      <circle cx="169" cy="20" r="5" fill="#E46F44"/>
+      <text x="183" y="26" fill="#D9DCE3">Codex</text>
+
+      <rect x="256" width="126" height="40" rx="20" fill="#FFFFFF" opacity=".07"/>
+      <circle cx="277" cy="20" r="5" fill="#E46F44"/>
+      <text x="291" y="26" fill="#D9DCE3">OpenCode</text>
+
+      <rect x="394" width="104" height="40" rx="20" fill="#FFFFFF" opacity=".07"/>
+      <circle cx="415" cy="20" r="5" fill="#E46F44"/>
+      <text x="429" y="26" fill="#D9DCE3">Cursor</text>
+    </g>
+  </g>
+
+  <text x="1122" y="328" text-anchor="end" fill="#737A88" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" letter-spacing=".4">by Avidlive</text>
+</svg>

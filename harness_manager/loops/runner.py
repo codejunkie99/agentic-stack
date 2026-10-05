@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -19,11 +20,34 @@ from .storage import (
     is_paused,
     load_checkpoint,
     save_checkpoint,
+    cancellation_requested,
+    request_cancel,
+    execution_lock,
 )
 from .worktrees import OwnedWorktree, WorktreeError, changed_paths, create_worktree
 
 _DECISION = re.compile(r"^(APPROVE|REJECT|ESCALATE)(?::\s*(.*))?$")
 _TERMINAL = {"completed", "cancelled", "exhausted", "audit_failed", "interrupted"}
+
+
+class _RunCancellation:
+    """Observe both the in-process owner and a CLI stop in another process."""
+    def __init__(self, root, run_id, event=None):
+        self.root, self.run_id = root, run_id
+        self.event = event or threading.Event()
+
+    def is_set(self):
+        return self.event.is_set() or cancellation_requested(self.root, self.run_id)
+
+    def wait(self, seconds):
+        return self.is_set() or self.event.wait(seconds) or self.is_set()
+
+
+def _cancelled(target_root, run):
+    run['status'] = 'cancelled'
+    run['reason'] = 'cancelled_by_user'
+    _transition(target_root, run, 'cancelled', reason=run['reason'])
+    return run
 
 
 def new_run_id(now: datetime | None = None) -> str:
@@ -152,6 +176,7 @@ def _run_child(
     target: Path,
     run: dict,
     max_output_chars: int,
+    cancel_event=None,
 ) -> ProcessResult:
     values = {
         "prompt": prompt,
@@ -160,7 +185,7 @@ def _run_child(
         "run_id": run["run_id"],
         "attempt": str(len(run.get("attempts", [])) + 1),
     }
-    return run_profile(profile, values, target, max_output_chars)
+    return run_profile(profile, values, target, max_output_chars, cancel_event)
 
 
 def _update_counters(run: dict, result: ProcessResult) -> None:
@@ -177,11 +202,14 @@ def _feedback(attempt: dict) -> str:
     return str(text)[-2000:]
 
 
-def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved: bool) -> dict:
+def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved: bool, cancel_event=None) -> dict:
     loop = contracts["loop"]
     profiles = contracts["profiles"]["profiles"]
     if run.get("status") in _TERMINAL:
         return run
+    cancellation = _RunCancellation(target_root, run['run_id'], cancel_event)
+    if cancellation.is_set():
+        return _cancelled(target_root, run)
     if _approval_required(contracts) and not approved and not run.get("approval_granted"):
         run["status"] = "awaiting_approval"
         _transition(target_root, run, "awaiting_approval", reason="approval_required")
@@ -207,6 +235,8 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
     checker = profiles.get(loop.get("checker")) if loop.get("checker") else None
     feedback = ""
     while True:
+        if cancellation.is_set():
+            return _cancelled(target_root, run)
         _counters(run)["attempts"] = len(run.get("attempts", []))
         decision = _breaker_decision(target_root, run, contracts)
         if decision.stop:
@@ -222,8 +252,11 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
         if feedback:
             prompt += f"\nVERIFIER FEEDBACK:\n{feedback}"
         attempt = {"attempt": attempt_number, "prompt_summary": prompt}
+        run['status'], run['phase'] = 'running', 'maker'
+        if not _transition(target_root, run, 'phase_started', attempt=attempt_number, status='running'):
+            return run
         try:
-            maker_result = _run_child(maker, prompt, execution_root, run, loop["limits"]["max_output_chars"])
+            maker_result = _run_child(maker, prompt, execution_root, run, loop["limits"]["max_output_chars"], cancellation)
         except KeyboardInterrupt:
             run["status"] = "interrupted"
             run["reason"] = "keyboard_interrupt"
@@ -231,6 +264,9 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
             return run
         attempt["maker"] = _process_dict(maker_result)
         _update_counters(run, maker_result)
+        if cancellation.is_set() or maker_result.status == 'cancelled':
+            run['attempts'].append(attempt)
+            return _cancelled(target_root, run)
         if not _transition(target_root, run, "maker_finished", attempt=attempt_number, status=maker_result.status):
             return run
         if maker_result.status == "failed_to_start":
@@ -258,6 +294,9 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
             return run
 
         verification = loop.get("verification")
+        run['phase'] = 'verifier'
+        if not _transition(target_root, run, 'phase_started', attempt=attempt_number, status='running'):
+            return run
         try:
             if verification is None:
                 verifier_result = ProcessResult("completed", 0, "", "", 0, 0.0)
@@ -268,6 +307,7 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
                     execution_root,
                     run,
                     loop["limits"]["max_output_chars"],
+                    cancellation,
                 )
         except KeyboardInterrupt:
             run["status"] = "interrupted"
@@ -276,6 +316,9 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
             return run
         attempt["verifier"] = _process_dict(verifier_result)
         _update_counters(run, verifier_result)
+        if cancellation.is_set() or verifier_result.status == 'cancelled':
+            run['attempts'].append(attempt)
+            return _cancelled(target_root, run)
         if verifier_result.status == "failed_to_start":
             attempt["outcome"] = "failed_to_start"
             run["attempts"].append(attempt)
@@ -289,6 +332,9 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
             continue
 
         if checker is not None:
+            run['phase'] = 'checker'
+            if not _transition(target_root, run, 'phase_started', attempt=attempt_number, status='running'):
+                return run
             try:
                 checker_result = _run_child(
                     checker,
@@ -296,6 +342,7 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
                     execution_root,
                     run,
                     loop["limits"]["max_output_chars"],
+                    cancellation,
                 )
             except KeyboardInterrupt:
                 run["status"] = "interrupted"
@@ -303,6 +350,10 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
                 _transition(target_root, run, "interrupted", reason=run["reason"])
                 return run
             _update_counters(run, checker_result)
+            if cancellation.is_set() or checker_result.status == 'cancelled':
+                attempt['checker'] = _process_dict(checker_result)
+                run['attempts'].append(attempt)
+                return _cancelled(target_root, run)
             if checker_result.status == "failed_to_start":
                 attempt["checker"] = {
                     **_process_dict(checker_result),
@@ -348,7 +399,8 @@ def _execute(target_root: Path, run: dict, contracts: dict[str, dict], approved:
         return run
 
 
-def start_run(target_root: Path, loop_name: str, task: str, *, approved: bool = False) -> dict:
+def prepare_run(target_root: Path, loop_name: str, task: str) -> dict:
+    """Persist a run identity before starting work, for asynchronous clients."""
     if not isinstance(task, str) or not task.strip():
         raise ContractError("task must be a non-empty string")
     contracts = load_contracts(Path(target_root), loop_name)
@@ -364,12 +416,21 @@ def start_run(target_root: Path, loop_name: str, task: str, *, approved: bool = 
         "attempts": [],
         "counters": {"attempts": 0, "runtime_seconds": 0.0, "output_chars": 0, "estimated_tokens": 0},
     }
-    if not _transition(Path(target_root), run, "created", status="created"):
-        return run
-    return _execute(Path(target_root), run, contracts, approved)
+    _transition(Path(target_root), run, "created", status="created")
+    return run
 
 
-def resume_run(target_root: Path, run_id: str, *, approved: bool = False) -> dict:
+def start_run(target_root: Path, loop_name: str, task: str, *, approved: bool = False) -> dict:
+    run = prepare_run(target_root, loop_name, task)
+    return resume_run(target_root, run['run_id'], approved=approved)
+
+
+def resume_run(target_root: Path, run_id: str, *, approved: bool = False, cancel_event=None) -> dict:
+    with execution_lock(Path(target_root), run_id):
+        return _resume_locked(target_root, run_id, approved=approved, cancel_event=cancel_event)
+
+
+def _resume_locked(target_root: Path, run_id: str, *, approved: bool, cancel_event=None) -> dict:
     target_root = Path(target_root)
     run = load_checkpoint(target_root, run_id)
     if run.get("status") in _TERMINAL:
@@ -378,7 +439,7 @@ def resume_run(target_root: Path, run_id: str, *, approved: bool = False) -> dic
     if _execution_digest(contracts) != run.get("execution_digest"):
         return _pause(target_root, run, "contract_mismatch")
     run["contract_digest"] = contract_digest(contracts)
-    return _execute(target_root, run, contracts, approved)
+    return _execute(target_root, run, contracts, approved, cancel_event)
 
 
 def cancel_run(target_root: Path, run_id: str) -> dict:
@@ -386,7 +447,8 @@ def cancel_run(target_root: Path, run_id: str) -> dict:
     run = load_checkpoint(target_root, run_id)
     if run.get("status") in _TERMINAL:
         return run
-    run["status"] = "cancelled"
+    request_cancel(target_root, run_id)
+    run["status"] = "cancelling" if run.get('status') in {'running', 'cancelling'} else "cancelled"
     run["reason"] = "cancelled_by_user"
-    _transition(target_root, run, "cancelled", reason=run["reason"])
+    _transition(target_root, run, run['status'], reason=run["reason"])
     return run

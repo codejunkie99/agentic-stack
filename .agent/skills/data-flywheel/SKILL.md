@@ -1,5 +1,6 @@
 ---
 name: data-flywheel
+description: "Export approved, redacted agent runs into local retrieval artifacts and evaluation cases."
 version: 2026-04-25
 triggers: ["data flywheel", "trace to train", "training traces", "context cards", "eval cases", "approved runs", "vertical intelligence"]
 tools: [bash, git]

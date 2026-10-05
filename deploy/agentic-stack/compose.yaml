@@ -1,0 +1,49 @@
+name: agentic-stack
+services:
+  stack:
+    build:
+      context: ../..
+      dockerfile: deploy/agentic-stack/Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      AGENTIC_CONTROL_TOKEN: ${AGENTIC_CONTROL_TOKEN:?Run python3 configure.py first}
+    volumes:
+      - stack_data:/data
+    expose:
+      - "8765"
+    stop_grace_period: 30s
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD", "python3", "/app/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:./seccomp.json
+      - apparmor:agentic-stack-bwrap
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      STACK_DOMAIN: ${STACK_DOMAIN:?Run python3 configure.py first}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      stack:
+        condition: service_healthy
+volumes:
+  stack_data:
+  caddy_data:
+  caddy_config:

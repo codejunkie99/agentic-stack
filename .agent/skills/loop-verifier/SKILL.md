@@ -1,5 +1,6 @@
 ---
 name: loop-verifier
+description: "Verify loop work against its contract and configured deterministic checks."
 version: 2026-07-18
 triggers: ["loop verify", "verify loop work"]
 tools: [bash]
