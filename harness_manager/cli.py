@@ -1,7 +1,8 @@
 """Argparse dispatcher. install.sh and install.ps1 invoke this.
 
 Verbs (subcommands): add, remove, doctor, status, manage, dashboard,
-mission-control (beta), brain, transfer, upgrade, sync-manifest.
+workspaces, desktop, serve, mission-control (beta), context, brain,
+loop, transfer, upgrade, sync-manifest.
 Anything else in first position → treated as an adapter name (existing
 `./install.sh <adapter>` UX preserved).
 """
@@ -30,10 +31,14 @@ VERBS = {
     "manage",
     "dashboard",
     "dash",
+    "workspaces",
+    "desktop",
+    "serve",
     "mission-control",
     "mission",
     "mc",
     "brain",
+    "context",
     "loop",
     "transfer",
     "upgrade",
@@ -309,6 +314,24 @@ def cmd_brain(args: list[str]) -> int:
     return brain_mod.run(args, target_root=Path.cwd(), stack_root=_stack_root())
 
 
+def cmd_context(args: list[str]) -> int:
+    action = args[0] if args else "install"
+    if action == "serve":
+        from .context_mcp import main as context_main
+        context_main()
+        return 0
+    from .workspaces import context_integration
+    if action == "install":
+        result = context_integration.install(Path.home(), Path(__file__).resolve().parent)
+    elif action == "remove":
+        result = context_integration.remove(Path.home())
+    else:
+        print("usage: agentic-stack context [install|remove|serve]", file=sys.stderr)
+        return 2
+    print(result["text"])
+    return 0
+
+
 def cmd_loop(args: list[str], *, yes: bool = False) -> int:
     from .loops import commands as loop_commands
 
@@ -431,6 +454,9 @@ def cmd_bare(target: Path, wizard_flags: list[str]) -> int:
     print("  ./install.sh add <name>  # install another adapter")
     print("  ./install.sh remove <name>  # remove an adapter (with confirm)")
     print("  ./install.sh dashboard   # interactive project dashboard")
+    print("  ./install.sh workspaces --build  # build and open the native macOS app")
+    print("  ./install.sh serve --help  # desktop backend options")
+    print("  ./install.sh context install  # connect cross-agent chat context")
     print("  ./install.sh mission-control --port 8787  # beta local web dashboard; Ctrl-C turns it off")
     print("  ./install.sh brain status  # optional external Brain CLI integration")
     print("  ./install.sh manage      # interactive TUI for adapter management")
@@ -582,6 +608,12 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_dashboard(target, plain=plain)
         if verb in ("mission-control", "mission", "mc"):
             return cmd_mission_control(rest[1:])
+        if verb == "serve":
+            from .workspaces.server import main as server_main
+            return server_main(rest[1:])
+        if verb in {"workspaces", "desktop"}:
+            from .workspaces.cli import main as workspaces_main
+            return workspaces_main(rest[1:])
         if verb == "brain":
             brain_args = list(rest[1:])
             brain_command = brain_args[0] if brain_args else "status"
@@ -591,6 +623,8 @@ def main(argv: list[str] | None = None) -> int:
                 if "--reconfigure" in wizard_flags and "--reconfigure" not in brain_args:
                     brain_args.append("--reconfigure")
             return cmd_brain(brain_args)
+        if verb == "context":
+            return cmd_context(rest[1:])
         if verb == "loop":
             return cmd_loop(rest[1:], yes=yes)
         if verb == "transfer":

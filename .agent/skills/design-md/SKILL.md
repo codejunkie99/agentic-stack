@@ -1,5 +1,6 @@
 ---
 name: design-md
+description: "Apply the project DESIGN.md visual design contract and its existing tokens."
 version: 2026-04-26
 triggers: ["DESIGN.md", "design.md", "Google Stitch", "Stitch", "design tokens", "design system", "visual design"]
 tools: [bash, memory_reflect]

@@ -1,0 +1,83 @@
+{
+  "dataset": "synthetic-only-v1",
+  "networkEnabled": false,
+  "reports": {
+    "local": {
+      "cases": [
+        {
+          "name": "cache decision",
+          "exactEvidenceHits": 1,
+          "expectedEvidence": 1,
+          "recall": 1.0,
+          "selectedReferences": 1,
+          "selectionProvider": "local",
+          "status": "ready",
+          "elapsedMs": 5,
+          "coverage": null
+        },
+        {
+          "name": "accessibility decision",
+          "exactEvidenceHits": 1,
+          "expectedEvidence": 1,
+          "recall": 1.0,
+          "selectedReferences": 1,
+          "selectionProvider": "local",
+          "status": "ready",
+          "elapsedMs": 4,
+          "coverage": null
+        },
+        {
+          "name": "release gate",
+          "exactEvidenceHits": 1,
+          "expectedEvidence": 1,
+          "recall": 1.0,
+          "selectedReferences": 1,
+          "selectionProvider": "local",
+          "status": "ready",
+          "elapsedMs": 3,
+          "coverage": null
+        },
+        {
+          "name": "combined evidence",
+          "exactEvidenceHits": 2,
+          "expectedEvidence": 2,
+          "recall": 1.0,
+          "selectedReferences": 2,
+          "selectionProvider": "local",
+          "status": "ready",
+          "elapsedMs": 5,
+          "coverage": null
+        },
+        {
+          "name": "semantic paraphrase",
+          "exactEvidenceHits": 0,
+          "expectedEvidence": 1,
+          "recall": 0.0,
+          "selectedReferences": 0,
+          "selectionProvider": "local",
+          "status": "empty",
+          "elapsedMs": 4,
+          "coverage": null
+        },
+        {
+          "name": "late exact evidence",
+          "exactEvidenceHits": 0,
+          "expectedEvidence": 1,
+          "recall": 0.0,
+          "selectedReferences": 1,
+          "selectionProvider": "local",
+          "status": "ready",
+          "elapsedMs": 3,
+          "coverage": null
+        }
+      ],
+      "exactEvidenceRecall": 0.7142857142857143,
+      "evidenceIntegrityErrors": [],
+      "invalidPinsExcluded": true,
+      "jevSelectedCases": 0
+    }
+  },
+  "retractionInvalidatesWarmCache": true,
+  "limits": "Six synthetic queries; no production corpus, no model-quality claim for offline results. Pin and warm-cache checks use local selection. Live fallbacks remain labeled local.",
+  "evaluationScope": "Six development queries. Not held out. Evidence recall, not answer accuracy. Single sample per query; background work uncontrolled."
+}

@@ -1,0 +1,22 @@
+#include <tunables/global>
+
+profile agentic-stack-bwrap flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+  network,
+  capability,
+  file,
+  mount,
+  umount,
+  pivot_root,
+  userns,
+  signal (receive) peer=unconfined,
+  signal (send,receive) peer=agentic-stack-bwrap,
+  ptrace (trace,read,tracedby,readby) peer=agentic-stack-bwrap,
+  deny /sys/** wklx,
+  deny /proc/sys/** wklx,
+  deny /proc/sysrq-trigger rwklx,
+  deny /proc/kcore rwklx,
+  deny /proc/kmem rwklx,
+  deny /dev/mem rwklx,
+  deny /dev/kmem rwklx,
+}

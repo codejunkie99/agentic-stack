@@ -1,5 +1,6 @@
 ---
 name: data-layer
+description: "Inspect cross-tool agent activity, usage, scheduled work, and local reports."
 version: 2026-04-26
 triggers: ["data layer", "dashboard", "show me the dashboard", "what did my agents do", "agent analytics", "agent status", "resource usage", "usage report", "cron monitoring", "daily report", "tokens", "terminal dashboard", "TUI"]
 tools: [bash, git]

@@ -1,0 +1,20 @@
+{
+  "claims": [
+    {"key": "cache", "body": "Cache keys include the workspace identifier and source revision.", "status": "accepted"},
+    {"key": "panels", "body": "Search overlays use native frosted panels and respect Reduce Transparency.", "status": "accepted"},
+    {"key": "release", "body": "Release builds must verify the application signature before distribution.", "status": "accepted"},
+    {"key": "late", "body": "Telemetry retention details follow the archived experiment log.", "padding": 100, "tail": "Telemetry samples expire after 14 days.", "status": "accepted"},
+    {"key": "old-panels", "body": "Search overlays use opaque panels without accessibility adaptation.", "status": "superseded", "replacement": "panels"},
+    {"key": "disputed", "body": "Cache keys should omit source revisions.", "status": "disputed"},
+    {"key": "unreviewed", "body": "Search overlays should blink once per second.", "status": "proposed"},
+    {"key": "foreign", "body": "Cache keys in the foreign project are intentionally global.", "status": "accepted", "scope": "foreign"}
+  ],
+  "queries": [
+    {"name": "cache decision", "query": "Cache keys", "expected": {"cache": "Cache keys include the workspace identifier and source revision."}},
+    {"name": "accessibility decision", "query": "Search overlays", "expected": {"panels": "Search overlays use native frosted panels and respect Reduce Transparency."}},
+    {"name": "release gate", "query": "Release builds", "expected": {"release": "Release builds must verify the application signature before distribution."}},
+    {"name": "combined evidence", "query": "Cache keys and search overlays", "expected": {"cache": "Cache keys include the workspace identifier and source revision.", "panels": "Search overlays use native frosted panels and respect Reduce Transparency."}},
+    {"name": "semantic paraphrase", "query": "Which dimensions prevent reused results crossing project boundaries?", "expected": {"cache": "Cache keys include the workspace identifier and source revision."}},
+    {"name": "late exact evidence", "query": "Telemetry retention", "expected": {"late": "Telemetry samples expire after 14 days."}}
+  ]
+}

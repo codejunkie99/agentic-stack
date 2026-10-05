@@ -1,5 +1,6 @@
 ---
 name: memory-manager
+description: "Review and maintain project memory while preserving evidence and separate memory layers."
 version: 2026-01-01
 triggers: ["reflect", "remember", "distill", "what did I learn", "update memory", "compress memory"]
 tools: [memory_reflect, bash, git]

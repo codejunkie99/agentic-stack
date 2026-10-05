@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import os
 import signal
 import subprocess
@@ -9,7 +10,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TextIO
+from typing import BinaryIO, Callable
 
 _OMISSION = "\n... <output omitted> ...\n"
 
@@ -66,19 +67,29 @@ def expand_command(command: list[str], values: dict[str, str]) -> list[str]:
     return [argument.format_map(values) for argument in command]
 
 
-def _read_stream(stream: TextIO, capture: _BoundedCapture) -> None:
+def _read_stream(stream: BinaryIO, capture: _BoundedCapture, name: str, on_output) -> None:
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
     try:
         while True:
-            chunk = stream.read(8192)
-            if not chunk:
+            # read1 returns available pipe bytes without waiting for 8 KB or EOF.
+            raw = stream.read1(8192)
+            chunk = decoder.decode(raw, final=not raw)
+            if chunk:
+                capture.add(chunk)
+                if on_output is not None:
+                    try:
+                        on_output(name, chunk)
+                    except Exception:
+                        # Optional progress reporting must not stop draining pipes.
+                        on_output = None
+            if not raw:
                 return
-            capture.add(chunk)
     finally:
         stream.close()
 
 
-def _stop_owned_process(process: subprocess.Popen[str]) -> None:
-    if process.poll() is not None:
+def _stop_owned_process(process: subprocess.Popen[bytes]) -> None:
+    if os.name != 'posix' and process.poll() is not None:
         return
     try:
         if os.name == "posix":
@@ -89,7 +100,6 @@ def _stop_owned_process(process: subprocess.Popen[str]) -> None:
         return
     try:
         process.wait(timeout=0.5)
-        return
     except subprocess.TimeoutExpired:
         pass
     try:
@@ -107,6 +117,9 @@ def run_profile(
     values: dict[str, str],
     cwd: Path,
     max_output_chars: int,
+    cancel_event: threading.Event | None = None,
+    *,
+    on_output: Callable[[str, str], None] | None = None,
 ) -> ProcessResult:
     """Run one profile with bounded retained output and full character counts."""
     if isinstance(max_output_chars, bool) or not isinstance(max_output_chars, int) or max_output_chars <= 0:
@@ -118,9 +131,6 @@ def run_profile(
         process = subprocess.Popen(
             argv,
             cwd=Path(cwd),
-            text=True,
-            encoding="utf-8",
-            errors="replace",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,
@@ -141,23 +151,44 @@ def run_profile(
     stdout = _BoundedCapture(max_output_chars)
     stderr = _BoundedCapture(max_output_chars)
     readers = (
-        threading.Thread(target=_read_stream, args=(process.stdout, stdout), daemon=True),
-        threading.Thread(target=_read_stream, args=(process.stderr, stderr), daemon=True),
+        threading.Thread(target=_read_stream, args=(process.stdout, stdout, "stdout", on_output), daemon=True),
+        threading.Thread(target=_read_stream, args=(process.stderr, stderr, "stderr", on_output), daemon=True),
     )
     for reader in readers:
         reader.start()
 
     timed_out = False
+    cancelled = False
     try:
-        process.wait(timeout=timeout)
+        if cancel_event is None:
+            process.wait(timeout=timeout)
+        else:
+            deadline = started + timeout
+            while process.poll() is None:
+                if cancel_event.wait(0.1):
+                    cancelled = True
+                    _stop_owned_process(process)
+                    break
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired(argv, timeout)
     except subprocess.TimeoutExpired:
         timed_out = True
         _stop_owned_process(process)
+    except BaseException:
+        _stop_owned_process(process)
+        raise
     for reader in readers:
-        reader.join()
+        reader.join(timeout=0.2)
+    if any(reader.is_alive() for reader in readers):
+        # A launcher may exit while a descendant still holds its pipe open.
+        _stop_owned_process(process)
+        for reader in readers:
+            reader.join(timeout=1)
 
     duration = time.monotonic() - started
-    if timed_out:
+    if cancelled:
+        status = "cancelled"
+    elif timed_out:
         status = "timed_out"
     elif process.returncode == 0:
         status = "completed"

@@ -1,0 +1,10 @@
+{$STACK_DOMAIN} {
+    request_body {
+        max_size 3MB
+    }
+    reverse_proxy stack:8765 {
+        transport http {
+            response_header_timeout 90s
+        }
+    }
+}

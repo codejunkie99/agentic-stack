@@ -1,5 +1,6 @@
 ---
 name: loop-constraints
+description: "Check loop contracts, permissions, and file-change limits before acting."
 version: 2026-07-18
 triggers: ["loop constraints", "loop safety"]
 tools: [bash]

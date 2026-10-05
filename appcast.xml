@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Agentic Stack Desktop Updates</title>
+    <link>https://github.com/codejunkie99/agentic-stack-desktop</link>
+    <description>Signed updates for Agentic Stack Desktop.</description>
+    <language>en</language>
+    <item>
+      <title>Agentic Stack Desktop Preview 0.19.1 · Licensing clarity</title>
+      <pubDate>Thu, 10 Sep 2026 07:15:11 +0000</pubDate>
+      <sparkle:releaseNotesLink>https://github.com/codejunkie99/agentic-stack-desktop/releases/tag/v0.19.1-desktop-preview.11</sparkle:releaseNotesLink>
+      <sparkle:version>11</sparkle:version>
+      <sparkle:shortVersionString>0.19.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/codejunkie99/agentic-stack-desktop/releases/download/v0.19.1-desktop-preview.11/Agentic.Stack-macOS.zip"
+        length="30471813"
+        type="application/octet-stream"
+        sparkle:edSignature="rzSa+deCgmrh8+cAXA5tizo77H46OWuGScT0Db0bDdmsQupUF9xmqnJH8gQ8CPNNkrGdL4Snxtto7MV86dD1Ag=="/>
+    </item>
+  </channel>
+</rss>

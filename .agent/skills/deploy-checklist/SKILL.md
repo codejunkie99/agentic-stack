@@ -1,5 +1,6 @@
 ---
 name: deploy-checklist
+description: "Check release readiness and request human approval before deploying."
 version: 2026-01-01
 triggers: ["deploy", "ship", "release", "go live"]
 tools: [bash]

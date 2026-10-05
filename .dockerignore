@@ -1,0 +1,8 @@
+.git
+**/__pycache__
+**/*.pyc
+.pytest_cache
+apps
+tests
+deploy/**/.env
+deploy/**/.env.*

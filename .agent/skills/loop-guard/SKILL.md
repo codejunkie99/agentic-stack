@@ -1,5 +1,6 @@
 ---
 name: loop-guard
+description: "Check loop budgets and checkpoints, stopping on cancellation or stagnation."
 version: 2026-07-18
 triggers: ["loop guard", "loop budget"]
 tools: [bash]

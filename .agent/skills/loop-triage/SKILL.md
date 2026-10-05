@@ -1,5 +1,6 @@
 ---
 name: loop-triage
+description: "Summarize a loop contract and checkpoint without modifying the project."
 version: 2026-07-18
 triggers: ["loop triage", "daily triage"]
 tools: [bash]
