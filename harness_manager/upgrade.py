@@ -83,6 +83,23 @@ def _plan(src_agent: Path, dst_agent: Path) -> list[tuple[Path, Path]]:
             rel = src.relative_to(src_agent)
             actions.append((src, dst_agent / rel))
     actions.extend(_new_loop_assets(src_agent, dst_agent))
+    actions.extend(_new_brain_assets(src_agent, dst_agent))
+    return actions
+
+
+def _new_brain_assets(src_agent: Path, dst_agent: Path) -> list[tuple[Path, Path]]:
+    """Plan add-only data assets: agent registry, evolver runner + eval cards."""
+    actions: list[tuple[Path, Path]] = []
+    for rel in ("protocols/agents.json", "evolve/README.md", "evolve/runner.json"):
+        src = src_agent / rel
+        if src.is_file() and not (dst_agent / rel).exists():
+            actions.append((src, dst_agent / rel))
+    evals = src_agent / "evolve" / "evals"
+    if evals.is_dir():
+        for src in sorted(evals.glob("*.json")):
+            rel = src.relative_to(src_agent)
+            if not (dst_agent / rel).exists():
+                actions.append((src, dst_agent / rel))
     return actions
 
 

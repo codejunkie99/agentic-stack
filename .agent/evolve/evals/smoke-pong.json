@@ -1,0 +1,6 @@
+{
+  "id": "smoke-pong",
+  "domain": "smoke",
+  "prompt": "Reply with exactly the word pong and nothing else.",
+  "check": {"type": "contains", "value": "pong"}
+}

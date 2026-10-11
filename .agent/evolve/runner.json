@@ -1,0 +1,5 @@
+{
+  "_doc": "How the evolver runs one eval task against a harness overlay. {agent_root} is the overlay's .agent, {prompt} the task prompt (also on stdin), {task_id} the card id. Default = the standalone conductor; swap for any agent CLI.",
+  "command": ["python3", "{agent_root}/harness/conductor.py", "{prompt}"],
+  "timeout_seconds": 600
+}

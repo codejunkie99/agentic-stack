@@ -39,6 +39,18 @@ telemetry, and reusable artifacts are in local files.
 - The flywheel prepares retrieval, evals, prompt shrinking, and optional future
   open-weight adapter work. It does not train models.
 
+### Orchestration, evolution, contracts (v0.20)
+- **Markdown tracks** — episodes (user), cases (agent), foresight (windowed);
+  weekly model-free reflection; source-backed knowledge pages; a stdio MCP
+  server with stable `mem_*` tools. See [memory-tracks.md](memory-tracks.md).
+- **DAG orchestration** — agent registry, typed node contracts, deterministic
+  completion adjudication, exception reports with three resolutions, file-backed
+  node records, playbooks, personas, campaigns. See [orchestration.md](orchestration.md).
+- **Gated evolution** — four strategy seats around the conductor; candidates
+  pass a paired screen before they touch the live harness. See [evolution.md](evolution.md).
+- **Contracts** — every tool speaks one JSON envelope with stable exit codes
+  and redaction. See [contracts.md](contracts.md).
+
 ## The feedback loops
 
 1. Skills log to episodic memory after every action.
