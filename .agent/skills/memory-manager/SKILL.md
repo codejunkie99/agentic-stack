@@ -40,6 +40,22 @@ This indexes all `.md` and `.jsonl` files under `.agent/memory/` and returns
 ranked results with context snippets. Falls back to grep if FTS5 is not
 available. The index auto-rebuilds when files change.
 
+## Markdown tracks, reflection, knowledge
+- Episodes (user track), agent cases, and foresight live as daily-log
+  Markdown under `memory/{episodes,cases,foresights}/` — append with
+  `tools/track.py add ...`, search with `track.py search`, never hand-delete
+  (use `deprecate`).
+- Weekly `memory/reflect_episodes.py` merges similar, time-adjacent episodes
+  into one consolidated entry and deprecates the originals (audit in
+  `reflection_report.jsonl`). Cron it; it is model-free.
+- Documents become searchable topic pages with `tools/knowledge.py add` —
+  source-backed, Markdown, editable; `knowledge.py search` before answering
+  from memory of a doc.
+- Durable user facts go through `mem_save_fact` (MCP) or
+  `memory/personal/PROFILE.md`; trajectories never do.
+- After a few plan runs: `tools/skill_forge.py cluster` then `propose` to
+  turn repeated successful cases into candidate skills for review.
+
 ## Anti-patterns
 - Do not auto-merge `personal/` into `semantic/` — user preferences are not general knowledge.
 - Do not delete entries to "clean up" memory. Archive them.

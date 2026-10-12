@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "_doc": "Agent registry: capability cards + execution adapters the host uses to match plan nodes to agents. `needs` on a node must be a subset of an agent's `capabilities`. Commands run shell-free; `{prompt}` is replaced with the rendered node prompt (also sent on stdin), `{prompt_file}` with a path to it. Rows marked verified=false are best-effort presets — edit the command to match your install.",
+  "agents": {
+    "claude-code": {
+      "transport": "cli",
+      "command": ["claude", "-p", "{prompt}", "--output-format", "text"],
+      "capabilities": ["code", "research", "design", "general", "shell"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 10,
+      "verified": true
+    },
+    "codex": {
+      "transport": "cli",
+      "command": ["codex", "exec", "{prompt}"],
+      "capabilities": ["code", "research", "general", "shell"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 20,
+      "verified": true
+    },
+    "opencode": {
+      "transport": "cli",
+      "command": ["opencode", "run", "{prompt}"],
+      "capabilities": ["code", "general", "shell"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 30,
+      "verified": true
+    },
+    "gemini": {
+      "transport": "cli",
+      "command": ["gemini", "-p", "{prompt}"],
+      "capabilities": ["code", "research", "general"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 40,
+      "verified": false
+    },
+    "copilot-cli": {
+      "transport": "cli",
+      "command": ["copilot", "-p", "{prompt}"],
+      "capabilities": ["code", "general"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 50,
+      "verified": false
+    },
+    "pi": {
+      "transport": "cli",
+      "command": ["pi", "-p", "{prompt}"],
+      "capabilities": ["code", "general"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 60,
+      "verified": false
+    },
+    "hermes": {
+      "transport": "cli",
+      "command": ["hermes", "chat", "-q", "{prompt}"],
+      "capabilities": ["research", "general"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": false,
+      "stateful": false,
+      "priority": 70,
+      "verified": false
+    },
+    "openclaw": {
+      "transport": "cli",
+      "command": ["openclaw", "agent", "--message", "{prompt}"],
+      "capabilities": ["research", "general"],
+      "timeout_seconds": 1800,
+      "mutates_workspace": false,
+      "stateful": false,
+      "priority": 80,
+      "verified": false
+    },
+    "shell": {
+      "transport": "shell",
+      "command": ["sh", "-c", "{prompt}"],
+      "capabilities": ["shell"],
+      "timeout_seconds": 600,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 90,
+      "verified": true,
+      "_doc": "Deterministic node: the task text IS the shell command. Use for verification, builds, data pulls."
+    },
+    "custom": {
+      "transport": "cli",
+      "command": ["custom-agent", "run", "{prompt}"],
+      "capabilities": ["general"],
+      "timeout_seconds": 1200,
+      "mutates_workspace": true,
+      "stateful": false,
+      "priority": 100,
+      "verified": false
+    }
+  }
+}

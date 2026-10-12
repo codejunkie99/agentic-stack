@@ -49,3 +49,14 @@ venv/
 .agent/skills/tldraw/INDEX.md
 .agent/skills/tldraw/snapshots/
 .agent/skills/tldraw/snapshots.jsonl
+
+# runtime state for plans, sessions, evolver screening (regenerated)
+.agent/runtime/sessions/
+.agent/runtime/plans/
+.agent/evolve/backups/
+.agent/evolve/rounds/
+.agent/evolve/state.json
+.agent/memory/.skill_clusters.json
+.agent/memory/**/*.lock
+.agent/memory/**/*.tmp
+.agent/proactive/

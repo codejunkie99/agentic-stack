@@ -7,6 +7,62 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-11
+
+### Added
+- Mission Control: new **Evolution** tab (evolver state, candidates, gene-bank cells); **Runs** now lists DAG plan runs and proactive campaigns; **Brain** shows episode/foresight/case track counts.
+- **DAG orchestration** (`.agent/harness/dag.py`, `.agent/tools/plan.py`):
+  plans as dependency graphs with typed `produces`/`requires` contracts, an
+  agent registry (`.agent/protocols/agents.json`) with capability cards and
+  shell-free execution adapters, local-complementarity validation, bounded
+  dispatch, deterministic completion adjudication (exit status, timeout,
+  empty or truncated output, `NEED_INPUT:` / `MISSING_CREDENTIAL:` markers,
+  per-node `verify`), exception reports with continue / abandon / replan,
+  decision deadlines, file-backed node records, a cross-run node registry
+  with `ref:` reuse, run reports with untrusted-output fences, playbooks.
+- **Personas** (`.agent/tools/persona.py`): lead role + specialist roster
+  with tools and permission checks; `plan.py --persona` restricts executors.
+- **Campaigns** (`.agent/tools/proactive.py`): persistent target /
+  measurement / allowed actions / budget records, wake-ups, a model-free
+  `tick` monitor with early wake on `done_regex` / `diverge_regex`,
+  measurement-cited decisions, and a report gate (baseline required, no
+  claims the recorded state contradicts).
+- **Strategy seats** (`.agent/harness/seats.py`, `seats.json`): the
+  conductor now composes memory / planning / capability / action seats.
+- **Evolver** (`.agent/tools/evolve.py`, `.agent/evolve/`): diagnosis from
+  episodic failures, candidate scaffolds, paired screening with validity and
+  activation gates (λ = 1.96), rounds with stagnation / max-round stops, a
+  gene bank per (where, pathology) cell with lineage, gated install with
+  backups, eval task cards and a pluggable runner.
+- **Markdown memory tracks** (`.agent/memory/tracks.py`, `.agent/tools/track.py`):
+  episodes, agent cases, foresight with validity windows; Markdown
+  frontmatter, entry markers, daily ids, scoping keys, atomic locked writes,
+  deprecation instead of deletion.
+- **Reflection** (`.agent/memory/reflect_episodes.py`): cosine scene
+  formation with running-mean centroids, consolidation of clusters into one
+  episode, deprecation of members, audit log, stable cluster ids.
+- **Knowledge** (`.agent/tools/knowledge.py`): documents → categorized,
+  source-backed topic pages with taxonomy, search, patch, remove.
+- **Memory MCP server** (`.agent/tools/memory_mcp.py`): stdio JSON-RPC with
+  stable `mem_context`, `mem_search`, `mem_save_turn`, `mem_save_fact` tools
+  and `mem://profile`, `mem://search` resources.
+- **Claude Code session hooks** (`.agent/harness/hooks/claude_code_session.py`,
+  adapter settings): SessionStart context, UserPromptSubmit recall, Stop turn
+  capture, SessionEnd summaries.
+- **Skill forge** (`.agent/tools/skill_forge.py`): weighted-RRF retrieval
+  across local / memory-derived / hub sources, quality facets with issue
+  flags and admission rules, composite scoring with scripts/references
+  bonuses, explicit validated update ops with lineage, task-intent
+  clustering of cases and candidate-skill proposals.
+- **CLI contract** (`.agent/tools/_cli.py`, `docs/contracts.md`): JSON
+  envelopes, error taxonomy, exit codes, credential redaction.
+- **Sync** (`.agent/tools/sync.py`): git-backed cross-device brain sync.
+- Skills `orchestrator` and `evolver`; `memory-manager` extended; docs
+  `orchestration.md`, `evolution.md`, `memory-tracks.md`, `contracts.md`,
+  `agent-install/SKILL.md`; `upgrade` ships the agent registry and evolver
+  assets add-only.
+
+
 ### Fixed
 - **Claude Code hook leaked home paths and file content** (#66, #67). Episodic
   entries now store project- or `~`-relative paths (`<external>` otherwise),

@@ -124,6 +124,7 @@ class MissionControlTest(unittest.TestCase):
             "/api/protocols/permissions",
             "/api/handoff",
             "/api/data-flywheel",
+            "/api/evolution",
             "/api/ops/events",
             "/api/settings",
             "/api/command-recipes",
@@ -507,3 +508,61 @@ class MissionControlTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MissionControlOrchestrationTest(unittest.TestCase):
+    def test_evolution_runs_and_tracks_surface_in_mission_control(self):
+        from harness_manager import mission_control
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            make_project(project)
+            agent = project / ".agent"
+            run_dir = agent / "runtime" / "plans" / "run-1"
+            run_dir.mkdir(parents=True)
+            (run_dir / "run.json").write_text(json.dumps({
+                "run_id": "run-1", "name": "demo", "status": "suspended",
+                "nodes": {"a": {"status": "completed"}, "b": {"status": "suspended"}},
+            }), encoding="utf-8")
+            (agent / "proactive").mkdir()
+            (agent / "proactive" / "campaigns.jsonl").write_text(
+                json.dumps({"type": "campaign", "campaign_id": "c1", "target": "latency < 100"}) + "\n"
+                + json.dumps({"type": "wake", "campaign_id": "c1", "id": "w1"}) + "\n",
+                encoding="utf-8",
+            )
+            evolve = agent / "evolve"
+            (evolve / "candidates" / "cand1").mkdir(parents=True)
+            (evolve / "candidates" / "cand1" / "descriptor.json").write_text(
+                json.dumps({"id": "cand1", "where": "prompt", "pathology": "loops", "symptom": "retries"}),
+                encoding="utf-8",
+            )
+            (evolve / "genebank.jsonl").write_text(
+                json.dumps({"where": "prompt", "pathology": "loops", "harness_id": "cand1", "utility": 0.8, "round_id": "r1"}) + "\n",
+                encoding="utf-8",
+            )
+            (evolve / "state.json").write_text(json.dumps({"round": 2, "stagnation": 0}), encoding="utf-8")
+            (agent / "memory" / "episodes").mkdir()
+            (agent / "memory" / "episodes" / "episode-2026-10-11.md").write_text(
+                "---\nid: episode-2026-10-11\n---\n\n<!-- entry:ep_20261011_00000001 -->\nhi\n<!-- /entry:ep_20261011_00000001 -->\n",
+                encoding="utf-8",
+            )
+
+            payloads = mission_control.build_payloads(project, ROOT)
+            html = mission_control.render_page(project, ROOT)
+
+        runs = {item["id"]: item for item in payloads["/api/runs"]["objects"]}
+        self.assertEqual(runs["plan-run-1"]["status"], "warn")
+        self.assertEqual(runs["plan-run-1"]["payload"]["node_counts"], {"completed": 1, "suspended": 1})
+        self.assertEqual(runs["campaign-c1"]["payload"]["wakes"], 1)
+
+        evolution = payloads["/api/evolution"]
+        self.assertEqual(evolution["stats"]["confirmed"], 1)
+        self.assertEqual(evolution["stats"]["cells"], 1)
+        ids = {item["id"] for item in evolution["objects"]}
+        self.assertIn("candidate-cand1", ids)
+        self.assertIn("cell-prompt|loops", ids)
+
+        track = next(item for item in payloads["/api/brain"]["objects"] if item["id"] == "track-episodes")
+        self.assertEqual(track["payload"]["entries"], 1)
+        self.assertEqual(track["payload"]["latest"], "ep_20261011_00000001")
+        self.assertIn('data-panel="Evolution"', html)

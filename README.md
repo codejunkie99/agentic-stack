@@ -25,6 +25,53 @@ metrics without training a model or sending telemetry.
   <img src="docs/diagram.svg" alt="agentic-stack architecture" width="880"/>
 </p>
 
+### New in v0.20.0 — orchestration, gated evolution, Markdown memory tracks
+
+The brain now covers orchestration, self-evolution, and portable memory
+in the same file-backed, stdlib-only, host-agent-reviewed style:
+
+- **DAG orchestration** — `plan.py` validates a goal as a dependency graph,
+  matches nodes to agents from `protocols/agents.json` (Claude Code, Codex,
+  OpenCode, Gemini, Copilot, Pi, Hermes, OpenClaw, shell, custom), dispatches
+  with bounded subprocesses, judges completion by evidence (exit status,
+  truncation, `NEED_INPUT:` markers, per-node `verify`), writes exception
+  reports with three resolutions (continue / abandon / replan), keeps every
+  prompt, output, transcript and verdict on disk, and lets later runs consume
+  earlier nodes via `ref:`. Playbooks save a run as a template; personas
+  assemble a lead role plus specialist roster; campaigns run unattended with
+  a model-free monitor and a report gate. → [docs/orchestration.md](docs/orchestration.md)
+- **Gated evolution** — four strategy seats (memory / planning / capability /
+  action) around the conductor, and `evolve.py`: diagnose failures from
+  episodic memory, scaffold a candidate, paired screen on a fixed task sample
+  (validity + activation gates, t ≥ 1.96), gene bank per (where, pathology)
+  cell, install with backup. Nothing unscreened touches the live harness.
+  → [docs/evolution.md](docs/evolution.md)
+- **Markdown memory tracks** — episodes (user), agent cases, foresight with a
+  validity window, weekly model-free reflection that consolidates and
+  deprecates (never deletes), source-backed knowledge pages, a stdio MCP
+  server (`mem_context`, `mem_search`, `mem_save_turn`, `mem_save_fact`,
+  `mem://profile`, `mem://search`) for any host, and Claude Code
+  SessionStart / UserPromptSubmit / Stop / SessionEnd hooks.
+  → [docs/memory-tracks.md](docs/memory-tracks.md)
+- **Skill forge** — task-aware retrieval fused across local, memory-derived
+  and hub catalogs; quality facets with issue flags and admission rules;
+  explicit, validated update operations with lineage; task-intent clustering
+  of agent cases into candidate skills.
+- **One CLI contract** — every new tool emits `{"ok", "data", "meta"}` /
+  `{"ok": false, "error": {...}}` when piped, uses stable exit codes, and
+  redacts credentials on the way out. `sync.py` moves the brain between
+  devices over git. → [docs/contracts.md](docs/contracts.md)
+- An agent can install the stack by reading
+  [docs/agent-install/SKILL.md](docs/agent-install/SKILL.md).
+
+```bash
+python3 .agent/tools/plan.py validate --file plan.json && python3 .agent/tools/plan.py new --file plan.json
+python3 .agent/tools/plan.py run <run_id> --yes && python3 .agent/tools/plan.py report <run_id>
+python3 .agent/tools/evolve.py diagnose && python3 .agent/tools/evolve.py screen <cid> --n 4
+python3 .agent/tools/track.py search episode "supabase migration"
+claude mcp add agentic-memory -- python3 "$PWD/.agent/tools/memory_mcp.py"
+```
+
 ### Desktop memory evaluation preview
 
 The main macOS app now includes project memory, source review, Jev context selection,
@@ -341,7 +388,10 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 .agent/                         # the portable brain (same across harnesses)
 ├── AGENTS.md                   # the map
 ├── harness/                    # conductor + hooks (standalone path)
+│   ├── dag.py                  # orchestration library (v0.20)
+│   ├── seats.py                # memory / planning / capability / action seats (v0.20)
 │   └── hooks/
+│       ├── claude_code_session.py    # SessionStart / UserPromptSubmit / Stop / SessionEnd (v0.20)
 │       ├── claude_code_post_tool.py  # rich PostToolUse logging (v0.8+)
 │       ├── copilot_cli_post_tool.py  # Copilot CLI postToolUse logging
 │       ├── pi_post_tool.py     # Pi tool_result logging
@@ -355,10 +405,16 @@ The index is stored at `.agent/memory/.index/` and gitignored.
 │   ├── validate.py             # heuristic prefilter (length + exact duplicate)
 │   ├── review_state.py         # candidate lifecycle + decision log
 │   ├── render_lessons.py       # lessons.jsonl → LESSONS.md
-│   └── memory_search.py        # [BETA] FTS5 search (opt-in)
+│   ├── memory_search.py        # [BETA] FTS5 search (opt-in)
+│   ├── tracks.py               # Markdown daily-log tracks: episodes / cases / foresight (v0.20)
+│   ├── reflect_episodes.py     # weekly model-free consolidation (v0.20)
+│   └── knowledge/              # source-backed topic pages (v0.20)
 ├── loops/                      # bounded loop contracts (budget, constraints, loops)
-├── skills/                     # _index.md + _manifest.jsonl + SKILL.md files
+├── evolve/                     # eval task cards, runner, candidates, gene bank (v0.20)
+├── playbooks/  personas/       # saved plans and assembled personas (v0.20)
+├── skills/                     # _index.md + _manifest.jsonl + SKILL.md files (+ orchestrator, evolver)
 ├── protocols/                  # permissions + tool schemas + delegation
+│   ├── agents.json             # agent registry: capability cards + execution adapters (v0.20)
 │   └── hook_patterns.json      # user-owned high/medium-stakes regex (v0.8+)
 └── tools/                      # host-agent CLI + memory_reflect + skill_loader
     ├── learn.py                # one-shot lesson teaching (stage + graduate)

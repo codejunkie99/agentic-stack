@@ -243,6 +243,7 @@ def _domain_panels(payloads: dict[str, dict[str, Any]]) -> str:
         ("/api/protocols", "Protocols"),
         ("/api/handoff", "Handoff"),
         ("/api/data-flywheel", "Data Flywheel"),
+        ("/api/evolution", "Evolution"),
         ("/api/ops/events", "Ops Console"),
         ("/api/settings", "Settings"),
     ]

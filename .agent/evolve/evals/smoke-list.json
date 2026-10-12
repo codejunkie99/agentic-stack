@@ -1,0 +1,6 @@
+{
+  "id": "smoke-list",
+  "domain": "smoke",
+  "prompt": "List three prime numbers below ten, comma separated.",
+  "check": {"type": "regex", "value": "2.*3.*5|3.*5.*7|2.*5.*7|2.*3.*7"}
+}

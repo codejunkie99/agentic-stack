@@ -572,6 +572,7 @@ async function refreshData() {
     '/api/protocols',
     '/api/protocols/permissions',
     '/api/data-flywheel',
+    '/api/evolution',
     '/api/ops/events',
     '/api/settings'
   ];
