@@ -325,6 +325,7 @@ struct StackDesktopRoot: View {
         case .handover: HandoverView(model: model)
         case .runs: RunsView(model: model).id(model.terminalHost + (model.selectedID ?? ""))
         case .loops: LoopManagementView(model: model).id(model.terminalHost + (model.selectedID ?? ""))
+        case .orchestration: OrchestrationView(model: model).id(model.terminalHost + (model.selectedID ?? ""))
         case .memory: JevMemoryPage(model: model).id(model.terminalHost + (model.selectedID ?? ""))
         case .memoryBrowse: KnowledgeGraphView(model: model).id(model.terminalHost + (model.selectedID ?? ""))
         case .personal: PersonalMemoryView(model: model).id(model.terminalHost + (model.selectedID ?? ""))

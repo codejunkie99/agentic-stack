@@ -997,6 +997,9 @@ class WorkspaceService:
             return self.stack.adapter(p)
         if method == "stack.command":
             return self.stack.command(p)
+        if method == 'orchestration.snapshot':
+            from .orchestration import snapshot as orchestration_snapshot
+            return orchestration_snapshot(self.stack.root(p.get('workspaceId')))
         if method == 'loops.snapshot':
             return self.loops.snapshot(p.get('workspaceId'))
         if method == 'loops.configure':

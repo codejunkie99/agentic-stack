@@ -1,5 +1,6 @@
 ---
 name: evolver
+description: "Diagnose recurring failures, scaffold harness candidates, screen them with paired gates, and install only winners."
 version: 2026-10-11
 triggers: ["evolve", "improve the harness", "why does this keep failing", "self-improve", "diagnose failures", "gene bank", "screen candidate"]
 tools: [bash, evolve]

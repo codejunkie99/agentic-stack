@@ -311,7 +311,7 @@ enum DesktopSection: String, CaseIterable, Identifiable {
     case insights = "Insights"
     case integrations = "Integrations", settings = "Settings"
     case overview = "Dashboard", agents = "Agents", skills = "Skills", memory = "Memory", graph = "Knowledge graph"
-    case protocols = "Protocols", loops = "Loops", maintenance = "Maintenance"
+    case protocols = "Protocols", loops = "Loops", orchestration = "Orchestration", maintenance = "Maintenance"
     case runs = "Tasks", terminal = "Terminal", hosting = "Hosting", references = "References", handover = "Handover"
     var id: String { rawValue }
     var symbol: String {
@@ -329,6 +329,7 @@ enum DesktopSection: String, CaseIterable, Identifiable {
         case .graph: "point.3.connected.trianglepath.dotted"
         case .protocols: "checkmark.shield"
         case .loops: "arrow.trianglehead.2.clockwise.rotate.90"
+        case .orchestration: "arrow.triangle.branch"
         case .maintenance: "wrench.and.screwdriver"
         case .runs: "play.rectangle"
         case .terminal: "apple.terminal"
@@ -350,6 +351,21 @@ struct LoopRun: Decodable, Identifiable, Sendable {
     let id: String; let name: String; let task: String; let status: String; let phase: String
     let attempts: Int; let detail: String; let error: String; let worktree: String; let canResume: Bool
     var isActive: Bool { ["queued", "running", "cancelling"].contains(status) }
+}
+struct OrchestrationItem: Decodable, Identifiable, Sendable {
+    let id: String; let kind: String; let label: String; let status: String
+    let summary: String; let command: String; let path: String
+    var statusTitle: String {
+        switch status {
+        case "pass": "OK"
+        case "fail": "Failed"
+        default: "Attention"
+        }
+    }
+}
+struct OrchestrationSnapshot: Decodable, Sendable {
+    let plans: [OrchestrationItem]; let campaigns: [OrchestrationItem]; let evolution: [OrchestrationItem]
+    let tracks: [OrchestrationItem]; let evolutionStats: [String: Int]; let projectAccessError: String
 }
 struct LoopSnapshot: Decodable, Sendable {
     let contracts: [LoopContract]; let runs: [LoopRun]; let profileDigest: String; let projectAccessError: String?

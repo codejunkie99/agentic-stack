@@ -1,5 +1,6 @@
 ---
 name: orchestrator
+description: "Plan a goal as a DAG, dispatch nodes to registered agents, adjudicate completion, and resolve exceptions."
 version: 2026-10-11
 triggers: ["plan this", "orchestrate", "break this down", "dag", "delegate to", "multi-agent", "playbook", "persona", "campaign", "wake me", "overnight"]
 tools: [bash, plan, persona, proactive]

@@ -4,7 +4,7 @@ import SwiftUI
 extension DesktopSection {
     var workspace: DesktopSection {
         switch self {
-        case .chat, .overview, .insights, .runs, .terminal, .loops: .graph
+        case .chat, .overview, .insights, .runs, .terminal, .loops, .orchestration: .graph
         case .memoryBrowse, .personal, .references, .handover: .memory
         case .agents: .integrations
         case .hosting, .protocols, .maintenance: .settings
@@ -39,7 +39,7 @@ extension DesktopSection {
     }
     var siblings: [DesktopSection] {
         switch workspace {
-        case .graph: [.graph, .chat, .overview, .insights, .runs, .terminal, .loops]
+        case .graph: [.graph, .chat, .overview, .insights, .runs, .terminal, .loops, .orchestration]
         case .memory: [.memory, .memoryBrowse, .personal, .references, .handover]
         case .integrations: [.integrations, .agents]
         case .settings: [.settings, .protocols, .maintenance, .hosting]
@@ -53,6 +53,7 @@ extension DesktopSection {
         case .overview: "Conversations, tasks, checkpoints and results in one work history"
         case .insights: "Project dashboard, activity, memory counts and agent readiness"
         case .runs: "Inspect run activity, results and pending reviews"
+        case .orchestration: "Plan runs, campaigns, gated harness evolution and memory tracks"
         case .memoryBrowse: "Search imported memories and inspect their original sources"
         case .personal: "Review the stable preferences and current context agents carry into work"
         case .memory: "Review evidence, Jev suggestions, corrections and decision history"
