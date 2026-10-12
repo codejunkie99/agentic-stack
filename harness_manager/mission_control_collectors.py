@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from . import dashboard_tui
+from . import mission_control_orchestration as orch
 
 
 API_PATHS = {
@@ -31,6 +32,7 @@ API_PATHS = {
     "/api/protocols",
     "/api/protocols/permissions",
     "/api/data-flywheel",
+    "/api/evolution",
     "/api/ops/events",
     "/api/settings",
 }
@@ -46,6 +48,7 @@ DOMAINS = [
     "Protocols",
     "Handoff",
     "Data Flywheel",
+    "Evolution",
     "Ops Console",
     "Settings",
 ]
@@ -320,6 +323,7 @@ def _phase_a_payloads(
             },
         ),
     )
+    track_objects = orch.track_objects(target, _control_object, _source)
     brain_stats = {
         **lesson_stats,
         "candidates": sum(candidate_flow.values()),
@@ -352,6 +356,9 @@ def _phase_a_payloads(
     trust_stats = _status_stats(trust_objects)
 
     run_objects = _run_objects(model, target)
+    run_objects += orch.plan_run_objects(target, _control_object, _source)
+    run_objects += orch.campaign_objects(target, _control_object, _source)
+    evolution_objects, evolution_stats = orch.evolution_objects(target, _control_object, _source)
     if not run_objects:
         run_objects.append(
             _empty_object("run-empty", "run", "No active runs", "warn", target / ".agent" / "runtime" / "instances.json")
@@ -481,20 +488,21 @@ def _phase_a_payloads(
             "Copy-only local commands for audits, handoff, exports, and adapter repair",
             recipe_objects,
         ),
-        "/api/brain": _domain_payload("Brain", "pass" if lesson_stats["accepted"] else "warn", model["brain_summary"], lesson_objects + candidate_objects, stats=brain_stats),
+        "/api/brain": _domain_payload("Brain", "pass" if lesson_stats["accepted"] else "warn", model["brain_summary"], lesson_objects + candidate_objects + track_objects, stats=brain_stats),
         "/api/brain/lessons": _domain_payload("Brain", "pass" if lesson_stats["accepted"] else "warn", "Accepted lessons", lesson_objects, stats=lesson_stats),
         "/api/brain/candidates": _domain_payload("Brain", "pass" if memory["candidates"] == 0 else "warn", "Memory candidate queue", candidate_objects),
         "/api/harnesses": _domain_payload("Harnesses", _objects_status(adapter_objects), "Installed and available harness adapters", adapter_objects),
         "/api/harnesses/codex": _domain_payload("Harnesses", _objects_status(codex_objects), "Codex harness adapter", codex_objects),
         "/api/trust": _domain_payload("Trust", _objects_status(trust_objects), "Doctor checks and harness verification", trust_objects, stats=trust_stats),
         "/api/trust/verify": _domain_payload("Trust", _objects_status(verify_objects), "Harness verification matrix", verify_objects, stats=_status_stats(verify_objects)),
-        "/api/runs": _domain_payload("Runs", _objects_status(run_objects), "Runtime instances", run_objects),
+        "/api/runs": _domain_payload("Runs", _objects_status(run_objects), "Runtime instances, DAG plan runs, and proactive campaigns", run_objects),
         "/api/skills": _domain_payload("Skills", _objects_status(skill_objects), "Installed skills", skill_objects),
         "/api/skills/example": _domain_payload("Skills", _objects_status(example_skill_objects), "Example skill", example_skill_objects),
         "/api/protocols": _domain_payload("Protocols", _objects_status(protocol_objects), "Installed operating protocols", protocol_objects),
         "/api/protocols/permissions": _domain_payload("Protocols", _objects_status(permission_objects), "Permissions protocol", permission_objects),
         "/api/handoff": _domain_payload("Handoff", _objects_status(handoff_objects), "Next operator transfer package", handoff_objects),
         "/api/data-flywheel": _domain_payload("Data Flywheel", _objects_status(flywheel_objects), "Artifacts and learned signals", flywheel_objects, stats=flywheel_stats),
+        "/api/evolution": _domain_payload("Evolution", _objects_status(evolution_objects), "Gated evolver: diagnoses, candidates, gene bank", evolution_objects, stats=evolution_stats),
         "/api/ops/events": _domain_payload("Ops Console", "pass", "Persistent local browser event stream", ops_objects, stats=ops_stats),
         "/api/settings": _domain_payload("Settings", "pass", "Read-only local control-plane settings", settings_objects),
     }

@@ -10,6 +10,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ## [0.20.0] - 2026-10-11
 
 ### Added
+- Mission Control: new **Evolution** tab (evolver state, candidates, gene-bank cells); **Runs** now lists DAG plan runs and proactive campaigns; **Brain** shows episode/foresight/case track counts.
 - **DAG orchestration** (`.agent/harness/dag.py`, `.agent/tools/plan.py`):
   plans as dependency graphs with typed `produces`/`requires` contracts, an
   agent registry (`.agent/protocols/agents.json`) with capability cards and
