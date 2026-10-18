@@ -1,5 +1,5 @@
 """Progressive disclosure: manifest always, full SKILL.md only when triggered."""
-import json, os
+import json, os, re
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 SKILLS_DIR = os.path.join(ROOT, "skills")
@@ -22,12 +22,32 @@ def load_manifest():
     return out
 
 
+def _trigger_pattern(trigger):
+    """Regex that matches `trigger` as a whole word, not inside a longer word.
+
+    A plain substring test made `bro` fire on "browser", `how` on "show",
+    `aml` on "yaml" and `vo` on "void", so unrelated requests loaded the wrong
+    skill. A word boundary is asserted on a side only when that side is a word
+    character, so a trigger like ".net" or "c#" still matches inside a sentence.
+    """
+    if not isinstance(trigger, str) or not trigger.strip():
+        return None
+    trigger = trigger.lower().strip()
+    pattern = re.escape(trigger)
+    if trigger[0].isalnum() or trigger[0] == "_":
+        pattern = r"(?<!\w)" + pattern
+    if trigger[-1].isalnum() or trigger[-1] == "_":
+        pattern = pattern + r"(?!\w)"
+    return re.compile(pattern)
+
+
 def match_triggers(user_input, manifest):
     matches = []
     text = user_input.lower()
     for skill in manifest:
         for trigger in skill.get("triggers", []):
-            if trigger.lower() in text:
+            pattern = _trigger_pattern(trigger)
+            if pattern and pattern.search(text):
                 matches.append(skill)
                 break
     return matches
