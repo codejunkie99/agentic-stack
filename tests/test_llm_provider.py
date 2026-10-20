@@ -33,7 +33,7 @@ class _Recorder:
                 @staticmethod
                 def create(**kwargs):
                     outer.calls.append(("anthropic", kwargs))
-                    return _NS(content=[_NS(text="ok-anthropic")])
+                    return _NS(content=[_NS(type="text", text="ok-anthropic")])
 
             class chat:
                 class completions:
@@ -77,10 +77,10 @@ class MiniMaxProviderTest(unittest.TestCase):
             llm.MINIMAX_REGIONS["cn_zh"]["anthropic_base_url"],
             "https://api.minimaxi.com/anthropic",
         )
-        self.assertEqual(set(llm.MINIMAX_MODELS), {"MiniMax-M3", "MiniMax-M2.7"})
+        self.assertEqual(list(llm.MINIMAX_MODELS), ["MiniMax-M3.1-Flash", "MiniMax-M3"])
         self.assertEqual(llm.MINIMAX_MODELS["MiniMax-M3"]["context_window"], 1000000)
-        self.assertEqual(llm.MINIMAX_MODELS["MiniMax-M2.7"]["context_window"], 204800)
-        self.assertEqual(llm.MINIMAX_DEFAULT_MODEL, "MiniMax-M3")
+        self.assertEqual(llm.MINIMAX_MODELS["MiniMax-M3.1-Flash"]["context_window"], 1000000)
+        self.assertEqual(llm.MINIMAX_DEFAULT_MODEL, "MiniMax-M3.1-Flash")
 
     def test_llm_available_requires_minimax_key(self):
         os.environ["AGENT_PROVIDER"] = "minimax"
@@ -119,14 +119,14 @@ class MiniMaxProviderTest(unittest.TestCase):
         self.assertEqual(wire, "anthropic")
         self.assertEqual(kwargs["model"], "MiniMax-M2.7")
 
-    def test_default_model_is_m3(self):
+    def test_default_model_is_flash(self):
         os.environ["AGENT_PROVIDER"] = "minimax"
         os.environ["MINIMAX_API_KEY"] = "stub-key"
         rec = _Recorder()
         with mock.patch.dict(sys.modules, {"openai": _NS(OpenAI=rec.factory())}):
             llm.call_model("sys", "hi")
         _, kwargs = rec.calls[0]
-        self.assertEqual(kwargs["model"], "MiniMax-M3")
+        self.assertEqual(kwargs["model"], "MiniMax-M3.1-Flash")
 
     def test_unknown_region_raises(self):
         os.environ["AGENT_PROVIDER"] = "minimax"
@@ -135,11 +135,13 @@ class MiniMaxProviderTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             llm.call_model("sys", "hi", model="MiniMax-M3")
 
-    def test_unknown_model_raises(self):
+    def test_custom_model_is_preserved(self):
         os.environ["AGENT_PROVIDER"] = "minimax"
         os.environ["MINIMAX_API_KEY"] = "stub-key"
-        with self.assertRaises(ValueError):
-            llm.call_model("sys", "hi", model="nope")
+        rec = _Recorder()
+        with mock.patch.dict(sys.modules, {"openai": _NS(OpenAI=rec.factory())}):
+            llm.call_model("sys", "hi", model="custom-model")
+        self.assertEqual(rec.calls[0][1]["model"], "custom-model")
 
     def test_unknown_wire_raises(self):
         os.environ["AGENT_PROVIDER"] = "minimax"

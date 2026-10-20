@@ -16,13 +16,13 @@ MINIMAX_REGIONS = {
     },
 }
 
-# Current MiniMax text models. ``MiniMax-M3`` is the default; ``MiniMax-M2.7`` is
-# also supported via AGENT_MODEL. Context windows are in tokens.
+# Current MiniMax text choices, default first. Context windows are in tokens.
+# Explicit AGENT_MODEL / model overrides are passed through for saved or custom IDs.
 MINIMAX_MODELS = {
+    "MiniMax-M3.1-Flash": {"context_window": 1000000},
     "MiniMax-M3": {"context_window": 1000000},
-    "MiniMax-M2.7": {"context_window": 204800},
 }
-MINIMAX_DEFAULT_MODEL = "MiniMax-M3"
+MINIMAX_DEFAULT_MODEL = "MiniMax-M3.1-Flash"
 
 
 def _minimax_region():
@@ -49,12 +49,7 @@ def llm_available():
 def _call_minimax(system, user, *, temperature, max_tokens, model):
     region = _minimax_region()
     base_urls = MINIMAX_REGIONS[region]
-    model = model or os.getenv("AGENT_MODEL", MINIMAX_DEFAULT_MODEL)
-    if model not in MINIMAX_MODELS:
-        raise ValueError(
-            f"unknown MiniMax model: {model}. "
-            f"Supported: {', '.join(MINIMAX_MODELS)}"
-        )
+    model = model or os.getenv("AGENT_MODEL") or MINIMAX_DEFAULT_MODEL
     api_key = os.getenv("MINIMAX_API_KEY", "")
     wire = os.getenv("AGENT_MINIMAX_WIRE", "openai").lower()
     if wire == "anthropic":
@@ -62,11 +57,13 @@ def _call_minimax(system, user, *, temperature, max_tokens, model):
         c = Anthropic(api_key=api_key, base_url=base_urls["anthropic_base_url"])
         r = c.messages.create(
             model=model,
-            max_tokens=max_tokens, temperature=temperature,
+            max_tokens=max_tokens,
+            extra_body={"temperature": temperature},
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        return r.content[0].text
+        # Flash always thinks: the first block may contain reasoning, not text.
+        return "".join(block.text for block in r.content if block.type == "text")
     if wire == "openai":
         from openai import OpenAI
         c = OpenAI(api_key=api_key, base_url=base_urls["openai_base_url"])

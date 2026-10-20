@@ -33,11 +33,22 @@ export AGENT_MODEL=gpt-4o
 
 # or
 export AGENT_PROVIDER=minimax
-export AGENT_MODEL=MiniMax-M3
+export AGENT_MODEL=MiniMax-M3.1-Flash
 export MINIMAX_API_KEY=...
 # Optional: AGENT_MINIMAX_REGION=global_en|cn_zh (default global_en)
 # Optional: AGENT_MINIMAX_WIRE=openai|anthropic (default openai)
 ```
+
+MiniMax defaults to `MiniMax-M3.1-Flash` when `AGENT_MODEL` is unset or empty;
+`MiniMax-M3` is the other current choice. Explicit `AGENT_MODEL` values and
+`call_model(..., model=...)` overrides are preserved, including legacy or custom
+IDs (availability is determined by the API). A call's `model` override takes
+precedence over `AGENT_MODEL`.
+
+The helper leaves thinking and effort settings to the API defaults. Flash always
+thinks and defaults to `max` effort; M3 defaults vary by wire protocol. On the
+Anthropic-compatible wire, the helper returns text blocks without exposing
+thinking blocks in its string result.
 
 ## Cron the dream cycle
 ```bash
